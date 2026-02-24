@@ -60,7 +60,7 @@ Edit `.env`:
 ```env
 DATABASE_URL=postgresql+asyncpg://ts_user:ts_secure_pass_2026@localhost:5432/timescheduler
 SECRET_KEY=<run: openssl rand -hex 32>
-USER_LOGIN=Wor7hless
+USER_LOGIN=78989
 USER_PASSWORD=your_secure_password
 BACKUP_INTERVAL_HOURS=24
 BACKUP_DIR=./backups
