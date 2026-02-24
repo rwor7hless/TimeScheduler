@@ -1,0 +1,161 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #F9FAFB;
+  --color-surface: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-text: #111827;
+  --color-text-secondary: #6B7280;
+  --color-accent: #D97706;
+  --color-accent-light: #F59E0B;
+  --color-danger: #EF4444;
+  --color-success: #10B981;
+}
+
+.dark {
+  --color-bg: #0F172A;
+  --color-surface: #1E293B;
+  --color-border: #334155;
+  --color-text: #F1F5F9;
+  --color-text-secondary: #94A3B8;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  margin: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #D1D5DB;
+  border-radius: 3px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
+
+/* ── Dark mode overrides for Tailwind utility classes ─────────────────────── */
+/* These allow components to automatically adapt without adding dark: to each */
+
+.dark .bg-white           { background-color: var(--color-surface) !important; }
+.dark .bg-gray-50         { background-color: #1E293B !important; }
+.dark .bg-gray-100        { background-color: #334155 !important; }
+.dark .bg-gray-200        { background-color: #475569 !important; }
+
+.dark .text-gray-900      { color: #F1F5F9 !important; }
+.dark .text-gray-800      { color: #E2E8F0 !important; }
+.dark .text-gray-700      { color: #CBD5E1 !important; }
+.dark .text-gray-600      { color: #94A3B8 !important; }
+.dark .text-gray-500      { color: #64748B !important; }
+.dark .text-gray-400      { color: #475569 !important; }
+
+.dark .border-gray-100    { border-color: #334155 !important; }
+.dark .border-gray-200    { border-color: #334155 !important; }
+.dark .border-gray-300    { border-color: #475569 !important; }
+
+.dark .text-gray-300      { color: #94A3B8 !important; }
+
+.dark .hover\:bg-gray-50:hover  { background-color: #1E293B !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+.dark .hover\:bg-gray-200:hover { background-color: #475569 !important; }
+.dark .hover\:text-gray-900:hover { color: #F1F5F9 !important; }
+.dark .hover\:text-gray-700:hover { color: #CBD5E1 !important; }
+
+/* Forms */
+.dark input,
+.dark textarea,
+.dark select {
+  background-color: #1E293B !important;
+  color: #F1F5F9 !important;
+  border-color: #334155 !important;
+}
+
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #64748B !important;
+}
+
+/* Cards and modals */
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3); }
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3); }
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+/* Amber states in dark mode */
+.dark .bg-amber-50              { background-color: rgba(120,80,0,0.15) !important; }
+.dark .hover\:bg-amber-50:hover { background-color: rgba(120,80,0,0.15) !important; }
+.dark .bg-amber-50\/30          { background-color: rgba(120,80,0,0.10) !important; }
+.dark .bg-amber-50\/50          { background-color: rgba(120,80,0,0.12) !important; }
+/* Hover with opacity variants — calendar slots */
+.dark .hover\:bg-amber-50\/50:hover { background-color: rgba(120,80,0,0.18) !important; }
+.dark .hover\:bg-amber-50\/40:hover { background-color: rgba(120,80,0,0.14) !important; }
+.dark .border-amber-300         { border-color: #92400E !important; }
+
+/* Stat cards */
+.dark .bg-emerald-50 { background-color: rgba(6,78,59,0.3) !important; }
+.dark .bg-orange-50  { background-color: rgba(124,45,18,0.3) !important; }
+.dark .bg-violet-50  { background-color: rgba(76,29,149,0.3) !important; }
+
+/* Kanban columns */
+.dark .bg-gray-50.rounded-xl { background-color: #1E293B !important; }
+
+/* Focus rings */
+.dark .focus\:ring-gray-300:focus { --tw-ring-color: #475569; }
+
+/* Recharts tooltip */
+.dark .recharts-default-tooltip {
+  background: #1E293B !important;
+  border-color: #334155 !important;
+  color: #F1F5F9 !important;
+}
+
+/* Stat cards text colors in dark */
+.dark .text-emerald-900 { color: #6EE7B7 !important; }
+.dark .text-amber-900   { color: #FCD34D !important; }
+.dark .text-orange-900  { color: #FDBA74 !important; }
+.dark .text-violet-900  { color: #C4B5FD !important; }
+
+/* Color picker ring (TaskModal) */
+.dark .ring-gray-800 { --tw-ring-color: #94A3B8 !important; }
+
+/* Time column background (Calendar) */
+.dark .bg-gray-50\/50 { background-color: rgba(30,41,59,0.5) !important; }
+
+/* Today highlight in WeekView */
+.dark .bg-amber-50\/20 { background-color: rgba(120,80,0,0.08) !important; }
+
+/* Hover slots in calendar */
+.dark .hover\:bg-amber-50\/40:hover { background-color: rgba(120,80,0,0.14) !important; }
+
+/* KanbanPage over-state */
+.dark .bg-amber-50\/50 { background-color: rgba(120,80,0,0.12) !important; }
+
+/* Scrollable period selector (StatsPage) */
+.dark .bg-gray-100.rounded-lg { background-color: #1E293B !important; }
+.dark .bg-white.shadow-sm { background-color: #334155 !important; }
