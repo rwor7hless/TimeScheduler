@@ -84,10 +84,11 @@ def upgrade() -> None:
         if "name" in c["column_names"] and "user_id" not in c["column_names"]:
             op.drop_constraint(c["name"], "tags", type_="unique")
             break
-    try:
+
+    # Create uq_tag_user_name only if it does not exist (e.g. already created by create_all)
+    r = conn.execute(text("SELECT 1 FROM pg_constraint WHERE conname = 'uq_tag_user_name' LIMIT 1"))
+    if r.fetchone() is None:
         op.create_unique_constraint("uq_tag_user_name", "tags", ["user_id", "name"])
-    except Exception:
-        pass  # may already exist from create_all
 
 
 def downgrade() -> None:
