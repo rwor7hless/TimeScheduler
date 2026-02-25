@@ -15,14 +15,12 @@ interface WeekViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const TOTAL_MINUTES = 24 * 60
 const SNAP = 15
-const MSK_OFFSET_MS = 3 * 60 * 60 * 1000
 
-function getMoscowNow(): { minutesFromMidnight: number; dateStr: string } {
-  const utc = new Date()
-  const moscow = new Date(utc.getTime() + MSK_OFFSET_MS)
-  const minutesFromMidnight = moscow.getUTCHours() * 60 + moscow.getUTCMinutes()
+function getLocalNow(): { minutesFromMidnight: number; dateStr: string } {
+  const now = new Date()
+  const minutesFromMidnight = now.getHours() * 60 + now.getMinutes()
   const pad = (n: number) => String(n).padStart(2, '0')
-  const dateStr = `${moscow.getUTCFullYear()}-${pad(moscow.getUTCMonth() + 1)}-${pad(moscow.getUTCDate())}`
+  const dateStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
   return { minutesFromMidnight, dateStr }
 }
 
@@ -98,10 +96,10 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
   const dragRef = useRef<DragInfo | null>(null)
   const hasMoved = useRef(false)
   const [ghost, setGhost] = useState<GhostState | null>(null)
-  const [moscowNow, setMoscowNow] = useState(() => getMoscowNow())
+  const [localNow, setLocalNow] = useState(() => getLocalNow())
 
   useEffect(() => {
-    const tick = () => setMoscowNow(getMoscowNow())
+    const tick = () => setLocalNow(getLocalNow())
     const id = setInterval(tick, 60 * 1000)
     tick()
     return () => clearInterval(id)
@@ -313,12 +311,11 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                 />
               ))}
 
-              {/* Current time line (MSK) - only on today's column */}
-              {key === moscowNow.dateStr && (
+              {key === localNow.dateStr && (
                 <div
                   className="absolute left-0 right-0 z-30 pointer-events-none"
                   style={{
-                    top: `${(moscowNow.minutesFromMidnight / TOTAL_MINUTES) * 100}%`,
+                    top: `${(localNow.minutesFromMidnight / TOTAL_MINUTES) * 100}%`,
                     height: '2px',
                     backgroundColor: '#ea580c',
                     boxShadow: '0 0 4px rgba(234,88,12,0.5)',

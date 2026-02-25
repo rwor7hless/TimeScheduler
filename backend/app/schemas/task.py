@@ -80,6 +80,7 @@ class TaskResponse(BaseModel):
     updated_at: datetime
     tags: list[TagResponse]
     board_id: int | None = None
+    is_archived: bool = False
     tg_remind: bool = False
     tg_remind_at: datetime | None = None
     tg_reminded: bool = False

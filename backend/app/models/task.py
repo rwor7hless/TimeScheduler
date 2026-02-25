@@ -1,11 +1,15 @@
 import enum
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import ARRAY, Boolean, Column, DateTime, Enum, ForeignKey, Integer, String, Table, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models.board import Board
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Priority(str, enum.Enum):
@@ -75,6 +79,8 @@ class Task(Base):
     repeat_days: Mapped[list[int] | None] = mapped_column(ARRAY(Integer()), nullable=True)  # 0=Mon..6=Sun
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
+
     tg_remind: Mapped[bool] = mapped_column(Boolean, default=False)
     tg_remind_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tg_reminded: Mapped[bool] = mapped_column(Boolean, default=False)
@@ -83,7 +89,7 @@ class Task(Base):
         DateTime(timezone=True), server_default="now()"
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", onupdate=datetime.utcnow
+        DateTime(timezone=True), server_default="now()", onupdate=_utcnow
     )
 
     tags: Mapped[list["Tag"]] = relationship(

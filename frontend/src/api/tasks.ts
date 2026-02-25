@@ -5,6 +5,9 @@ export const tasksApi = {
   list: (params?: Record<string, string>) =>
     api.get<Task[]>('/tasks', { params }).then((r) => r.data),
 
+  listArchived: () =>
+    api.get<Task[]>('/tasks/archived').then((r) => r.data),
+
   get: (id: number) =>
     api.get<Task>(`/tasks/${id}`).then((r) => r.data),
 
@@ -19,6 +22,12 @@ export const tasksApi = {
 
   delete: (id: number) =>
     api.delete(`/tasks/${id}`),
+
+  archive: (id: number) =>
+    api.post(`/tasks/${id}/archive`),
+
+  unarchive: (id: number) =>
+    api.post<Task>(`/tasks/${id}/unarchive`).then((r) => r.data),
 
   reorder: (data: KanbanReorder) =>
     api.patch('/tasks/reorder', data),

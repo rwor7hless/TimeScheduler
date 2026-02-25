@@ -66,7 +66,7 @@ export default function CalendarPage() {
   if (isLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="flex flex-col h-[calc(100vh-9rem)] min-h-0">
+    <div className="flex flex-col lg:h-[calc(100vh-9rem)] min-h-0">
       {/* Toolbar */}
       <div className="flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export default function CalendarPage() {
             &larr;
           </Button>
           <Button variant="secondary" size="sm" onClick={goToToday}>
-            Today
+            Сегодня
           </Button>
           <Button variant="secondary" size="sm" onClick={navigateNext}>
             &rarr;
@@ -92,18 +92,19 @@ export default function CalendarPage() {
                   viewMode === mode ? 'bg-white shadow-sm font-medium' : 'text-gray-600'
                 }`}
               >
-                {mode === 'day' ? 'Day' : mode === 'week' ? 'Week' : 'Month'}
+                {mode === 'day' ? 'День' : mode === 'week' ? 'Неделя' : 'Месяц'}
               </button>
             ))}
           </div>
           <Button
+            size="sm"
             onClick={() => {
               setEditingTask(null)
               setDefaultDate('')
               setModalOpen(true)
             }}
           >
-            + Task
+            + Задача
           </Button>
         </div>
       </div>
