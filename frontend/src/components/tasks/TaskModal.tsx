@@ -182,10 +182,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
 
   // Determine if we're in calendar context (show date fields) or kanban context
   const isCalendarContext = !!(defaultDate || (task && task.scheduled_start))
-  const showDateFields = isCalendarContext || scheduledDate
-
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="lg" noScroll>
+    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="2xl" noScroll>
       <form onSubmit={handleSubmit} className="space-y-2.5">
 
         {/* Title */}
