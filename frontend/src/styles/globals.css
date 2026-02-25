@@ -30,6 +30,12 @@ body {
   color: var(--color-text);
   margin: 0;
   -webkit-font-smoothing: antialiased;
+  padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 * {
@@ -74,7 +80,7 @@ body {
 .dark .text-gray-700      { color: #CBD5E1 !important; }
 .dark .text-gray-600      { color: #94A3B8 !important; }
 .dark .text-gray-500      { color: #64748B !important; }
-.dark .text-gray-400      { color: #475569 !important; }
+.dark .text-gray-400      { color: #64748B !important; }
 
 .dark .border-gray-100    { border-color: #334155 !important; }
 .dark .border-gray-200    { border-color: #334155 !important; }

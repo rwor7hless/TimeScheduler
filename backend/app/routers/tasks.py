@@ -43,7 +43,7 @@ async def list_tasks(
     query = (
         select(Task)
         .options(selectinload(Task.tags))
-        .where(Task.user_id == current_user.id)
+        .where(Task.user_id == current_user.id, Task.is_archived.is_(False))
         .order_by(Task.kanban_order)
     )
 
@@ -66,6 +66,20 @@ async def list_tasks(
         query = query.where(Task.board_id == board_id)
 
     result = await db.execute(query)
+    return result.scalars().unique().all()
+
+
+@router.get("/archived", response_model=list[TaskResponse])
+async def list_archived_tasks(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Task)
+        .options(selectinload(Task.tags))
+        .where(Task.user_id == current_user.id, Task.is_archived.is_(True))
+        .order_by(Task.completed_at.desc().nullslast(), Task.updated_at.desc())
+    )
     return result.scalars().unique().all()
 
 
@@ -240,6 +254,45 @@ async def partial_update_task(
         )
         task.tags = list(tag_result.scalars().all())
 
+    await db.commit()
+    await db.refresh(task)
+    return task
+
+
+@router.post("/{task_id}/archive", status_code=status.HTTP_204_NO_CONTENT)
+async def archive_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Task).where(Task.id == task_id, Task.user_id == current_user.id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task.is_archived = True
+    if task.completed_at is None:
+        task.completed_at = datetime.now(timezone.utc)
+    await db.commit()
+
+
+@router.post("/{task_id}/unarchive", response_model=TaskResponse)
+async def unarchive_task(
+    task_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Task)
+        .options(selectinload(Task.tags))
+        .where(Task.id == task_id, Task.user_id == current_user.id)
+    )
+    task = result.scalar_one_or_none()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    task.is_archived = False
+    task.status = KanbanStatus.TODO
     await db.commit()
     await db.refresh(task)
     return task

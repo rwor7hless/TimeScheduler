@@ -70,7 +70,7 @@ export default function BoardsPage() {
           to="/kanban"
           className="flex flex-col items-center justify-center p-6 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-400 transition-colors group"
         >
-          <div className="text-amber-600 group-hover:text-amber-700 mb-2">
+          <div className="text-amber-600 group-hover:text-amber-700 dark:text-amber-400 dark:group-hover:text-amber-300 mb-2">
             <KanbanIcon />
           </div>
           <span className="font-medium text-gray-900">Основная</span>
@@ -98,7 +98,7 @@ export default function BoardsPage() {
                 e.preventDefault()
                 openDeleteModal(board.id, board.name)
               }}
-              className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+              className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:text-red-400 dark:hover:bg-red-900/30 opacity-0 group-hover:opacity-100 transition-opacity"
               title="Удалить доску"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

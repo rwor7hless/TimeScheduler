@@ -51,13 +51,13 @@ const LogoutIcon = () => (
 )
 
 const navItems = (isAdmin: boolean) => [
-  { to: '/today', label: 'Today', Icon: TodayIcon },
-  { to: '/calendar/day', label: 'Calendar', Icon: CalendarIcon },
-  { to: '/boards', label: 'Boards', Icon: KanbanIcon },
-  { to: '/habits', label: 'Habits', Icon: HabitsIcon },
-  { to: '/stats', label: 'Stats', Icon: StatsIcon },
-  { to: '/export', label: 'Export', Icon: ExportIcon },
-  ...(isAdmin ? [{ to: '/admin', label: 'Admin', Icon: AdminIcon }] : []),
+  { to: '/today', label: 'Сегодня', Icon: TodayIcon },
+  { to: '/calendar/day', label: 'Календарь', Icon: CalendarIcon },
+  { to: '/boards', label: 'Доски', Icon: KanbanIcon },
+  { to: '/habits', label: 'Привычки', Icon: HabitsIcon },
+  { to: '/stats', label: 'Статистика', Icon: StatsIcon },
+  { to: '/export', label: 'Экспорт', Icon: ExportIcon },
+  ...(isAdmin ? [{ to: '/admin', label: 'Админ', Icon: AdminIcon }] : []),
 ]
 
 interface SidebarProps {
@@ -66,7 +66,7 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const { logout, isAdmin } = useAuth()
+  const { logout, isAdmin, user } = useAuth()
 
   return (
     <>
@@ -88,6 +88,14 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
               Time<span className="text-amber-600">Scheduler</span>
             </span>
+            {user && (
+              <div className="flex items-center gap-2 mt-3">
+                <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400">
+                  {user.username.charAt(0).toUpperCase()}
+                </div>
+                <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{user.username}</span>
+              </div>
+            )}
           </div>
 
           <nav className="flex-1 px-2 py-3 space-y-0.5">
@@ -118,7 +126,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               className="flex items-center gap-2.5 w-full px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors touch-manipulation"
             >
               <LogoutIcon />
-              Sign out
+              Выход
             </button>
           </div>
         </div>

@@ -97,6 +97,37 @@ export function useDeleteTask() {
   })
 }
 
+export function useArchivedTasks() {
+  const { user } = useAuth()
+  return useQuery({
+    queryKey: ['tasks', user?.user_id, 'archived'],
+    queryFn: () => tasksApi.listArchived(),
+    enabled: !!user?.user_id,
+  })
+}
+
+export function useArchiveTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => tasksApi.archive(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['stats'] })
+    },
+  })
+}
+
+export function useUnarchiveTask() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: number) => tasksApi.unarchive(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['stats'] })
+    },
+  })
+}
+
 export function useReorderTasks() {
   const qc = useQueryClient()
   return useMutation({

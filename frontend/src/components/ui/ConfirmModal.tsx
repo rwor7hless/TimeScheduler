@@ -8,6 +8,7 @@ interface ConfirmModalProps {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+
   variant?: 'danger' | 'primary'
   onConfirm: () => void | Promise<void>
   isLoading?: boolean
@@ -18,8 +19,8 @@ export default function ConfirmModal({
   onClose,
   title,
   message,
-  confirmLabel = 'Confirm',
-  cancelLabel = 'Cancel',
+  confirmLabel = 'Подтвердить',
+  cancelLabel = 'Отмена',
   variant = 'primary',
   onConfirm,
   isLoading = false,
@@ -36,7 +37,7 @@ export default function ConfirmModal({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="space-y-4">
-        <p className="text-gray-600">{message}</p>
+        <p className="text-gray-600 dark:text-gray-300">{message}</p>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="secondary" onClick={onClose} disabled={isLoading}>
             {cancelLabel}
