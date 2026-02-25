@@ -37,11 +37,10 @@ async def lifespan(app: FastAPI):
     from sqlalchemy.ext.asyncio import AsyncSession
     from app.database import async_session
     from app.models.user import User
-    from app.services.auth import hash_password
+    from app.services.auth import hash_password, verify_password_hash
 
     async with async_session() as session:
         if settings.clean_db_on_startup:
-            # Truncate all data (order: child tables first due to FKs)
             await session.execute(
                 text("TRUNCATE tasks, habits, tags, users RESTART IDENTITY CASCADE")
             )
@@ -58,6 +57,10 @@ async def lifespan(app: FastAPI):
             session.add(admin)
             await session.commit()
             await session.refresh(admin)
+        elif not verify_password_hash(settings.user_password, admin.password_hash):
+            admin.password_hash = hash_password(settings.user_password)
+            admin.is_admin = True
+            await session.commit()
 
     # Schedule periodic backup
     scheduler.add_job(

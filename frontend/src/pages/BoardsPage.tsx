@@ -31,10 +31,10 @@ export default function BoardsPage() {
       const board = await createBoard.mutateAsync(name)
       setCreateModalOpen(false)
       setNewBoardName('')
-      toast.success('Board created')
+      toast.success('Доска создана')
       navigate(`/kanban/${board.id}`)
     } catch {
-      toast.error('Failed to create board')
+      toast.error('Не удалось создать доску')
     }
   }
 
@@ -49,9 +49,9 @@ export default function BoardsPage() {
       await deleteBoard.mutateAsync(boardToDelete.id)
       setDeleteModalOpen(false)
       setBoardToDelete(null)
-      toast.success('Board deleted')
+      toast.success('Доска удалена')
     } catch {
-      toast.error('Failed to delete board')
+      toast.error('Не удалось удалить доску')
     }
   }
 
@@ -60,8 +60,8 @@ export default function BoardsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Boards</h2>
-        <Button onClick={() => setCreateModalOpen(true)}>+ New Board</Button>
+        <h2 className="text-lg font-semibold text-gray-900">Доски</h2>
+        <Button onClick={() => setCreateModalOpen(true)}>+ Новая доска</Button>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -73,8 +73,8 @@ export default function BoardsPage() {
           <div className="text-amber-600 group-hover:text-amber-700 mb-2">
             <KanbanIcon />
           </div>
-          <span className="font-medium text-gray-900">Default</span>
-          <span className="text-xs text-gray-500 mt-0.5">Main board</span>
+          <span className="font-medium text-gray-900">Основная</span>
+          <span className="text-xs text-gray-500 mt-0.5">Главная доска</span>
         </Link>
 
         {/* Custom boards */}
@@ -99,7 +99,7 @@ export default function BoardsPage() {
                 openDeleteModal(board.id, board.name)
               }}
               className="absolute top-2 right-2 p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
-              title="Delete board"
+              title="Удалить доску"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
@@ -115,23 +115,23 @@ export default function BoardsPage() {
           setCreateModalOpen(false)
           setNewBoardName('')
         }}
-        title="New Board"
+        title="Новая доска"
       >
         <form onSubmit={handleCreateBoard} className="space-y-4">
           <Input
-            label="Board name"
+            label="Название доски"
             value={newBoardName}
             onChange={(e) => setNewBoardName(e.target.value)}
-            placeholder="Enter board name..."
+            placeholder="Введите название..."
             required
             autoFocus
           />
           <div className="flex justify-end gap-2">
             <Button type="button" variant="secondary" onClick={() => setCreateModalOpen(false)}>
-              Cancel
+              Отмена
             </Button>
             <Button type="submit" disabled={createBoard.isPending || !newBoardName.trim()}>
-              Create
+              Создать
             </Button>
           </div>
         </form>
@@ -143,11 +143,11 @@ export default function BoardsPage() {
           setDeleteModalOpen(false)
           setBoardToDelete(null)
         }}
-        title="Delete Board"
+        title="Удаление доски"
       >
         <div className="space-y-4">
           <p className="text-gray-600">
-            Delete board &quot;{boardToDelete?.name}&quot;? Tasks on this board will become unassigned (moved to Default).
+            Удалить доску &laquo;{boardToDelete?.name}&raquo;? Задачи будут перемещены в основную доску.
           </p>
           <div className="flex justify-end gap-2">
             <Button
@@ -158,14 +158,14 @@ export default function BoardsPage() {
                 setBoardToDelete(null)
               }}
             >
-              Cancel
+              Отмена
             </Button>
             <Button
               variant="danger"
               onClick={handleDeleteBoard}
               disabled={deleteBoard.isPending}
             >
-              Delete
+              Удалить
             </Button>
           </div>
         </div>

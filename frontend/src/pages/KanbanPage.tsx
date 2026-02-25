@@ -22,18 +22,20 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
 import { useTasks, useReorderTasks, useBoards, useDeleteTask } from '@/hooks/useTasks'
+import { tasksApi } from '@/api/tasks'
 import TaskCard from '@/components/tasks/TaskCard'
 import TaskModal from '@/components/tasks/TaskModal'
 import Button from '@/components/ui/Button'
 import ConfirmModal from '@/components/ui/ConfirmModal'
 import Spinner from '@/components/ui/Spinner'
 import type { Task, KanbanStatus } from '@/types/task'
+import { useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 
 const COLUMNS: { id: KanbanStatus; title: string; accent: string }[] = [
-  { id: 'todo', title: 'To Do', accent: 'border-t-stone-400' },
-  { id: 'in_progress', title: 'In Progress', accent: 'border-t-blue-400' },
-  { id: 'done', title: 'Done', accent: 'border-t-emerald-400' },
+  { id: 'todo', title: 'К выполнению', accent: 'border-t-stone-400' },
+  { id: 'in_progress', title: 'В работе', accent: 'border-t-blue-400' },
+  { id: 'done', title: 'Готово', accent: 'border-t-emerald-400' },
 ]
 
 function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
@@ -99,15 +101,26 @@ function DroppableColumn({
           items={tasks.map((t) => t.id)}
           strategy={verticalListSortingStrategy}
         >
-          <div className="space-y-2">
-            {tasks.map((task) => (
-              <SortableTaskCard
-                key={task.id}
-                task={task}
-                onClick={() => onTaskClick(task)}
-              />
-            ))}
-          </div>
+          {tasks.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-2 opacity-40">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <line x1="12" y1="8" x2="12" y2="16" />
+                <line x1="8" y1="12" x2="16" y2="12" />
+              </svg>
+              <span className="text-xs">Нажмите +</span>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {tasks.map((task) => (
+                <SortableTaskCard
+                  key={task.id}
+                  task={task}
+                  onClick={() => onTaskClick(task)}
+                />
+              ))}
+            </div>
+          )}
         </SortableContext>
       </div>
     </div>
@@ -119,10 +132,11 @@ export default function KanbanPage() {
   const selectedBoardId = boardIdParam ? parseInt(boardIdParam, 10) : null
   const isValidBoardId = selectedBoardId !== null && !isNaN(selectedBoardId)
 
+  const queryClient = useQueryClient()
   const { data: boards } = useBoards()
   const boardName = useMemo(() => {
-    if (!selectedBoardId) return 'Default'
-    return boards?.find((b) => b.id === selectedBoardId)?.name ?? `Board ${selectedBoardId}`
+    if (!selectedBoardId) return 'Основная'
+    return boards?.find((b) => b.id === selectedBoardId)?.name ?? `Доска ${selectedBoardId}`
   }, [boards, selectedBoardId])
 
   const taskParams = useMemo((): Record<string, string> => {
@@ -203,7 +217,7 @@ export default function KanbanPage() {
           ordered_ids: reordered.map((t) => t.id),
         })
       } catch {
-        toast.error('Failed to reorder')
+        toast.error('Не удалось изменить порядок')
       }
     } else {
       const targetItems = [...columns[targetColumn]].filter((t) => t.id !== activeId)
@@ -211,19 +225,24 @@ export default function KanbanPage() {
         ? targetItems.findIndex((t) => t.id === overTask.id)
         : targetItems.length
       targetItems.splice(insertAt < 0 ? targetItems.length : insertAt, 0, activeTask)
+      const newSource = sourceItems.filter((t) => t.id !== activeId)
 
       try {
-        await reorderMutation.mutateAsync({
-          status: targetColumn,
-          ordered_ids: targetItems.map((t) => t.id),
-        })
-        const newSource = sourceItems.filter((t) => t.id !== activeId)
-        await reorderMutation.mutateAsync({
-          status: sourceColumn,
-          ordered_ids: newSource.map((t) => t.id),
-        })
+        await Promise.all([
+          tasksApi.reorder({
+            status: targetColumn,
+            ordered_ids: targetItems.map((t) => t.id),
+          }),
+          tasksApi.reorder({
+            status: sourceColumn,
+            ordered_ids: newSource.map((t) => t.id),
+          }),
+        ])
+        reorderMutation.reset()
       } catch {
-        toast.error('Failed to move task')
+        toast.error('Не удалось переместить задачу')
+      } finally {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] })
       }
     }
   }
@@ -239,9 +258,9 @@ export default function KanbanPage() {
     if (doneIds.length === 0) return
     try {
       await Promise.all(doneIds.map((id) => deleteTask.mutateAsync(id)))
-      toast.success('Done tasks cleared')
+      toast.success('Готовые задачи удалены')
     } catch {
-      toast.error('Failed to clear done tasks')
+      toast.error('Не удалось очистить задачи')
       throw new Error('Clear failed')
     }
   }
@@ -251,7 +270,7 @@ export default function KanbanPage() {
   if (boardIdParam && !isValidBoardId) {
     return (
       <div className="space-y-4">
-        <p className="text-gray-600">Invalid board. <Link to="/boards" className="text-amber-600 hover:underline">Back to boards</Link></p>
+        <p className="text-gray-600">Доска не найдена. <Link to="/boards" className="text-amber-600 hover:underline">Назад к доскам</Link></p>
       </div>
     )
   }
@@ -264,18 +283,18 @@ export default function KanbanPage() {
             to="/boards"
             className="text-sm text-gray-500 hover:text-amber-600 transition-colors"
           >
-            ← Boards
+            ← Доски
           </Link>
           <h2 className="text-lg font-semibold text-gray-900">{boardName}</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Button onClick={() => openCreateModal('todo')}>+ Task</Button>
+          <Button onClick={() => openCreateModal('todo')}>+ Задача</Button>
           <Button
             variant="secondary"
             onClick={() => setClearDoneModalOpen(true)}
             disabled={doneCount === 0}
           >
-            Clear Done {doneCount > 0 ? `(${doneCount})` : ''}
+            Очистить готовые {doneCount > 0 ? `(${doneCount})` : ''}
           </Button>
         </div>
       </div>
@@ -317,9 +336,9 @@ export default function KanbanPage() {
       <ConfirmModal
         isOpen={clearDoneModalOpen}
         onClose={() => setClearDoneModalOpen(false)}
-        title="Clear Done Tasks"
-        message={`Delete ${doneCount} done task${doneCount === 1 ? '' : 's'} from this board?`}
-        confirmLabel="Clear"
+        title="Очистить готовые задачи"
+        message={`Удалить ${doneCount} ${doneCount === 1 ? 'задачу' : 'задач(и)'} с этой доски?`}
+        confirmLabel="Удалить"
         variant="danger"
         onConfirm={handleClearDone}
         isLoading={deleteTask.isPending}

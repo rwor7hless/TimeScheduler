@@ -20,16 +20,16 @@ interface TaskModalProps {
 }
 
 const priorityOptions = [
-  { value: 'low', label: 'Low' },
-  { value: 'medium', label: 'Medium' },
-  { value: 'high', label: 'High' },
-  { value: 'urgent', label: 'Urgent' },
+  { value: 'low', label: 'Низкий' },
+  { value: 'medium', label: 'Средний' },
+  { value: 'high', label: 'Высокий' },
+  { value: 'urgent', label: 'Срочный' },
 ]
 
 const statusOptions = [
-  { value: 'todo', label: 'To Do' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'done', label: 'Done' },
+  { value: 'todo', label: 'К выполнению' },
+  { value: 'in_progress', label: 'В работе' },
+  { value: 'done', label: 'Готово' },
 ]
 
 function parseDatetime(isoString: string): { date: string; startTime: string } {
@@ -90,30 +90,38 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         setTgRemindTime('')
       }
     } else {
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const today = new Date()
-      const defaultDateStr = defaultDate || `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}T${pad(today.getHours())}:${pad(today.getMinutes())}`
-      const parsed = defaultDateStr.includes('T')
-        ? (() => {
-            const p = parseDatetime(defaultDateStr)
-            const [h, m] = p.startTime.split(':').map(Number)
-            const endH = (h + 1) % 24
-            return { date: p.date, startTime: p.startTime, endTime: `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}` }
-          })()
-        : { date: defaultDateStr || new Date().toISOString().slice(0, 10), startTime: '09:00', endTime: '10:00' }
       setTitle('')
       setDescription('')
       setColor('')
       setPriority('medium')
       setStatus(defaultStatus ?? 'todo')
-      setScheduledDate(parsed.date)
-      setStartTime(parsed.startTime)
-      setEndTime(parsed.endTime)
       setRepeatDays([])
       setSelectedTagIds([])
       setTgRemind(false)
       setTgRemindDate('')
       setTgRemindTime('')
+
+      const isKanbanTask = !defaultDate && (boardId !== undefined || defaultStatus !== undefined)
+      if (isKanbanTask) {
+        setScheduledDate('')
+        setStartTime('')
+        setEndTime('')
+      } else {
+        const pad = (n: number) => String(n).padStart(2, '0')
+        const today = new Date()
+        const defaultDateStr = defaultDate || `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}T${pad(today.getHours())}:${pad(today.getMinutes())}`
+        const parsed = defaultDateStr.includes('T')
+          ? (() => {
+              const p = parseDatetime(defaultDateStr)
+              const [h, m] = p.startTime.split(':').map(Number)
+              const endH = (h + 1) % 24
+              return { date: p.date, startTime: p.startTime, endTime: `${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}` }
+            })()
+          : { date: defaultDateStr || new Date().toISOString().slice(0, 10), startTime: '09:00', endTime: '10:00' }
+        setScheduledDate(parsed.date)
+        setStartTime(parsed.startTime)
+        setEndTime(parsed.endTime)
+      }
     }
   }, [task, isOpen, defaultDate, defaultStatus])
 
@@ -150,14 +158,14 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     try {
       if (task) {
         await updateTask.mutateAsync({ id: task.id, data })
-        toast.success('Task updated')
+        toast.success('Задача обновлена')
       } else {
         await createTask.mutateAsync(data)
-        toast.success('Task created')
+        toast.success('Задача создана')
       }
       onClose()
     } catch {
-      toast.error('Failed to save task')
+      toast.error('Не удалось сохранить задачу')
     }
   }
 
@@ -165,10 +173,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     if (!task) return
     try {
       await deleteTask.mutateAsync(task.id)
-      toast.success('Task deleted')
+      toast.success('Задача удалена')
       onClose()
     } catch {
-      toast.error('Failed to delete task')
+      toast.error('Не удалось удалить задачу')
     }
   }
 
@@ -179,30 +187,30 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Edit Task' : 'New Task'} maxWidth="2xl" noScroll>
+    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="2xl" noScroll>
       <form onSubmit={handleSubmit} className="space-y-3">
         <Input
-          label="Title"
+          label="Название"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Task title..."
+          placeholder="Название задачи..."
           required
         />
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <label className="block text-sm font-medium text-gray-700">Описание</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full h-[100px] px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-transparent resize-none"
-            placeholder="Description (optional)..."
+            placeholder="Описание (необязательно)..."
           />
         </div>
 
         <div className="space-y-3">
           <div className="min-w-[120px]">
             <Input
-              label="Date"
+              label="Дата"
               type="date"
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
@@ -220,7 +228,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         </div>
 
         <div className="space-y-1">
-          <label className="block text-sm font-medium text-gray-700">Color</label>
+          <label className="block text-sm font-medium text-gray-700">Цвет</label>
           <div className="flex flex-wrap gap-2 px-0.5 py-0.5">
             {TASK_COLOR_PALETTE.map((c) => (
               <button
@@ -240,7 +248,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
               className={`w-8 h-8 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-xs text-gray-500 ${
                 !color ? 'bg-amber-50 border-amber-400' : ''
               }`}
-              title="Random"
+              title="Случайный"
             >
               ?
             </button>
@@ -249,13 +257,13 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
 
         <div className="grid grid-cols-2 gap-2">
           <Select
-            label="Priority"
+            label="Приоритет"
             options={priorityOptions}
             value={priority}
             onChange={(e) => setPriority(e.target.value as Priority)}
           />
           <Select
-            label="Status"
+            label="Статус"
             options={statusOptions}
             value={status}
             onChange={(e) => setStatus(e.target.value as KanbanStatus)}
@@ -265,7 +273,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         <div className="space-y-1.5">
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="block text-sm font-medium text-gray-700">Repeat on</label>
+              <label className="block text-sm font-medium text-gray-700">Повтор</label>
               <label className="flex items-center gap-2 cursor-pointer select-none">
                 <input
                   type="checkbox"
@@ -298,13 +306,13 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                 </button>
               ))}
             </div>
-            <p className="text-xs text-gray-500">Leave empty for one-time task</p>
+            <p className="text-xs text-gray-500">Оставьте пустым для одноразовой задачи</p>
           </div>
         </div>
 
         {tags && tags.length > 0 && (
           <div className="space-y-1">
-            <label className="block text-sm font-medium text-gray-700">Tags</label>
+            <label className="block text-sm font-medium text-gray-700">Теги</label>
             <div className="flex flex-wrap gap-2">
               {tags.map((tag) => (
                 <button
@@ -379,17 +387,17 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
               onClick={handleDelete}
               disabled={deleteTask.isPending}
             >
-              Delete
+              Удалить
             </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <Button type="button" variant="secondary" onClick={onClose}>
-              Cancel
+              Отмена
             </Button>
             <Button type="submit" disabled={createTask.isPending || updateTask.isPending}>
-              {task ? 'Update' : 'Create'}
+              {task ? 'Сохранить' : 'Создать'}
             </Button>
           </div>
         </div>

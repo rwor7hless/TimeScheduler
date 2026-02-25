@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class Board(Base):
@@ -17,7 +21,7 @@ class Board(Base):
         DateTime(timezone=True), server_default="now()"
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default="now()", onupdate=datetime.utcnow
+        DateTime(timezone=True), server_default="now()", onupdate=_utcnow
     )
 
     tasks: Mapped[list["Task"]] = relationship(
