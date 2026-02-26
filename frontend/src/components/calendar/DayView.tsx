@@ -222,7 +222,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-center justify-center px-2 text-xs font-mono text-gray-400 select-none"
+                className="flex items-start justify-center px-2 pt-1 text-xs font-mono text-gray-400 select-none"
               >
                 {format(addHours(startOfDay(date), hour), 'HH:00')}
               </div>
@@ -247,6 +247,9 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
 
             {format(date, 'yyyy-MM-dd') === localNow.dateStr && (() => {
               const pct = (localNow.minutesFromMidnight / TOTAL_MINUTES) * 100
+              const h = Math.floor(localNow.minutesFromMidnight / 60)
+              const m = localNow.minutesFromMidnight % 60
+              const label = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
               return (
                 <>
                   <div
@@ -257,6 +260,12 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
                     className="absolute left-0 right-0 z-30 pointer-events-none"
                     style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: '#ef4444' }}
                   />
+                  <div
+                    className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-red-700 bg-gray-100/95 px-1 rounded border border-red-100 shadow-sm"
+                    style={{ top: `calc(${pct}% - 1px)` }}
+                  >
+                    {label}
+                  </div>
                 </>
               )
             })()}

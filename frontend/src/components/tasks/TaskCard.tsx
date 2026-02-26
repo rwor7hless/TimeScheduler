@@ -44,8 +44,8 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
           )}
           style={{ backgroundColor: `${color}26` }}
         >
-          <div className="flex items-start justify-between gap-1">
-            <div className="flex items-center gap-1 min-w-0">
+          <div className="flex items-start justify-between gap-1 min-w-0">
+            <div className="flex items-center gap-1 min-w-0 flex-1">
               {isCancelled && (
                 <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-white text-[9px] flex-shrink-0">
                   ✓
@@ -53,7 +53,7 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
               )}
               <h4
                 className={clsx(
-                  'font-medium truncate',
+                  'font-medium leading-snug break-words flex-1 min-w-0',
                   compact ? 'text-xs' : 'text-sm',
                   isCancelled ? 'text-gray-400 line-through' : 'text-gray-900',
                 )}
