@@ -40,6 +40,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const [color, setColor] = useState<string>('')
   const [priority, setPriority] = useState<Priority>('medium')
   const [status, setStatus] = useState<KanbanStatus>('todo')
+  const [wasStatusBeforeDone, setWasStatusBeforeDone] = useState<KanbanStatus>('todo')
   const [scheduledDate, setScheduledDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
@@ -48,6 +49,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const [tgRemind, setTgRemind] = useState(false)
   const [tgRemindDate, setTgRemindDate] = useState('')
   const [tgRemindTime, setTgRemindTime] = useState('')
+  const [showAdvanced, setShowAdvanced] = useState(false)
 
   const { data: tags } = useTags()
   const createTask = useCreateTask()
@@ -61,6 +63,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setColor(task.color || '')
       setPriority(task.priority)
       setStatus(task.status)
+      setWasStatusBeforeDone(task.status === 'done' ? 'todo' : task.status)
       if (task.scheduled_start && task.scheduled_end) {
         const startParsed = parseDatetime(task.scheduled_start)
         const endParsed = parseDatetime(task.scheduled_end)
@@ -83,17 +86,26 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         setTgRemindDate('')
         setTgRemindTime('')
       }
+      const hasAdvanced =
+        (task.repeat_days && task.repeat_days.length > 0) ||
+        task.tags.length > 0 ||
+        task.tg_remind ||
+        task.status === 'done'
+      setShowAdvanced(hasAdvanced)
     } else {
       setTitle('')
       setDescription('')
       setColor('')
       setPriority('medium')
-      setStatus(defaultStatus ?? 'todo')
+      const initialStatus: KanbanStatus = defaultStatus ?? 'todo'
+      setStatus(initialStatus)
+      setWasStatusBeforeDone(initialStatus)
       setRepeatDays([])
       setSelectedTagIds([])
       setTgRemind(false)
       setTgRemindDate('')
       setTgRemindTime('')
+      setShowAdvanced(false)
 
       const isKanbanTask = !defaultDate && (boardId !== undefined || defaultStatus !== undefined)
       if (isKanbanTask) {
@@ -281,102 +293,144 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
           </button>
         )}
 
-        {/* Repeat days */}
-        <div className="space-y-1">
-          <div className="flex items-center justify-between">
-            <label className="block text-xs font-medium text-gray-600">Повтор</label>
-            <label className="flex items-center gap-1.5 cursor-pointer select-none">
-              <input
-                type="checkbox"
-                checked={repeatDays.length === 7}
-                onChange={(e) => setRepeatDays(e.target.checked ? [0, 1, 2, 3, 4, 5, 6] : [])}
-                className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
-              />
-              <span className="text-xs font-medium text-amber-700">Ежедневно</span>
-            </label>
-          </div>
-          <div className="flex gap-1.5">
-            {WEEKDAY_LABELS.map((label, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() =>
-                  setRepeatDays((prev) =>
-                    prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b)
-                  )
-                }
-                className={`flex-1 py-1 rounded-md text-[11px] font-medium transition-all ${
-                  repeatDays.includes(i)
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Tags */}
-        {tags && tags.length > 0 && (
-          <div className="space-y-1">
-            <label className="block text-xs font-medium text-gray-600">Теги</label>
-            <div className="flex flex-wrap gap-1.5">
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTag(tag.id)}
-                  className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                    selectedTagIds.includes(tag.id)
-                      ? 'text-white ring-2 ring-offset-1'
-                      : 'text-gray-600 bg-gray-100'
-                  }`}
-                  style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
-                >
-                  {tag.name}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Telegram reminder */}
-        <div className="space-y-1.5">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={tgRemind}
-              onChange={(e) => {
-                const checked = e.target.checked
-                setTgRemind(checked)
-                if (checked) {
-                  if (!tgRemindTime) setTgRemindTime('09:00')
-                  if (!tgRemindDate) setTgRemindDate(scheduledDate || new Date().toISOString().slice(0, 10))
-                }
-              }}
-              className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-            />
-            <span className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.9l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.659z" />
-              </svg>
-              Напомнить в Telegram
+        {/* Advanced section */}
+        <div className="pt-1 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((v) => !v)}
+            className="flex items-center justify-between w-full text-xs text-gray-600 hover:text-gray-900"
+          >
+            <span>Дополнительные настройки</span>
+            <span className="text-[10px]">
+              {showAdvanced ? 'Скрыть ▲' : 'Показать ▼'}
             </span>
-          </label>
-          {tgRemind && (
-            <div className="ml-5 grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
-              <Input
-                label="Дата"
-                type="date"
-                value={tgRemindDate}
-                onChange={(e) => setTgRemindDate(e.target.value)}
-              />
-              <TimePicker
-                label="Время"
-                value={tgRemindTime || '09:00'}
-                onChange={setTgRemindTime}
-              />
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-2 space-y-2">
+              {/* Repeat days */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-medium text-gray-600">Повтор</label>
+                  <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={repeatDays.length === 7}
+                      onChange={(e) => setRepeatDays(e.target.checked ? [0, 1, 2, 3, 4, 5, 6] : [])}
+                      className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500 focus:ring-amber-500"
+                    />
+                    <span className="text-xs font-medium text-amber-700">Ежедневно</span>
+                  </label>
+                </div>
+                <div className="flex gap-1.5">
+                  {WEEKDAY_LABELS.map((label, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() =>
+                        setRepeatDays((prev) =>
+                          prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b)
+                        )
+                      }
+                      className={`flex-1 py-1 rounded-md text-[11px] font-medium transition-all ${
+                        repeatDays.includes(i)
+                          ? 'bg-amber-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tags */}
+              {tags && tags.length > 0 && (
+                <div className="space-y-1">
+                  <label className="block text-xs font-medium text-gray-600">Теги</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {tags.map((tag) => (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => toggleTag(tag.id)}
+                        className={`px-2 py-0.5 rounded-full text-[11px] font-medium transition-all ${
+                          selectedTagIds.includes(tag.id)
+                            ? 'text-white ring-2 ring-offset-1'
+                            : 'text-gray-600 bg-gray-100'
+                        }`}
+                        style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
+                      >
+                        {tag.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Done / cancel checkbox */}
+              {task && (
+                <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-medium text-gray-700">
+                  <input
+                    type="checkbox"
+                    checked={status === 'done'}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      if (checked) {
+                        setWasStatusBeforeDone((prev) => (status !== 'done' ? status : prev))
+                        setStatus('done')
+                      } else {
+                        setStatus(wasStatusBeforeDone)
+                      }
+                    }}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
+                  />
+                  <span>
+                    Отменить задачу
+                    <span className="text-gray-400 font-normal"> (пометить как завершённую)</span>
+                  </span>
+                </label>
+              )}
+
+              {/* Telegram reminder */}
+              <div className="space-y-1.5">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={tgRemind}
+                    onChange={(e) => {
+                      const checked = e.target.checked
+                      setTgRemind(checked)
+                      if (checked) {
+                        if (!tgRemindTime) setTgRemindTime('09:00')
+                        if (!tgRemindDate) setTgRemindDate(scheduledDate || new Date().toISOString().slice(0, 10))
+                      }
+                    }}
+                    className="w-3.5 h-3.5 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-medium text-gray-700 flex items-center gap-1.5">
+                    <svg className="w-3.5 h-3.5 text-blue-500" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.9l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.659z" />
+                    </svg>
+                    Напомнить в Telegram
+                  </span>
+                </label>
+                {tgRemind && (
+                  <div className="ml-5 grid grid-cols-2 gap-2 p-2.5 rounded-lg bg-gray-50 border border-gray-100">
+                    <Input
+                      label="Дата"
+                      type="date"
+                      value={tgRemindDate}
+                      onChange={(e) => setTgRemindDate(e.target.value)}
+                    />
+                    <TimePicker
+                      label="Время"
+                      value={tgRemindTime || '09:00'}
+                      onChange={setTgRemindTime}
+                    />
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </div>

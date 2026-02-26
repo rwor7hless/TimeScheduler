@@ -14,6 +14,7 @@ interface DayViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const TOTAL_MINUTES = 24 * 60
 const SNAP = 15
+const HOUR_H = 100
 
 function getLocalNow(): { minutesFromMidnight: number; dateStr: string } {
   const now = new Date()
@@ -55,6 +56,14 @@ function computeOverlapLayout(tasks: Task[]): Map<number, { left: string; width:
         if (!visited.has(o.id) && o.start < cur.end && o.end > cur.start) q.push(o)
       }
     }
+
+    group.sort((a, b) => {
+      const durA = a.end - a.start
+      const durB = b.end - b.start
+      if (durA !== durB) return durB - durA // длиннее левее, короче правее
+      return a.start - b.start
+    })
+
     const colEnds: number[] = []
     const colMap = new Map<number, number>()
     for (const t of group) {
@@ -89,6 +98,7 @@ interface GhostState {
 
 export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskMove }: DayViewProps) {
   const gridRef = useRef<HTMLDivElement>(null)
+  const scrollRef = useRef<HTMLDivElement>(null)
   const dragRef = useRef<DragInfo | null>(null)
   const hasMoved = useRef(false)
   const [ghost, setGhost] = useState<GhostState | null>(null)
@@ -100,6 +110,16 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
     tick()
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (!scrollRef.current) return
+    const now = getLocalNow()
+    const dateStr = format(date, 'yyyy-MM-dd')
+    const targetMin = dateStr === now.dateStr ? now.minutesFromMidnight : 9 * 60
+    const targetPx = (targetMin / TOTAL_MINUTES) * HOUR_H * 24
+    const containerH = scrollRef.current.clientHeight
+    scrollRef.current.scrollTop = Math.max(0, targetPx - containerH / 2)
+  }, [date])
 
   const dayTasks = useMemo(() => {
     const wd = weekdayIndex(date)
@@ -194,92 +214,101 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden h-full flex flex-col min-h-0">
-      <div className="flex flex-1 min-h-0">
-        {/* Time column */}
-        <div className="w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50 flex flex-col">
-          {HOURS.map((hour) => (
-            <div
-              key={hour}
-              className="flex-1 min-h-0 flex items-center justify-center px-2 text-xs font-mono text-gray-400 select-none text-center"
-            >
-              {format(addHours(startOfDay(date), hour), 'HH:00')}
-            </div>
-          ))}
-        </div>
-
-        {/* Grid + tasks */}
-        <div ref={gridRef} className="flex-1 relative flex flex-col min-h-0">
-          {HOURS.map((hour) => (
-            <div
-              key={hour}
-              className="flex-1 min-h-0 border-t border-gray-100 cursor-pointer hover:bg-amber-50/50 transition-colors"
-              onClick={() => {
-                if (ghost) return
-                onSlotClick(format(addHours(startOfDay(date), hour), "yyyy-MM-dd'T'HH:mm"))
-              }}
-            />
-          ))}
-
-          {format(date, 'yyyy-MM-dd') === localNow.dateStr && (
-            <div
-              className="absolute left-0 right-0 z-30 pointer-events-none"
-              style={{
-                top: `${(localNow.minutesFromMidnight / TOTAL_MINUTES) * 100}%`,
-                height: '2px',
-                backgroundColor: '#ea580c',
-                boxShadow: '0 0 4px rgba(234,88,12,0.5)',
-              }}
-            />
-          )}
-
-          {dayTasks.map((task) => {
-            const pos = getPos(task)
-            if (!pos) return null
-            const layout = overlapLayout.get(task.id)
-            const isDragging = ghost?.task.id === task.id
-
-            return (
+      <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
+        <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
+          {/* Time column */}
+          <div className="w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+            {HOURS.map((hour) => (
               <div
-                key={task.id}
-                className={`absolute overflow-hidden z-10 select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
-                style={{
-                  top: pos.top,
-                  height: pos.height,
-                  left: layout?.left ?? '2px',
-                  width: layout?.width ?? 'calc(100% - 4px)',
-                  minHeight: '20px',
-                  cursor: onTaskMove ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
-                  touchAction: 'none',
-                }}
-                onPointerDown={(e) => handleTaskPD(e, task)}
-                onPointerMove={handleTaskPM}
-                onPointerUp={handleTaskPU}
-                onPointerCancel={handleTaskPC}
+                key={hour}
+                style={{ height: `${HOUR_H}px` }}
+                className="flex items-center justify-center px-2 text-xs font-mono text-gray-400 select-none"
               >
-                <TaskCard task={task} onClick={() => {}} compact className="h-full pointer-events-none" />
+                {format(addHours(startOfDay(date), hour), 'HH:00')}
               </div>
-            )
-          })}
+            ))}
+          </div>
 
-          {/* Drag ghost */}
-          {ghost && (
-            <div
-              className="absolute overflow-hidden z-20 pointer-events-none"
-              style={{
-                top: `${(ghost.startMin / TOTAL_MINUTES) * 100}%`,
-                height: `${(Math.min(ghost.durationMin, TOTAL_MINUTES - ghost.startMin) / TOTAL_MINUTES) * 100}%`,
-                left: overlapLayout.get(ghost.task.id)?.left ?? '2px',
-                width: overlapLayout.get(ghost.task.id)?.width ?? 'calc(100% - 4px)',
-                minHeight: '20px',
-                filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
-              }}
-            >
-              <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
-              <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/60 text-white px-1 rounded leading-tight">
-                {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
+          {/* Grid + tasks */}
+          <div ref={gridRef} className="flex-1 relative">
+            {HOURS.map((hour) => (
+              <div
+                key={hour}
+                style={{ height: `${HOUR_H}px` }}
+                className="border-t border-gray-100 cursor-pointer hover:bg-amber-50/50 transition-colors relative"
+                onClick={() => {
+                  if (ghost) return
+                  onSlotClick(format(addHours(startOfDay(date), hour), "yyyy-MM-dd'T'HH:mm"))
+                }}
+              >
+                <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200 opacity-40 pointer-events-none" />
               </div>
-            </div>
-          )}
+            ))}
+
+            {format(date, 'yyyy-MM-dd') === localNow.dateStr && (() => {
+              const pct = (localNow.minutesFromMidnight / TOTAL_MINUTES) * 100
+              return (
+                <>
+                  <div
+                    className="absolute z-30 pointer-events-none rounded-full"
+                    style={{ top: `calc(${pct}% - 4px)`, left: '0px', width: '8px', height: '8px', backgroundColor: '#ef4444' }}
+                  />
+                  <div
+                    className="absolute left-0 right-0 z-30 pointer-events-none"
+                    style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: '#ef4444' }}
+                  />
+                </>
+              )
+            })()}
+
+            {dayTasks.map((task) => {
+              const pos = getPos(task)
+              if (!pos) return null
+              const layout = overlapLayout.get(task.id)
+              const isDragging = ghost?.task.id === task.id
+
+              return (
+                <div
+                  key={task.id}
+                  className={`absolute overflow-hidden z-10 select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+                  style={{
+                    top: pos.top,
+                    height: pos.height,
+                    left: layout?.left ?? '2px',
+                    width: layout?.width ?? 'calc(100% - 4px)',
+                    minHeight: '20px',
+                    cursor: onTaskMove ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
+                    touchAction: 'none',
+                  }}
+                  onPointerDown={(e) => handleTaskPD(e, task)}
+                  onPointerMove={handleTaskPM}
+                  onPointerUp={handleTaskPU}
+                  onPointerCancel={handleTaskPC}
+                >
+                  <TaskCard task={task} onClick={() => {}} compact className="h-full pointer-events-none" />
+                </div>
+              )
+            })}
+
+            {ghost && (
+              <div
+                className="absolute overflow-hidden z-20 pointer-events-none"
+                style={{
+                  top: `${(ghost.startMin / TOTAL_MINUTES) * 100}%`,
+                  height: `${(Math.min(ghost.durationMin, TOTAL_MINUTES - ghost.startMin) / TOTAL_MINUTES) * 100}%`,
+                  left: overlapLayout.get(ghost.task.id)?.left ?? '2px',
+                  width: overlapLayout.get(ghost.task.id)?.width ?? 'calc(100% - 4px)',
+                  minHeight: '20px',
+                  filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
+                }}
+              >
+                <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
+                <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/60 text-white px-1 rounded leading-tight">
+                  {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

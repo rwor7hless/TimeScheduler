@@ -20,12 +20,14 @@ const PRIORITY_CONFIG: Record<Priority, { icon: string; className: string }> = {
 export default function TaskCard({ task, onClick, compact = false, className }: TaskCardProps) {
   const color = task.color || '#6B7280'
   const prio = PRIORITY_CONFIG[task.priority]
+  const isCancelled = task.status === 'done'
 
   return (
     <div
       onClick={onClick}
       className={clsx(
         'bg-white rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-shadow overflow-hidden',
+        isCancelled && 'opacity-60',
         className
       )}
     >
@@ -43,9 +45,22 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
           style={{ backgroundColor: `${color}26` }}
         >
           <div className="flex items-start justify-between gap-1">
-            <h4 className={clsx('font-medium text-gray-900', compact ? 'text-xs' : 'text-sm')}>
-              {task.title}
-            </h4>
+            <div className="flex items-center gap-1 min-w-0">
+              {isCancelled && (
+                <span className="inline-flex items-center justify-center w-3 h-3 rounded-full bg-emerald-500 text-white text-[9px] flex-shrink-0">
+                  ✓
+                </span>
+              )}
+              <h4
+                className={clsx(
+                  'font-medium truncate',
+                  compact ? 'text-xs' : 'text-sm',
+                  isCancelled ? 'text-gray-400 line-through' : 'text-gray-900',
+                )}
+              >
+                {task.title}
+              </h4>
+            </div>
             <span className={clsx('flex-shrink-0 text-xs font-bold leading-none mt-0.5', prio.className)} title={task.priority}>
               {prio.icon}
             </span>

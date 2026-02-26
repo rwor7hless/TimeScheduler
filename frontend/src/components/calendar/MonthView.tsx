@@ -94,21 +94,30 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                 {format(day, 'd')}
               </div>
               <div className="space-y-0.5">
-                {dayTasks.slice(0, 3).map((task) => (
-                  <div
-                    key={task.id}
-                    className="text-xs px-1.5 py-0.5 rounded truncate font-medium"
-                    style={{
-                      backgroundColor: `${task.color}28`,
-                      color: task.color,
-                    }}
-                  >
-                    {task.title}
-                  </div>
-                ))}
+                {dayTasks.slice(0, 3).map((task) => {
+                  const time = task.scheduled_start
+                    ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                    : null
+                  return (
+                    <div
+                      key={task.id}
+                      className="text-[11px] px-1.5 py-0.5 rounded truncate font-medium"
+                      style={{
+                        backgroundColor: `${task.color}18`,
+                        borderLeft: `2px solid ${task.color}`,
+                        color: task.color,
+                      }}
+                    >
+                      {time && (
+                        <span className="opacity-60 mr-1 font-normal text-[10px]">{time}</span>
+                      )}
+                      {task.title}
+                    </div>
+                  )
+                })}
                 {dayTasks.length > 3 && (
-                  <div className="text-xs text-gray-400 px-1.5">
-                    +{dayTasks.length - 3} more
+                  <div className="text-[11px] text-gray-400 px-1.5 font-medium">
+                    +{dayTasks.length - 3} ещё
                   </div>
                 )}
               </div>
