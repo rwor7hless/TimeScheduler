@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
-import Select from '@/components/ui/Select'
 import Button from '@/components/ui/Button'
 import TimeRangeInput from '@/components/ui/TimeRangeInput'
 import TimePicker from '@/components/ui/TimePicker'
@@ -19,12 +18,36 @@ interface TaskModalProps {
   boardId?: number | null
 }
 
-const priorityOptions = [
-  { value: 'low', label: 'Низкий' },
-  { value: 'medium', label: 'Средний' },
-  { value: 'high', label: 'Высокий' },
-  { value: 'urgent', label: 'Срочный' },
+const PRIORITY_CONFIG: { value: Priority; label: string; activeClass: string; ghostClass: string }[] = [
+  {
+    value: 'low',
+    label: 'Низкий',
+    activeClass: 'bg-gray-500 text-white',
+    ghostClass: 'text-gray-400 hover:text-gray-600 hover:bg-gray-100',
+  },
+  {
+    value: 'medium',
+    label: 'Средний',
+    activeClass: 'bg-blue-500 text-white',
+    ghostClass: 'text-blue-400 hover:text-blue-600 hover:bg-blue-50',
+  },
+  {
+    value: 'high',
+    label: 'Высокий',
+    activeClass: 'bg-orange-500 text-white',
+    ghostClass: 'text-orange-400 hover:text-orange-600 hover:bg-orange-50',
+  },
+  {
+    value: 'urgent',
+    label: 'Срочный',
+    activeClass: 'bg-red-500 text-white',
+    ghostClass: 'text-red-400 hover:text-red-600 hover:bg-red-50',
+  },
 ]
+
+function randomColor(): string {
+  return TASK_COLOR_PALETTE[Math.floor(Math.random() * TASK_COLOR_PALETTE.length)]
+}
 
 function parseDatetime(isoString: string): { date: string; startTime: string } {
   const d = new Date(isoString)
@@ -37,13 +60,15 @@ function parseDatetime(isoString: string): { date: string; startTime: string } {
 export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultStatus, boardId }: TaskModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [color, setColor] = useState<string>('')
   const [priority, setPriority] = useState<Priority>('medium')
   const [status, setStatus] = useState<KanbanStatus>('todo')
   const [wasStatusBeforeDone, setWasStatusBeforeDone] = useState<KanbanStatus>('todo')
   const [scheduledDate, setScheduledDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
+  const [deadlineDate, setDeadlineDate] = useState('')
+  const [deadlineTime, setDeadlineTime] = useState('')
+  const [showDeadline, setShowDeadline] = useState(false)
   const [repeatDays, setRepeatDays] = useState<number[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
   const [tgRemind, setTgRemind] = useState(false)
@@ -60,7 +85,6 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     if (task) {
       setTitle(task.title)
       setDescription(task.description || '')
-      setColor(task.color || '')
       setPriority(task.priority)
       setStatus(task.status)
       setWasStatusBeforeDone(task.status === 'done' ? 'todo' : task.status)
@@ -74,6 +98,16 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         setScheduledDate('')
         setStartTime('')
         setEndTime('')
+      }
+      if (task.deadline) {
+        const parsed = parseDatetime(task.deadline)
+        setDeadlineDate(parsed.date)
+        setDeadlineTime(parsed.startTime)
+        setShowDeadline(true)
+      } else {
+        setDeadlineDate('')
+        setDeadlineTime('')
+        setShowDeadline(false)
       }
       setRepeatDays(task.repeat_days ?? [])
       setSelectedTagIds(task.tags.map((t) => t.id))
@@ -95,7 +129,6 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     } else {
       setTitle('')
       setDescription('')
-      setColor('')
       setPriority('medium')
       const initialStatus: KanbanStatus = defaultStatus ?? 'todo'
       setStatus(initialStatus)
@@ -105,6 +138,9 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setTgRemind(false)
       setTgRemindDate('')
       setTgRemindTime('')
+      setDeadlineDate('')
+      setDeadlineTime('')
+      setShowDeadline(false)
       setShowAdvanced(false)
 
       const isKanbanTask = !defaultDate && (boardId !== undefined || defaultStatus !== undefined)
@@ -142,6 +178,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       ? new Date(`${scheduledDate}T${endTime}:00`).toISOString()
       : null
 
+    const deadline = showDeadline && deadlineDate
+      ? new Date(`${deadlineDate}T${deadlineTime || '23:59'}:00`).toISOString()
+      : null
+
     const tg_remind_at = tgRemind && tgRemindDate && tgRemindTime
       ? new Date(`${tgRemindDate}T${tgRemindTime}:00`).toISOString()
       : null
@@ -149,11 +189,12 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     const data: TaskCreate = {
       title: title.trim(),
       description: description || null,
-      color: color || (task ? task.color : undefined),
+      color: task ? task.color : randomColor(),
       priority,
       status,
       scheduled_start,
       scheduled_end,
+      deadline,
       repeat_days: repeatDays.length > 0 ? repeatDays : [],
       tag_ids: selectedTagIds,
       board_id: boardId ?? task?.board_id ?? null,
@@ -192,80 +233,62 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     )
   }
 
-  // Determine if we're in calendar context (show date fields) or kanban context
   const isCalendarContext = !!(defaultDate || (task && task.scheduled_start))
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="2xl" noScroll>
-      <form onSubmit={handleSubmit} className="space-y-2.5">
+      <form onSubmit={handleSubmit} className="space-y-3">
 
         {/* Title */}
         <Input
           label="Название"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="Название задачи..."
+          placeholder="Что нужно сделать?"
           required
         />
 
-        {/* Description — compact */}
+        {/* Description */}
         <div className="space-y-1">
           <label className="block text-xs font-medium text-gray-600">Описание</label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full h-[60px] px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-transparent resize-none"
-            placeholder="Описание (необязательно)..."
+            className="w-full h-[56px] px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 focus:border-transparent resize-none"
+            placeholder="Детали (необязательно)..."
           />
         </div>
 
-        {/* Color + Priority in one row */}
-        <div className="flex items-end gap-3">
-          <div className="flex-1 space-y-1">
-            <label className="block text-xs font-medium text-gray-600">Цвет</label>
-            <div className="flex flex-wrap gap-1.5 px-0.5">
-              {TASK_COLOR_PALETTE.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => setColor(c)}
-                  className={`w-6 h-6 rounded-full transition-all ${
-                    color === c ? 'ring-2 ring-gray-800 ring-offset-1 scale-110' : 'hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: c }}
-                  title={c}
-                />
-              ))}
+        {/* Priority — pill buttons */}
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-gray-600">Приоритет</label>
+          <div className="flex gap-2">
+            {PRIORITY_CONFIG.map((p) => (
               <button
+                key={p.value}
                 type="button"
-                onClick={() => setColor('')}
-                className={`w-6 h-6 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-[10px] text-gray-500 ${
-                  !color ? 'bg-amber-50 border-amber-400' : ''
+                onClick={() => setPriority(p.value)}
+                className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  priority === p.value ? p.activeClass : `bg-transparent border border-gray-200 ${p.ghostClass}`
                 }`}
-                title="Случайный"
               >
-                ?
+                {p.label}
               </button>
-            </div>
-          </div>
-          <div className="w-36 flex-shrink-0">
-            <Select
-              label="Приоритет"
-              options={priorityOptions}
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as Priority)}
-            />
+            ))}
           </div>
         </div>
 
-        {/* Date/Time — only show if calendar context or already has date */}
+        {/* Date/Time slot */}
         {(isCalendarContext || scheduledDate) ? (
-          <div className="grid grid-cols-2 gap-2">
-            <Input
-              label="Дата"
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-            />
+          <div className="flex items-end gap-3">
+            <div className="flex-1">
+              <Input
+                label="Дата"
+                type="date"
+                value={scheduledDate}
+                onChange={(e) => setScheduledDate(e.target.value)}
+              />
+            </div>
             <TimeRangeInput
               label="Время"
               startTime={startTime}
@@ -286,10 +309,55 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
               setStartTime('09:00')
               setEndTime('10:00')
             }}
-            className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1"
+            className="text-xs text-amber-600 hover:text-amber-700 flex items-center gap-1.5"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-            Добавить дату и время
+            Добавить в расписание
+          </button>
+        )}
+
+        {/* Deadline */}
+        {showDeadline ? (
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-rose-600 flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                Дедлайн
+              </label>
+              <button
+                type="button"
+                onClick={() => { setShowDeadline(false); setDeadlineDate(''); setDeadlineTime('') }}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                ✕ убрать
+              </button>
+            </div>
+            <div className="flex gap-2 items-end">
+              <div className="flex-1">
+                <input
+                  type="date"
+                  value={deadlineDate}
+                  onChange={(e) => setDeadlineDate(e.target.value)}
+                  className="w-full px-3 py-1.5 border border-rose-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-rose-400/40 focus:border-rose-400 bg-rose-50/40"
+                />
+              </div>
+              <TimePicker
+                value={deadlineTime || '23:59'}
+                onChange={setDeadlineTime}
+              />
+            </div>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => {
+              setShowDeadline(true)
+              if (!deadlineTime) setDeadlineTime('23:59')
+            }}
+            className="text-xs text-rose-500 hover:text-rose-600 flex items-center gap-1.5"
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Добавить дедлайн
           </button>
         )}
 
@@ -298,12 +366,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
           <button
             type="button"
             onClick={() => setShowAdvanced((v) => !v)}
-            className="flex items-center justify-between w-full text-xs text-gray-600 hover:text-gray-900"
+            className="flex items-center justify-between w-full text-xs text-gray-500 hover:text-gray-800"
           >
-            <span>Дополнительные настройки</span>
-            <span className="text-[10px]">
-              {showAdvanced ? 'Скрыть ▲' : 'Показать ▼'}
-            </span>
+            <span>Дополнительно</span>
+            <span className="text-[10px]">{showAdvanced ? '▲' : '▼'}</span>
           </button>
 
           {showAdvanced && (
@@ -368,7 +434,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                 </div>
               )}
 
-              {/* Done / cancel checkbox */}
+              {/* Done checkbox */}
               {task && (
                 <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-medium text-gray-700">
                   <input
@@ -386,8 +452,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                     className="w-3.5 h-3.5 rounded border-gray-300 text-emerald-500 focus:ring-emerald-500"
                   />
                   <span>
-                    Отменить задачу
-                    <span className="text-gray-400 font-normal"> (пометить как завершённую)</span>
+                    Завершить задачу
+                    <span className="text-gray-400 font-normal"> (отметить как выполненную)</span>
                   </span>
                 </label>
               )}

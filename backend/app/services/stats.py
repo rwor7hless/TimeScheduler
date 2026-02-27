@@ -32,13 +32,13 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     )
     completed_last_month = completed_result.scalar() or 0
 
-    # Overdue tasks (scheduled_end in the past and not done)
+    # Overdue tasks (explicit deadline in the past and not done)
     overdue_result = await db.execute(
         select(func.count(Task.id)).where(
             task_filter,
             Task.status != KanbanStatus.DONE,
-            Task.scheduled_end < now,
-            Task.scheduled_end.isnot(None),
+            Task.deadline < now,
+            Task.deadline.isnot(None),
         )
     )
     overdue_count = overdue_result.scalar() or 0

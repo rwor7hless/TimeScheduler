@@ -62,61 +62,56 @@ export default function TimeRangeInput({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className="block text-xs font-medium text-gray-700 mb-1">{label}</label>
       )}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            min={0}
-            max={23}
-            value={startH}
-            onChange={(e) => setStartH(e.target.value)}
-            onBlur={applyInput}
-            className={inputClass}
-            placeholder="ч"
-            title="Часы начала"
-          />
-          <span className="text-gray-400">:</span>
-          <input
-            type="number"
-            min={0}
-            max={59}
-            value={startMin}
-            onChange={(e) => setStartMin(e.target.value)}
-            onBlur={applyInput}
-            className={inputClass}
-            placeholder="м"
-            title="Минуты начала"
-          />
-          <span className="text-xs text-gray-400 ml-0.5">начало</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <input
-            type="number"
-            min={0}
-            max={23}
-            value={endH}
-            onChange={(e) => setEndH(e.target.value)}
-            onBlur={applyInput}
-            className={inputClass}
-            placeholder="ч"
-            title="Часы конца"
-          />
-          <span className="text-gray-400">:</span>
-          <input
-            type="number"
-            min={0}
-            max={59}
-            value={endMin}
-            onChange={(e) => setEndMin(e.target.value)}
-            onBlur={applyInput}
-            className={inputClass}
-            placeholder="м"
-            title="Минуты конца"
-          />
-          <span className="text-xs text-gray-400 ml-0.5">конец</span>
-        </div>
+      <div className="flex items-center gap-1">
+        <input
+          type="number"
+          min={0}
+          max={23}
+          value={startH}
+          onChange={(e) => setStartH(e.target.value)}
+          onBlur={applyInput}
+          className={inputClass}
+          placeholder="ч"
+          title="Часы начала"
+        />
+        <span className="text-gray-400">:</span>
+        <input
+          type="number"
+          min={0}
+          max={59}
+          value={startMin}
+          onChange={(e) => setStartMin(e.target.value)}
+          onBlur={applyInput}
+          className={inputClass}
+          placeholder="м"
+          title="Минуты начала"
+        />
+        <span className="text-gray-300 mx-1">→</span>
+        <input
+          type="number"
+          min={0}
+          max={23}
+          value={endH}
+          onChange={(e) => setEndH(e.target.value)}
+          onBlur={applyInput}
+          className={inputClass}
+          placeholder="ч"
+          title="Часы конца"
+        />
+        <span className="text-gray-400">:</span>
+        <input
+          type="number"
+          min={0}
+          max={59}
+          value={endMin}
+          onChange={(e) => setEndMin(e.target.value)}
+          onBlur={applyInput}
+          className={inputClass}
+          placeholder="м"
+          title="Минуты конца"
+        />
       </div>
     </div>
   )

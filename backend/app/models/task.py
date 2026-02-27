@@ -76,6 +76,7 @@ class Task(Base):
 
     scheduled_start: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     scheduled_end: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     repeat_days: Mapped[list[int] | None] = mapped_column(ARRAY(Integer()), nullable=True)  # 0=Mon..6=Sun
     completed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 

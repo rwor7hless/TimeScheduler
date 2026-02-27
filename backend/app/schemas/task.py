@@ -26,6 +26,7 @@ class TaskCreate(BaseModel):
     status: KanbanStatus = KanbanStatus.TODO
     scheduled_start: datetime | None = None
     scheduled_end: datetime | None = None
+    deadline: datetime | None = None
     repeat_days: list[int] = []  # 0=Mon..6=Sun, empty = one-time
     tag_ids: list[int] = []
     board_id: int | None = None
@@ -49,6 +50,7 @@ class TaskUpdate(BaseModel):
     status: KanbanStatus | None = None
     scheduled_start: datetime | None = None
     scheduled_end: datetime | None = None
+    deadline: datetime | None = None
     repeat_days: list[int] | None = None
     tag_ids: list[int] | None = None
     board_id: int | None = None
@@ -74,6 +76,7 @@ class TaskResponse(BaseModel):
     kanban_order: int
     scheduled_start: datetime | None
     scheduled_end: datetime | None
+    deadline: datetime | None = None
     repeat_days: list[int] | None = None
     completed_at: datetime | None
     created_at: datetime

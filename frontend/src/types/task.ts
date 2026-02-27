@@ -22,6 +22,7 @@ export interface Task {
   kanban_order: number
   scheduled_start: string | null
   scheduled_end: string | null
+  deadline: string | null
   repeat_days: number[] | null  // 0=Mon..6=Sun
   completed_at: string | null
   created_at: string
@@ -42,6 +43,7 @@ export interface TaskCreate {
   status?: KanbanStatus
   scheduled_start?: string | null
   scheduled_end?: string | null
+  deadline?: string | null
   repeat_days?: number[]
   tag_ids?: number[]
   board_id?: number | null
@@ -57,6 +59,7 @@ export interface TaskUpdate {
   status?: KanbanStatus
   scheduled_start?: string | null
   scheduled_end?: string | null
+  deadline?: string | null
   repeat_days?: number[] | null
   tag_ids?: number[]
   board_id?: number | null
