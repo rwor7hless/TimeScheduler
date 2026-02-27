@@ -236,7 +236,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const isCalendarContext = !!(defaultDate || (task && task.scheduled_start))
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="2xl" noScroll>
+    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование' : 'Новая задача'} maxWidth="2xl">
       <form onSubmit={handleSubmit} className="space-y-3">
 
         {/* Title */}

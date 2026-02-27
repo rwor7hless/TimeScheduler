@@ -8,11 +8,9 @@ interface ModalProps {
   children: ReactNode
   /** max-w-md (default) | max-w-2xl | max-w-4xl */
   maxWidth?: 'md' | '2xl' | '4xl'
-  /** Без прокрутки — контент должен помещаться в экран */
-  noScroll?: boolean
 }
 
-export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md', noScroll = false }: ModalProps) {
+export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md' }: ModalProps) {
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
