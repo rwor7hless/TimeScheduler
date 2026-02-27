@@ -280,7 +280,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
 
         {/* Date/Time slot */}
         {(isCalendarContext || scheduledDate) ? (
-          <div className="flex items-end gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="flex-1">
               <Input
                 label="Дата"
