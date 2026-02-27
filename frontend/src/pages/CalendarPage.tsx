@@ -68,27 +68,23 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col lg:h-[calc(100vh-9rem)] min-h-0">
       {/* Toolbar */}
-      <div className="flex items-center justify-between flex-wrap gap-3 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <Button variant="secondary" size="sm" onClick={navigatePrev}>
-            &larr;
-          </Button>
-          <Button variant="secondary" size="sm" onClick={goToToday}>
-            Сегодня
-          </Button>
-          <Button variant="secondary" size="sm" onClick={navigateNext}>
-            &rarr;
-          </Button>
-          <h2 className="text-lg font-semibold text-gray-900 ml-2 capitalize">{headerText}</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0 mb-2">
+        {/* Nav + date */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Button variant="secondary" size="sm" onClick={navigatePrev}>&larr;</Button>
+          <Button variant="secondary" size="sm" onClick={goToToday}>Сегодня</Button>
+          <Button variant="secondary" size="sm" onClick={navigateNext}>&rarr;</Button>
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 ml-1 capitalize truncate">{headerText}</h2>
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Mode switcher + add */}
+        <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex bg-gray-100 rounded-lg p-0.5">
             {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
-                className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${
                   viewMode === mode ? 'bg-white shadow-sm font-medium' : 'text-gray-600'
                 }`}
               >
@@ -98,11 +94,7 @@ export default function CalendarPage() {
           </div>
           <Button
             size="sm"
-            onClick={() => {
-              setEditingTask(null)
-              setDefaultDate('')
-              setModalOpen(true)
-            }}
+            onClick={() => { setEditingTask(null); setDefaultDate(''); setModalOpen(true) }}
           >
             + Задача
           </Button>

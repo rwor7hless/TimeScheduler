@@ -268,10 +268,10 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
   const today = new Date()
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full min-h-0">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full min-h-0 min-w-[520px]">
       {/* Day headers - fixed */}
       <div className="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <div className="w-16 flex-shrink-0" />
+        <div className="w-10 sm:w-16 flex-shrink-0" />
         {days.map((day) => {
           const isToday = isSameDay(day, today)
           return (
@@ -283,7 +283,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                 {format(day, 'EEE', { locale: ru })}
               </div>
               <div
-                className={`text-sm font-semibold mx-auto w-7 h-7 flex items-center justify-center rounded-full ${
+                className={`text-xs sm:text-sm font-semibold mx-auto w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full ${
                   isToday ? 'bg-amber-500 text-white' : 'text-gray-700'
                 }`}
               >
@@ -298,12 +298,12 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-center px-2 pt-1 text-xs font-mono text-gray-400 select-none"
+                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-400 select-none"
               >
                 {`${String(hour).padStart(2, '0')}:00`}
               </div>

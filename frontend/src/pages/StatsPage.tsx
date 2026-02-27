@@ -186,15 +186,15 @@ export default function StatsPage() {
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Прогресс привычек</h3>
           <div className="space-y-3">
             {stats.habit_progress.map((hp) => (
-              <div key={hp.habit_id} className="flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{hp.name}</div>
+              <div key={hp.habit_id} className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{hp.name}</div>
                   <div className="text-xs text-gray-500 dark:text-gray-400">
                     Стрик: {hp.current_streak} дн.
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <div className="w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                     <div
                       className="h-2 rounded-full bg-green-500 dark:bg-green-400 transition-all"
                       style={{ width: `${Math.min(hp.completion_rate * 100, 100)}%` }}

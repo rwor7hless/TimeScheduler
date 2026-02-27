@@ -217,12 +217,12 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-center px-2 pt-1 text-xs font-mono text-gray-400 select-none"
+                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-400 select-none"
               >
                 {format(addHours(startOfDay(date), hour), 'HH:00')}
               </div>

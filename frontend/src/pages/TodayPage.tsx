@@ -111,24 +111,33 @@ function ScheduledTaskRow({
   )
 }
 
+const STATUS_CYCLE: Record<string, 'todo' | 'in_progress' | 'done'> = {
+  todo: 'in_progress',
+  in_progress: 'done',
+  done: 'todo',
+}
+
+const STATUS_COLOR: Record<string, string> = {
+  todo: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600',
+  in_progress: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50',
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  todo: 'To do',
+  in_progress: 'В работе',
+}
+
 function ActiveTaskRow({
   task,
   onDone,
+  onStatusChange,
   onClick,
 }: {
   task: Task
   onDone: () => void
+  onStatusChange: (status: 'todo' | 'in_progress' | 'done') => void
   onClick: () => void
 }) {
-  const statusColor: Record<string, string> = {
-    todo: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
-    in_progress: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
-  }
-  const statusLabel: Record<string, string> = {
-    todo: 'To do',
-    in_progress: 'В работе',
-  }
-
   return (
     <div className="flex items-center gap-3 px-3 py-2 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
       {/* Done button */}
@@ -155,10 +164,15 @@ function ActiveTaskRow({
         {task.title}
       </button>
 
-      {/* Status badge */}
-      <span className={clsx('text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0', statusColor[task.status])}>
-        {statusLabel[task.status]}
-      </span>
+      {/* Status badge — clickable, cycles todo → in_progress → done */}
+      <button
+        type="button"
+        onClick={() => onStatusChange(STATUS_CYCLE[task.status])}
+        title="Сменить статус"
+        className={clsx('text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 transition-colors', STATUS_COLOR[task.status])}
+      >
+        {STATUS_LABEL[task.status]}
+      </button>
     </div>
   )
 }
@@ -275,6 +289,14 @@ export default function TodayPage() {
     }
   }
 
+  const handleStatusChange = async (task: Task, status: 'todo' | 'in_progress' | 'done') => {
+    try {
+      await patchTask.mutateAsync({ id: task.id, data: { status } })
+    } catch {
+      toast.error('Не удалось обновить задачу')
+    }
+  }
+
   const handleHabitToggle = async (habitId: number) => {
     try {
       await toggleLog.mutateAsync({ id: habitId, date: todayStr })
@@ -357,6 +379,7 @@ export default function TodayPage() {
                     key={task.id}
                     task={task}
                     onDone={() => handleMarkDone(task)}
+                    onStatusChange={(status) => handleStatusChange(task, status)}
                     onClick={() => openEdit(task)}
                   />
                 ))}
