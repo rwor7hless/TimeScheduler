@@ -55,7 +55,7 @@ function getCat(id: ExpenseCategoryId | null) {
 
 // ─── Tabs ───────────────────────────────────────────────────────────────────
 
-type Tab = 'overview' | 'expenses' | 'income' | 'planned' | 'history'
+type Tab = 'overview' | 'expenses' | 'income' | 'planned' | 'history' | 'year'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'overview',  label: 'Обзор'       },
@@ -63,6 +63,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'income',    label: 'Доходы'      },
   { id: 'planned',   label: 'Планируемые' },
   { id: 'history',   label: 'История'     },
+  { id: 'year',      label: 'Год'         },
 ]
 
 // ─── Modal tab type ─────────────────────────────────────────────────────────
@@ -541,6 +542,158 @@ function OverviewTab({
   )
 }
 
+// ─── Year tab ────────────────────────────────────────────────────────────────
+
+function YearTab({ allData, viewYear, isDark }: { allData: BudgetMonth[]; viewYear: number; isDark: boolean }) {
+  const months = useMemo(() => {
+    return Array.from({ length: 12 }, (_, i) => {
+      const m = allData.find(d => d.year === viewYear && d.month === i)
+      const income  = m?.transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0) ?? 0
+      const expense = m?.transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0) ?? 0
+      const saved   = income - expense
+      return { label: format(new Date(viewYear, i, 1), 'MMM', { locale: ru }), income, expense, saved }
+    })
+  }, [allData, viewYear])
+
+  const totalIncome  = months.reduce((s, m) => s + m.income, 0)
+  const totalExpense = months.reduce((s, m) => s + m.expense, 0)
+  const totalSaved   = totalIncome - totalExpense
+
+  // By-category for the whole year
+  const catData = useMemo(() => {
+    const map = new Map<string, { label: string; color: string; value: number }>()
+    allData.filter(m => m.year === viewYear).forEach(m => {
+      m.transactions.filter(t => t.type === 'expense' && t.category).forEach(t => {
+        const cat = getCat(t.category)
+        const existing = map.get(cat.id) ?? { label: cat.label, color: cat.color, value: 0 }
+        map.set(cat.id, { ...existing, value: existing.value + t.amount })
+      })
+    })
+    return Array.from(map.values()).sort((a, b) => b.value - a.value)
+  }, [allData, viewYear])
+
+  const tooltipStyle = {
+    fontSize: 12, borderRadius: 8,
+    backgroundColor: isDark ? '#1E293B' : '#fff',
+    border: isDark ? '1px solid #334155' : '1px solid #E5E7EB',
+    boxShadow: 'none',
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Summary */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4">
+          <div className="text-xs text-emerald-700 dark:text-emerald-400 font-medium mb-1">Доходы за год</div>
+          <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{totalIncome.toLocaleString('ru-RU')} ₽</div>
+        </div>
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
+          <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Расходы за год</div>
+          <div className="text-xl font-bold text-red-600 dark:text-red-400 tabular-nums">{totalExpense.toLocaleString('ru-RU')} ₽</div>
+        </div>
+        <div className={clsx('rounded-xl p-4', totalSaved >= 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-orange-50 dark:bg-orange-900/20')}>
+          <div className={clsx('text-xs font-medium mb-1', totalSaved >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400')}>Отложено</div>
+          <div className={clsx('text-xl font-bold tabular-nums', totalSaved >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400')}>
+            {totalSaved >= 0 ? '+' : ''}{totalSaved.toLocaleString('ru-RU')} ₽
+          </div>
+        </div>
+      </div>
+
+      {/* Monthly bar chart */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Доходы и расходы по месяцам</h3>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} barGap={2}>
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v.toLocaleString('ru-RU')} ₽`} />
+            <Bar dataKey="income"  fill="#10B981" radius={[4,4,0,0]} name="Доходы"  maxBarSize={24} />
+            <Bar dataKey="expense" fill="#EF4444" radius={[4,4,0,0]} name="Расходы" maxBarSize={24} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Savings line */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Накопления по месяцам (доход − расход)</h3>
+        <ResponsiveContainer width="100%" height={160}>
+          <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+            <YAxis tick={{ fontSize: 9, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
+            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${v.toLocaleString('ru-RU')} ₽`} />
+            <Bar
+              dataKey="saved"
+              name="Отложено"
+              maxBarSize={28}
+              radius={[4,4,0,0]}
+              label={false}
+            >
+              {months.map((m, i) => (
+                <Cell key={i} fill={m.saved >= 0 ? '#3B82F6' : '#F97316'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Category breakdown */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Расходы по категориям за год</h3>
+        {catData.length > 0 ? (
+          <div className="flex flex-col gap-2">
+            {catData.map(cat => {
+              const pct = totalExpense > 0 ? (cat.value / totalExpense) * 100 : 0
+              return (
+                <div key={cat.label} className="flex items-center gap-3">
+                  <span className="text-xs text-gray-500 dark:text-gray-400 w-24 flex-shrink-0 truncate">{cat.label}</span>
+                  <div className="flex-1 h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: cat.color }} />
+                  </div>
+                  <span className="text-xs tabular-nums text-gray-700 dark:text-gray-300 w-24 text-right flex-shrink-0">
+                    {cat.value.toLocaleString('ru-RU')} ₽
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 text-center py-8">Расходов за {viewYear} год нет</p>
+        )}
+      </div>
+
+      {/* Monthly table */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-gray-100 dark:border-gray-700">
+              <th className="text-left px-4 py-2.5 text-xs font-medium text-gray-500 dark:text-gray-400">Месяц</th>
+              <th className="text-right px-4 py-2.5 text-xs font-medium text-emerald-600">Доходы</th>
+              <th className="text-right px-4 py-2.5 text-xs font-medium text-red-500">Расходы</th>
+              <th className="text-right px-4 py-2.5 text-xs font-medium text-blue-600">Отложено</th>
+            </tr>
+          </thead>
+          <tbody>
+            {months.map((m, i) => (
+              <tr key={i} className="border-b last:border-0 border-gray-50 dark:border-gray-700/50">
+                <td className="px-4 py-2 text-gray-700 dark:text-gray-300 capitalize">{m.label}</td>
+                <td className="px-4 py-2 text-right tabular-nums text-emerald-600 dark:text-emerald-400">
+                  {m.income > 0 ? `+${m.income.toLocaleString('ru-RU')} ₽` : '—'}
+                </td>
+                <td className="px-4 py-2 text-right tabular-nums text-red-500 dark:text-red-400">
+                  {m.expense > 0 ? `−${m.expense.toLocaleString('ru-RU')} ₽` : '—'}
+                </td>
+                <td className={clsx('px-4 py-2 text-right tabular-nums font-medium', m.saved >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-orange-500 dark:text-orange-400')}>
+                  {m.income === 0 && m.expense === 0 ? '—' : `${m.saved >= 0 ? '+' : ''}${m.saved.toLocaleString('ru-RU')} ₽`}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main page ───────────────────────────────────────────────────────────────
 
 export default function BudgetPage() {
@@ -597,17 +750,44 @@ export default function BudgetPage() {
 
   const handleAddTx = (tx: Omit<Transaction, 'id' | 'createdAt'>) => {
     const newTx: Transaction = { ...tx, id: genId(), createdAt: Date.now() }
-    upsertMonth({ ...currentMonth, transactions: [...currentMonth.transactions, newTx] })
-    toast.success(tx.type === 'income' ? 'Доход добавлен' : 'Расход добавлен')
+    // put into the month matching the chosen date, not the currently viewed month
+    const d = parseISO(tx.date)
+    const targetMonth = getOrCreateMonth(allData, d.getFullYear(), d.getMonth())
+    upsertMonth({ ...targetMonth, transactions: [...targetMonth.transactions, newTx] })
+    const label = format(d, 'LLLL yyyy', { locale: ru })
+    toast.success(`${tx.type === 'income' ? 'Доход' : 'Расход'} добавлен в ${label}`)
   }
 
   const handleUpdateTx = (tx: Transaction) => {
-    upsertMonth({ ...currentMonth, transactions: currentMonth.transactions.map(t => t.id === tx.id ? tx : t) })
+    // find the month that currently owns this tx
+    const ownerMonth = allData.find(m => m.transactions.some(t => t.id === tx.id)) ?? currentMonth
+    const newDate = parseISO(tx.date)
+    const newMonthKey = { year: newDate.getFullYear(), month: newDate.getMonth() }
+
+    if (ownerMonth.year === newMonthKey.year && ownerMonth.month === newMonthKey.month) {
+      // same month — just update
+      upsertMonth({ ...ownerMonth, transactions: ownerMonth.transactions.map(t => t.id === tx.id ? tx : t) })
+    } else {
+      // date changed to different month — move tx
+      const withoutOld = { ...ownerMonth, transactions: ownerMonth.transactions.filter(t => t.id !== tx.id) }
+      const targetMonth = getOrCreateMonth(allData, newMonthKey.year, newMonthKey.month)
+      const withNew = { ...targetMonth, transactions: [...targetMonth.transactions, tx] }
+      persist(prev => {
+        let next = [...prev]
+        const oi = next.findIndex(m => m.year === withoutOld.year && m.month === withoutOld.month)
+        if (oi >= 0) next[oi] = withoutOld; else next.push(withoutOld)
+        const ni = next.findIndex(m => m.year === withNew.year && m.month === withNew.month)
+        if (ni >= 0) next[ni] = withNew; else next.push(withNew)
+        return next
+      })
+    }
     toast.success('Сохранено')
   }
 
   const handleDeleteTx = (id: string) => {
-    upsertMonth({ ...currentMonth, transactions: currentMonth.transactions.filter(t => t.id !== id) })
+    // find owning month
+    const ownerMonth = allData.find(m => m.transactions.some(t => t.id === id)) ?? currentMonth
+    upsertMonth({ ...ownerMonth, transactions: ownerMonth.transactions.filter(t => t.id !== id) })
     toast.success('Удалено')
   }
 
@@ -691,6 +871,8 @@ export default function BudgetPage() {
   const monthTitle = format(new Date(year, month, 1), 'LLLL yyyy', { locale: ru })
     .replace(/^./, s => s.toUpperCase())
 
+  const chevronCls = "w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -698,21 +880,27 @@ export default function BudgetPage() {
         <div className="flex items-center gap-3">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Бюджет</h2>
           <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
-            </button>
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[130px] text-center">{monthTitle}</span>
-            <button
-              type="button"
-              onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}
-              className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
-            </button>
+            {tab === 'year' ? (
+              <>
+                <button type="button" onClick={() => setViewDate(d => new Date(d.getFullYear() - 1, d.getMonth(), 1))} className={chevronCls}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[60px] text-center">{year}</span>
+                <button type="button" onClick={() => setViewDate(d => new Date(d.getFullYear() + 1, d.getMonth(), 1))} className={chevronCls}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </>
+            ) : (
+              <>
+                <button type="button" onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))} className={chevronCls}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6" /></svg>
+                </button>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 min-w-[130px] text-center">{monthTitle}</span>
+                <button type="button" onClick={() => setViewDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))} className={chevronCls}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6" /></svg>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -825,6 +1013,10 @@ export default function BudgetPage() {
             ))
           )}
         </div>
+      )}
+
+      {tab === 'year' && (
+        <YearTab allData={allData} viewYear={year} isDark={isDark} />
       )}
 
       {/* Unified entry modal */}
