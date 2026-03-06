@@ -23,7 +23,8 @@
       "Bash(docker exec timescheduler-db-1 psql -U ts_user -d timescheduler -c \":*)",
       "Bash(docker compose up -d backend)",
       "Bash(docker ps --filter name=backend --format \"{{.Status}}\")",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tasks)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tasks)",
+      "Read(//etc/nginx/**)"
     ]
   }
 }

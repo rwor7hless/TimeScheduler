@@ -28,9 +28,13 @@ function saveNotes(notes: Note[]) {
   localStorage.setItem('notes', JSON.stringify(notes))
 }
 
+function genId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
+
 function createNote(): Note {
   return {
-    id: crypto.randomUUID(),
+    id: genId(),
     title: '',
     content: '',
     taskId: null,

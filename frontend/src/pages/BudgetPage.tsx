@@ -1,4 +1,8 @@
 import { useState, useMemo, useCallback } from 'react'
+
+function genId() {
+  return Math.random().toString(36).slice(2) + Date.now().toString(36)
+}
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import clsx from 'clsx'
@@ -599,7 +603,7 @@ export default function BudgetPage() {
   const openAdd = (type: 'expense' | 'income') => { setAddTxType(type); setAddTxOpen(true) }
 
   const handleAddTx = (tx: Omit<Transaction, 'id' | 'createdAt'>) => {
-    const newTx: Transaction = { ...tx, id: crypto.randomUUID(), createdAt: Date.now() }
+    const newTx: Transaction = { ...tx, id: genId(), createdAt: Date.now() }
     upsertMonth({ ...currentMonth, transactions: [...currentMonth.transactions, newTx] })
     setAddTxOpen(false)
     toast.success(tx.type === 'income' ? 'Доход добавлен' : 'Расход добавлен')
@@ -615,7 +619,7 @@ export default function BudgetPage() {
   const [addPlannedOpen, setAddPlannedOpen] = useState(false)
 
   const handleAddPlanned = (item: Omit<PlannedPurchase, 'id' | 'createdAt' | 'done'>) => {
-    const newItem: PlannedPurchase = { ...item, id: crypto.randomUUID(), createdAt: Date.now(), done: false }
+    const newItem: PlannedPurchase = { ...item, id: genId(), createdAt: Date.now(), done: false }
     upsertMonth({ ...currentMonth, plannedPurchases: [...currentMonth.plannedPurchases, newItem] })
     setAddPlannedOpen(false)
     toast.success('Покупка добавлена в план')
