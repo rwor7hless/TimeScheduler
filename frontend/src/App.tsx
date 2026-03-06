@@ -14,6 +14,7 @@ import StatsPage from '@/pages/StatsPage'
 import ExportPage from '@/pages/ExportPage'
 import TodayPage from '@/pages/TodayPage'
 import NotesPage from '@/pages/NotesPage'
+import BudgetPage from '@/pages/BudgetPage'
 import { queryClient } from '@/lib/queryClient'
 
 function ProtectedRoute() {
@@ -51,6 +52,7 @@ export default function App() {
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/notes" element={<NotesPage />} />
+                <Route path="/budget" element={<BudgetPage />} />
                 <Route path="/export" element={<ExportPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminPage />} />

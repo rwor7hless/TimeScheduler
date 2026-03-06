@@ -2,7 +2,28 @@
   "permissions": {
     "allow": [
       "Bash(npm install react-markdown remark-gfm)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(python -c \"from alembic.config import Config; from alembic import command; c = Config\\(''alembic.ini''\\); command.current\\(c\\)\")",
+      "Bash(docker exec timescheduler-backend-1 alembic current)",
+      "Bash(docker exec -w /app timescheduler-backend-1 alembic current)",
+      "Bash(docker exec timescheduler-backend-1 sh -c \"cd /app && ls\")",
+      "Bash(docker exec timescheduler-backend-1 sh -c \"cd /app && python -m alembic current\")",
+      "Bash(docker exec timescheduler-backend-1 sh -c \"grep -n ''last_completed_date\\\\|repeat_days'' /app/app/routers/tasks.py\")",
+      "Bash(docker exec timescheduler-backend-1 sh -c \"cd /app && python -m alembic upgrade head\")",
+      "Bash(docker exec timescheduler-backend-1 ls /app/alembic/versions/)",
+      "Bash(docker compose build backend frontend)",
+      "Bash(docker compose up -d backend frontend)",
+      "Bash(docker compose up backend)",
+      "Bash(docker run --rm --env-file /home/wor7hless/Documents/Github/TimeScheduler/.env -e DATABASE_URL=postgresql+asyncpg://ts_user:ts_secure_pass_2026@timescheduler-db-1:5432/timescheduler --network timescheduler_default timescheduler-backend python -c \"from app.models.task import Task; print\\(''OK''\\)\")",
+      "Bash(docker run --rm --env-file /home/wor7hless/Documents/Github/TimeScheduler/.env -e DATABASE_URL=postgresql+asyncpg://ts_user:ts_secure_pass_2026@timescheduler-db-1:5432/timescheduler --network timescheduler_default timescheduler-backend python -c \"from app.main import app; print\\(''OK''\\)\")",
+      "Bash(docker run --rm --env-file /home/wor7hless/Documents/Github/TimeScheduler/.env -e DATABASE_URL=postgresql+asyncpg://ts_user:ts_secure_pass_2026@timescheduler-db-1:5432/timescheduler --network timescheduler_default timescheduler-backend sh -c \"cd /app && python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 2>&1\")",
+      "Bash(docker run --rm timescheduler-backend ls /app/alembic/versions/)",
+      "Bash(docker compose build --no-cache backend)",
+      "Bash(docker exec timescheduler-db-1 psql -U ts_user -d timescheduler -c \":*)",
+      "Bash(docker compose up -d backend)",
+      "Bash(docker ps --filter name=backend --format \"{{.Status}}\")",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tasks)"
     ]
   }
 }

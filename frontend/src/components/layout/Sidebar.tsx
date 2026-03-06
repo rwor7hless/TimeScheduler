@@ -51,6 +51,12 @@ const NotesIcon = () => (
   </svg>
 )
 
+const BudgetIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>
+  </svg>
+)
+
 const LogoutIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
@@ -63,6 +69,7 @@ const navItems = (isAdmin: boolean) => [
   { to: '/boards', label: 'Доски', Icon: KanbanIcon },
   { to: '/habits', label: 'Привычки', Icon: HabitsIcon },
   { to: '/notes', label: 'Заметки', Icon: NotesIcon },
+  { to: '/budget', label: 'Бюджет', Icon: BudgetIcon },
   { to: '/stats', label: 'Статистика', Icon: StatsIcon },
   { to: '/export', label: 'Экспорт', Icon: ExportIcon },
   ...(isAdmin ? [{ to: '/admin', label: 'Админ', Icon: AdminIcon }] : []),
