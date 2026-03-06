@@ -170,3 +170,132 @@ body {
 /* Scrollable period selector (StatsPage) */
 .dark .bg-gray-100.rounded-lg { background-color: #1E293B !important; }
 .dark .bg-white.shadow-sm { background-color: #334155 !important; }
+
+/* ── Markdown preview styles ──────────────────────────────────────────────── */
+
+.markdown-preview {
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  line-height: 1.75;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text);
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+.markdown-preview h1 { font-size: 1.5rem; }
+.markdown-preview h2 { font-size: 1.25rem; }
+.markdown-preview h3 { font-size: 1.1rem; }
+.markdown-preview h4 { font-size: 1rem; }
+
+.markdown-preview h1:first-child,
+.markdown-preview h2:first-child,
+.markdown-preview h3:first-child { margin-top: 0; }
+
+.markdown-preview p {
+  margin-top: 0;
+  margin-bottom: 0.75em;
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: 1.5rem;
+  margin-bottom: 0.75em;
+}
+.markdown-preview ul { list-style-type: disc; }
+.markdown-preview ol { list-style-type: decimal; }
+.markdown-preview li { margin-bottom: 0.2em; }
+.markdown-preview li > ul,
+.markdown-preview li > ol { margin-bottom: 0; }
+
+/* GFM task list */
+.markdown-preview input[type="checkbox"] {
+  margin-right: 0.4em;
+  accent-color: var(--color-accent);
+}
+
+.markdown-preview blockquote {
+  border-left: 3px solid var(--color-accent);
+  padding-left: 1rem;
+  margin: 0.75em 0;
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.markdown-preview code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+  font-size: 0.85em;
+  padding: 0.15em 0.4em;
+  border-radius: 4px;
+  background-color: #F3F4F6;
+  color: #D97706;
+}
+
+.dark .markdown-preview code {
+  background-color: #1E293B;
+  color: #FCD34D;
+}
+
+.markdown-preview pre {
+  background-color: #111827;
+  color: #E5E7EB;
+  padding: 1rem;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.75em 0;
+  font-size: 0.85em;
+}
+
+.dark .markdown-preview pre {
+  background-color: #0F172A;
+  color: #CBD5E1;
+}
+
+.markdown-preview pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.markdown-preview hr {
+  border: none;
+  border-top: 1px solid var(--color-border);
+  margin: 1.25em 0;
+}
+
+.markdown-preview a {
+  color: var(--color-accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.markdown-preview a:hover { opacity: 0.8; }
+
+.markdown-preview strong { font-weight: 600; }
+.markdown-preview em { font-style: italic; }
+.markdown-preview del { text-decoration: line-through; opacity: 0.7; }
+
+/* GFM tables */
+.markdown-preview table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 0.875rem;
+}
+.markdown-preview th,
+.markdown-preview td {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+.markdown-preview th {
+  background-color: #F9FAFB;
+  font-weight: 600;
+}
+.dark .markdown-preview th { background-color: #1E293B; }

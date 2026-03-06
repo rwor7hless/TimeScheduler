@@ -34,6 +34,16 @@ function fillDailyGaps(
   return result
 }
 
+// calculate streak of consecutive days with completions ending today
+function calcStreak(filled: { date: string; count: number }[]): number {
+  let streak = 0
+  for (let i = filled.length - 1; i >= 0; i--) {
+    if (filled[i].count > 0) streak++
+    else break
+  }
+  return streak
+}
+
 function StatCard({
   label,
   value,
@@ -70,6 +80,16 @@ export default function StatsPage() {
     () => stats ? fillDailyGaps(stats.daily_completions, PERIOD_DAYS[period]) : [],
     [stats, period]
   )
+
+  const periodMetrics = useMemo(() => {
+    if (!chartData.length) return null
+    const total = chartData.reduce((s, d) => s + d.count, 0)
+    const best = chartData.reduce((a, b) => b.count > a.count ? b : a, chartData[0])
+    const daysWithTasks = chartData.filter(d => d.count > 0).length
+    const streak = calcStreak(chartData)
+    const avgPerDay = daysWithTasks > 0 ? (total / PERIOD_DAYS[period]) : 0
+    return { total, best, daysWithTasks, streak, avgPerDay }
+  }, [chartData, period])
 
   if (isLoading) return <Spinner className="mt-20" />
   if (!stats) return null
@@ -156,27 +176,81 @@ export default function StatsPage() {
           </ResponsiveContainer>
         </div>
 
-        {/* Average completion time */}
+        {/* Period summary */}
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Метрики</h3>
-          <div className="space-y-4">
-            <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Ср. время выполнения</div>
-              <div className="text-xl font-bold text-gray-900 dark:text-gray-100">
-                {stats.avg_completion_hours != null
-                  ? `${stats.avg_completion_hours} ч.`
-                  : '—'}
+          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Итоги периода</h3>
+          {periodMetrics ? (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Выполнено задач</div>
+                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{periodMetrics.total}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Серия дней</div>
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {periodMetrics.streak}
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">дн.</span>
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Ср. в день</div>
+                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                    {periodMetrics.avgPerDay.toFixed(1)}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Активных дней</div>
+                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                    {periodMetrics.daysWithTasks}
+                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">/ {PERIOD_DAYS[period]}</span>
+                  </div>
+                </div>
               </div>
+
+              {periodMetrics.best.count > 0 && (
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Лучший день</div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{periodMetrics.best.label}</span>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">— {periodMetrics.best.count} задач</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Active hours heatmap */}
+              {stats.most_active_hours.length > 0 && (
+                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Пиковые часы</div>
+                  <div className="flex gap-px flex-wrap">
+                    {Array.from({ length: 24 }, (_, h) => {
+                      const isActive = stats.most_active_hours.includes(h)
+                      return (
+                        <div
+                          key={h}
+                          title={`${h}:00${isActive ? ' — активный' : ''}`}
+                          className={[
+                            'h-4 rounded-sm transition-colors',
+                            isActive
+                              ? 'bg-amber-500 dark:bg-amber-400'
+                              : 'bg-gray-100 dark:bg-gray-700',
+                          ].join(' ')}
+                          style={{ width: 'calc((100% - 23px) / 24)' }}
+                        />
+                      )
+                    })}
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                    <span>0:00</span>
+                    <span>12:00</span>
+                    <span>23:00</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <div className="text-xs text-gray-500 dark:text-gray-400">Активные часы</div>
-              <div className="text-sm text-gray-700 dark:text-gray-300">
-                {stats.most_active_hours.length > 0
-                  ? stats.most_active_hours.map((h) => `${h}:00`).join(', ')
-                  : '—'}
-              </div>
-            </div>
-          </div>
+          ) : (
+            <p className="text-sm text-gray-400 dark:text-gray-500">Нет данных</p>
+          )}
         </div>
       </div>
 

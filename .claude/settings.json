@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install react-markdown remark-gfm)",
+      "Bash(npx tsc --noEmit)"
+    ]
+  }
+}

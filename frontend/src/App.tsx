@@ -13,6 +13,7 @@ import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import ExportPage from '@/pages/ExportPage'
 import TodayPage from '@/pages/TodayPage'
+import NotesPage from '@/pages/NotesPage'
 import { queryClient } from '@/lib/queryClient'
 
 function ProtectedRoute() {
@@ -49,6 +50,7 @@ export default function App() {
                 <Route path="/kanban/:boardId" element={<KanbanPage />} />
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
+                <Route path="/notes" element={<NotesPage />} />
                 <Route path="/export" element={<ExportPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminPage />} />
