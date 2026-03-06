@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.database import Base, engine
-from app.routers import admin, auth, backup, boards, export, habits, stats, tags, tasks, telegram
+from app.routers import admin, auth, backup, boards, budget, export, habits, notes, stats, tags, tasks, telegram
 from app.services.backup import run_backup
 from app.services.telegram_bot import poll_telegram_updates, send_telegram_reminders
 
@@ -117,6 +117,8 @@ app.include_router(stats.router)
 app.include_router(export.router)
 app.include_router(backup.router)
 app.include_router(telegram.router)
+app.include_router(notes.router)
+app.include_router(budget.router)
 
 
 @app.get("/api/health")
