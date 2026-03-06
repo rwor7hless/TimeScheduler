@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import clsx from 'clsx'
@@ -151,8 +151,9 @@ function EntryModal({
     }
   }
 
-  // reset on open
-  useState(() => { if (isOpen) resetToEdit() })
+  // reset when modal opens or edited item changes
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { if (isOpen) resetToEdit() }, [isOpen, editTx, editPlanned])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
