@@ -24,7 +24,8 @@
       "Bash(docker compose up -d backend)",
       "Bash(docker ps --filter name=backend --format \"{{.Status}}\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tasks)",
-      "Read(//etc/nginx/**)"
+      "Read(//etc/nginx/**)",
+      "Bash(npm install remark-breaks --save)"
     ]
   }
 }

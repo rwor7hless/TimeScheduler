@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 import { useTasks } from '@/hooks/useTasks'
 import type { Task } from '@/types/task'
 
@@ -646,7 +647,7 @@ export default function NotesPage() {
             ) : (
               <div className="px-4 py-3 markdown-preview">
                 {selectedNote.content ? (
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>
                     {selectedNote.content}
                   </ReactMarkdown>
                 ) : (
