@@ -1,18 +1,20 @@
 from datetime import date, datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+COLOR_PATTERN = r"^#[0-9A-Fa-f]{6}$"
 
 
 class HabitCreate(BaseModel):
-    name: str
+    name: str = Field(max_length=255)
     description: str | None = None
-    color: str = "#10B981"
+    color: str = Field(default="#10B981", pattern=COLOR_PATTERN)
 
 
 class HabitUpdate(BaseModel):
-    name: str | None = None
+    name: str | None = Field(default=None, max_length=255)
     description: str | None = None
-    color: str | None = None
+    color: str | None = Field(default=None, pattern=COLOR_PATTERN)
     is_active: bool | None = None
 
 

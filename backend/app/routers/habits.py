@@ -2,6 +2,7 @@ from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -107,22 +108,25 @@ async def toggle_habit_log(
     if not habit_result.scalar_one_or_none():
         raise HTTPException(status_code=404, detail="Habit not found")
 
-    # Check if log exists for this date
-    result = await db.execute(
-        select(HabitLog).where(HabitLog.habit_id == habit_id, HabitLog.date == data.date)
-    )
-    existing_log = result.scalar_one_or_none()
-
-    if existing_log:
-        await db.delete(existing_log)
-        await db.commit()
-        return None
-    else:
-        log = HabitLog(habit_id=habit_id, date=data.date, completed_at=datetime.now(timezone.utc))
-        db.add(log)
+    # Try to insert first (optimistic approach avoids race condition)
+    log = HabitLog(habit_id=habit_id, date=data.date, completed_at=datetime.now(timezone.utc))
+    db.add(log)
+    try:
+        await db.flush()
         await db.commit()
         await db.refresh(log)
         return log
+    except IntegrityError:
+        # Unique constraint violation: log already exists — delete it (toggle off)
+        await db.rollback()
+        result = await db.execute(
+            select(HabitLog).where(HabitLog.habit_id == habit_id, HabitLog.date == data.date)
+        )
+        existing_log = result.scalar_one_or_none()
+        if existing_log:
+            await db.delete(existing_log)
+            await db.commit()
+        return None
 
 
 @router.get("/{habit_id}/logs", response_model=list[HabitLogResponse])

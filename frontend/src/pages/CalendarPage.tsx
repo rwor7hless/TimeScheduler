@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import { addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask } from '@/hooks/useTasks'
@@ -18,9 +19,25 @@ export default function CalendarPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [defaultDate, setDefaultDate] = useState<string>('')
+  const [searchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const searchQuery = searchParams.get('search')
 
-  const { data: tasks, isLoading } = useTasks({ scope: 'calendar' })
+  const taskParams: Record<string, string> = { scope: 'calendar' }
+  if (searchQuery) taskParams.search = searchQuery
+
+  const { data: tasks, isLoading } = useTasks(taskParams)
   const patchTask = usePatchTask()
+
+  // Open new-task modal when navigated here with ?new=1 (hotkey 'n')
+  useEffect(() => {
+    if (searchParams.get('new') === '1') {
+      setEditingTask(null)
+      setDefaultDate('')
+      setModalOpen(true)
+      navigate('/calendar/day', { replace: true })
+    }
+  }, [searchParams, navigate])
 
   const handleTaskMove = useCallback((task: Task, newStart: string, newEnd: string) => {
     patchTask.mutate({ id: task.id, data: { scheduled_start: newStart, scheduled_end: newEnd } })

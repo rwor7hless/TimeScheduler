@@ -58,6 +58,8 @@ function parseDatetime(isoString: string): { date: string; startTime: string } {
 }
 
 export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultStatus, boardId }: TaskModalProps) {
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [showSubtaskInput, setShowSubtaskInput] = useState(false)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Priority>('medium')
@@ -142,6 +144,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setDeadlineTime('')
       setShowDeadline(false)
       setShowAdvanced(false)
+      setShowSubtaskInput(false)
+      setNewSubtaskTitle('')
 
       const isKanbanTask = !defaultDate && (boardId !== undefined || defaultStatus !== undefined)
       if (isKanbanTask) {
@@ -198,6 +202,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       repeat_days: repeatDays.length > 0 ? repeatDays : [],
       tag_ids: selectedTagIds,
       board_id: boardId ?? task?.board_id ?? null,
+      parent_id: task?.parent_id ?? null,
       tg_remind: tgRemind,
       tg_remind_at,
     }
@@ -224,6 +229,24 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       onClose()
     } catch {
       toast.error('Не удалось удалить задачу')
+    }
+  }
+
+  const handleAddSubtask = async () => {
+    if (!task || !newSubtaskTitle.trim()) return
+    try {
+      await createTask.mutateAsync({
+        title: newSubtaskTitle.trim(),
+        priority: 'medium',
+        status: 'todo',
+        board_id: task.board_id,
+        parent_id: task.id,
+      })
+      setNewSubtaskTitle('')
+      setShowSubtaskInput(false)
+      toast.success('Подзадача добавлена')
+    } catch {
+      toast.error('Не удалось добавить подзадачу')
     }
   }
 
@@ -359,6 +382,63 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             Добавить дедлайн
           </button>
+        )}
+
+        {/* Subtasks — only shown when editing an existing task */}
+        {task && (
+          <div className="pt-1 border-t border-gray-100 space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-medium text-gray-600">
+                Подзадачи
+                {task.subtasks.length > 0 && (
+                  <span className="ml-1.5 text-gray-400 font-normal">
+                    ({task.subtasks.filter((s) => s.status === 'done').length}/{task.subtasks.length})
+                  </span>
+                )}
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowSubtaskInput((v) => !v)}
+                className="text-xs text-blue-500 hover:text-blue-700 flex items-center gap-1"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                Добавить
+              </button>
+            </div>
+
+            {task.subtasks.length > 0 && (
+              <ul className="space-y-1">
+                {task.subtasks.map((sub) => (
+                  <li key={sub.id} className="flex items-center gap-2 text-xs text-gray-700 py-0.5 px-1.5 rounded hover:bg-gray-50">
+                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`} />
+                    <span className={sub.status === 'done' ? 'line-through text-gray-400' : ''}>{sub.title}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {showSubtaskInput && (
+              <div className="flex gap-1.5 items-center">
+                <input
+                  type="text"
+                  value={newSubtaskTitle}
+                  onChange={(e) => setNewSubtaskTitle(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask() } if (e.key === 'Escape') { setShowSubtaskInput(false); setNewSubtaskTitle('') } }}
+                  placeholder="Название подзадачи..."
+                  className="flex-1 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-400/40 focus:border-blue-400"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSubtask}
+                  disabled={!newSubtaskTitle.trim() || createTask.isPending}
+                  className="px-2.5 py-1.5 bg-blue-500 text-white text-xs rounded-lg hover:bg-blue-600 disabled:opacity-40"
+                >
+                  ОК
+                </button>
+              </div>
+            )}
+          </div>
         )}
 
         {/* Advanced section */}

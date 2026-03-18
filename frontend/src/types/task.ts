@@ -29,10 +29,12 @@ export interface Task {
   updated_at: string
   tags: Tag[]
   board_id: number | null
+  parent_id: number | null
   is_archived: boolean
   tg_remind: boolean
   tg_remind_at: string | null
   tg_reminded: boolean
+  subtasks: Task[]
 }
 
 export interface TaskCreate {
@@ -47,6 +49,7 @@ export interface TaskCreate {
   repeat_days?: number[]
   tag_ids?: number[]
   board_id?: number | null
+  parent_id?: number | null
   tg_remind?: boolean
   tg_remind_at?: string | null
 }

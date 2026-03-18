@@ -45,10 +45,23 @@ const PRIORITY_COLOR: Record<string, string> = {
   low: 'text-gray-400', medium: 'text-blue-400', high: 'text-amber-500', urgent: 'text-red-500',
 }
 
-function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
+function SortableTaskCard({
+  task,
+  onClick,
+  selectMode,
+  selected,
+  onToggleSelect,
+}: {
+  task: Task
+  onClick: () => void
+  selectMode: boolean
+  selected: boolean
+  onToggleSelect: (id: number) => void
+}) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: task.id,
     data: { type: 'task', task },
+    disabled: selectMode,
   })
 
   return (
@@ -59,10 +72,26 @@ function SortableTaskCard({ task, onClick }: { task: Task; onClick: () => void }
         transition,
         opacity: isDragging ? 0 : 1,
       }}
-      {...attributes}
-      {...listeners}
+      className="relative group"
+      {...(!selectMode ? { ...attributes, ...listeners } : {})}
     >
-      <TaskCard task={task} onClick={onClick} />
+      {selectMode && (
+        <div className="absolute top-2 left-2 z-10">
+          <input
+            type="checkbox"
+            checked={selected}
+            onChange={() => onToggleSelect(task.id)}
+            className="w-4 h-4 accent-amber-500 cursor-pointer"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+      <div
+        className={clsx(selectMode && selected && 'ring-2 ring-amber-400 rounded-xl')}
+        onClick={() => selectMode ? onToggleSelect(task.id) : onClick()}
+      >
+        <TaskCard task={task} onClick={selectMode ? () => {} : onClick} />
+      </div>
     </div>
   )
 }
@@ -72,13 +101,20 @@ function DroppableColumn({
   tasks,
   onTaskClick,
   onAddTask,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
 }: {
   col: (typeof COLUMNS)[number]
   tasks: Task[]
   onTaskClick: (t: Task) => void
   onAddTask: () => void
+  selectMode: boolean
+  selectedIds: Set<number>
+  onToggleSelect: (id: number) => void
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: col.id })
+  const allSelected = tasks.length > 0 && tasks.every((t) => selectedIds.has(t.id))
 
   return (
     <div
@@ -91,6 +127,19 @@ function DroppableColumn({
       <div className="flex items-center justify-between px-3 pt-3 pb-2">
         <h3 className="text-sm font-semibold text-gray-700">{col.title}</h3>
         <div className="flex items-center gap-2">
+          {selectMode && tasks.length > 0 && (
+            <input
+              type="checkbox"
+              checked={allSelected}
+              onChange={() => tasks.forEach((t) => {
+                if (allSelected ? selectedIds.has(t.id) : !selectedIds.has(t.id)) {
+                  onToggleSelect(t.id)
+                }
+              })}
+              title="Выбрать всё в колонке"
+              className="w-3.5 h-3.5 accent-amber-500 cursor-pointer"
+            />
+          )}
           <span className="text-xs text-gray-400 bg-gray-200 px-2 py-0.5 rounded-full">
             {tasks.length}
           </span>
@@ -124,6 +173,9 @@ function DroppableColumn({
                   key={task.id}
                   task={task}
                   onClick={() => onTaskClick(task)}
+                  selectMode={selectMode}
+                  selected={selectedIds.has(task.id)}
+                  onToggleSelect={onToggleSelect}
                 />
               ))}
             </div>
@@ -175,10 +227,7 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                   key={task.id}
                   className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 bg-gray-50 hover:bg-gray-100 transition-colors group"
                 >
-                  {/* Color dot */}
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
-
-                  {/* Title + meta */}
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-700 truncate line-through decoration-gray-300">
                       {task.title}
@@ -213,8 +262,6 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                       )}
                     </div>
                   </div>
-
-                  {/* Actions */}
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
                     <button
                       onClick={async () => {
@@ -288,12 +335,64 @@ export default function KanbanPage() {
   const { data: tasks, isLoading } = useTasks(taskParams)
   const reorderMutation = useReorderTasks()
   const archiveTask = useArchiveTask()
+  const deleteTask = useDeleteTask()
+
   const [activeTask, setActiveTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [defaultStatus, setDefaultStatus] = useState<KanbanStatus>('todo')
   const [archiveDoneModalOpen, setArchiveDoneModalOpen] = useState(false)
   const [archivedDrawerOpen, setArchivedDrawerOpen] = useState(false)
+
+  // Bulk select state
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
+  const [bulkDeleteConfirm, setBulkDeleteConfirm] = useState(false)
+  const [bulkLoading, setBulkLoading] = useState(false)
+
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  const exitSelectMode = () => {
+    setSelectMode(false)
+    setSelectedIds(new Set())
+  }
+
+  const handleBulkComplete = async () => {
+    if (selectedIds.size === 0) return
+    setBulkLoading(true)
+    try {
+      const ids = Array.from(selectedIds)
+      await tasksApi.reorder({ status: 'done', ordered_ids: ids })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      toast.success(`${ids.length} задач завершено`)
+      exitSelectMode()
+    } catch {
+      toast.error('Не удалось завершить задачи')
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return
+    setBulkLoading(true)
+    try {
+      await Promise.all(Array.from(selectedIds).map((id) => deleteTask.mutateAsync(id)))
+      toast.success(`${selectedIds.size} задач удалено`)
+      exitSelectMode()
+    } catch {
+      toast.error('Не удалось удалить задачи')
+    } finally {
+      setBulkLoading(false)
+      setBulkDeleteConfirm(false)
+    }
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -400,7 +499,6 @@ export default function KanbanPage() {
       toast.success('Готовые задачи перемещены в архив')
     } catch {
       toast.error('Не удалось переместить в архив')
-      throw new Error('Archive failed')
     }
   }
 
@@ -426,23 +524,58 @@ export default function KanbanPage() {
           </Link>
           <h2 className="text-lg font-semibold text-gray-900">{boardName}</h2>
         </div>
-        <div className="flex items-center gap-2">
-          <Button size="sm" onClick={() => openCreateModal('todo')}>+ Задача</Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setArchivedDrawerOpen(true)}
-          >
-            Завершённые
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setArchiveDoneModalOpen(true)}
-            disabled={doneCount === 0}
-          >
-            В архив {doneCount > 0 ? `(${doneCount})` : ''}
-          </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {selectMode ? (
+            <>
+              <span className="text-sm text-gray-500">{selectedIds.size} выбрано</span>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={handleBulkComplete}
+                disabled={selectedIds.size === 0 || bulkLoading}
+              >
+                ✓ Завершить
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => selectedIds.size > 0 && setBulkDeleteConfirm(true)}
+                disabled={selectedIds.size === 0 || bulkLoading}
+              >
+                🗑 Удалить
+              </Button>
+              <Button size="sm" variant="secondary" onClick={exitSelectMode}>
+                Отмена
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button size="sm" onClick={() => openCreateModal('todo')}>+ Задача</Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectMode(true)}
+                title="Выбрать несколько задач"
+              >
+                ☑ Выбрать
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setArchivedDrawerOpen(true)}
+              >
+                Завершённые
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setArchiveDoneModalOpen(true)}
+                disabled={doneCount === 0}
+              >
+                В архив {doneCount > 0 ? `(${doneCount})` : ''}
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -463,6 +596,9 @@ export default function KanbanPage() {
                 setModalOpen(true)
               }}
               onAddTask={() => openCreateModal(col.id)}
+              selectMode={selectMode}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelect}
             />
           ))}
         </div>
@@ -489,6 +625,17 @@ export default function KanbanPage() {
         variant="danger"
         onConfirm={handleArchiveDone}
         isLoading={archiveTask.isPending}
+      />
+
+      <ConfirmModal
+        isOpen={bulkDeleteConfirm}
+        onClose={() => setBulkDeleteConfirm(false)}
+        title="Удалить задачи"
+        message={`Удалить ${selectedIds.size} ${selectedIds.size === 1 ? 'задачу' : 'задач(и)'} навсегда? Это действие нельзя отменить.`}
+        confirmLabel="Удалить"
+        variant="danger"
+        isLoading={bulkLoading}
+        onConfirm={handleBulkDelete}
       />
 
       <ArchivedModal

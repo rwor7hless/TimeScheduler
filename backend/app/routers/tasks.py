@@ -90,6 +90,13 @@ async def create_task(
     current_user: User = Depends(get_current_user),
 ):
     await _validate_board_ownership(data.board_id, current_user.id, db)
+    # Validate parent ownership
+    if data.parent_id is not None:
+        parent_result = await db.execute(
+            select(Task.id).where(Task.id == data.parent_id, Task.user_id == current_user.id)
+        )
+        if parent_result.scalar_one_or_none() is None:
+            raise HTTPException(status_code=404, detail="Parent task not found")
     task = Task(
         user_id=current_user.id,
         title=data.title,
@@ -101,6 +108,7 @@ async def create_task(
         scheduled_end=data.scheduled_end,
         repeat_days=data.repeat_days if data.repeat_days else None,
         board_id=data.board_id,
+        parent_id=data.parent_id,
         tg_remind=data.tg_remind,
         tg_remind_at=data.tg_remind_at,
     )
@@ -169,6 +177,7 @@ async def update_task(
     task.scheduled_end = data.scheduled_end
     task.repeat_days = data.repeat_days if data.repeat_days else None
     task.board_id = data.board_id
+    task.parent_id = data.parent_id
     task.tg_remind = data.tg_remind
     old_tg_remind_at = task.tg_remind_at
     task.tg_remind_at = data.tg_remind_at
@@ -204,15 +213,34 @@ async def reorder_tasks(
     order_mapping = {tid: idx for idx, tid in enumerate(data.ordered_ids)}
     now = datetime.now(timezone.utc)
 
+    # Update status and order
     await db.execute(
         update(Task)
         .where(Task.id.in_(data.ordered_ids), Task.user_id == current_user.id)
         .values(
             status=data.status,
             kanban_order=case(order_mapping, value=Task.id, else_=Task.kanban_order),
-            completed_at=now if data.status == KanbanStatus.DONE else None,
         )
     )
+
+    # Set completed_at only for tasks that don't have it yet (preserve original timestamp)
+    if data.status == KanbanStatus.DONE:
+        await db.execute(
+            update(Task)
+            .where(
+                Task.id.in_(data.ordered_ids),
+                Task.user_id == current_user.id,
+                Task.completed_at.is_(None),
+            )
+            .values(completed_at=now)
+        )
+    else:
+        await db.execute(
+            update(Task)
+            .where(Task.id.in_(data.ordered_ids), Task.user_id == current_user.id)
+            .values(completed_at=None)
+        )
+
     await db.commit()
     return {"ok": True}
 

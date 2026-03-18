@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.dependencies import get_current_user
+from app.dependencies import get_admin_user, get_current_user
 from app.services.backup import list_backups, run_backup
 
-router = APIRouter(prefix="/api/backup", tags=["backup"], dependencies=[Depends(get_current_user)])
+router = APIRouter(prefix="/api/backup", tags=["backup"], dependencies=[Depends(get_admin_user)])
 
 
 @router.post("/trigger")

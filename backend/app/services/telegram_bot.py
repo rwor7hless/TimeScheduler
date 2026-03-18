@@ -1,5 +1,6 @@
 import secrets
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -124,13 +125,9 @@ async def send_telegram_reminders() -> None:
         for task, user in rows:
             scheduled = task.scheduled_start
             if scheduled:
-                # scheduled_start is stored as UTC, but was sent by the browser
-                # already offset (new Date("YYYY-MM-DDTHH:MM:00").toISOString()),
-                # so UTC value equals the local time the user picked minus their offset.
-                # Re-add UTC+3 (Moscow) to recover what the user intended.
                 if scheduled.tzinfo is None:
                     scheduled = scheduled.replace(tzinfo=timezone.utc)
-                local_time = scheduled.astimezone(timezone(timedelta(hours=3)))
+                local_time = scheduled.astimezone(ZoneInfo(settings.user_timezone))
                 time_str = local_time.strftime("%d.%m.%Y %H:%M")
             else:
                 time_str = "не указано"

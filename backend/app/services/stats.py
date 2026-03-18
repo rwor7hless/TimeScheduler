@@ -16,9 +16,11 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
 
     task_filter = Task.user_id == user_id
 
-    # Active tasks (not done)
+    # Active tasks (not done, not archived)
     active_result = await db.execute(
-        select(func.count(Task.id)).where(task_filter, Task.status != KanbanStatus.DONE)
+        select(func.count(Task.id)).where(
+            task_filter, Task.status != KanbanStatus.DONE, Task.is_archived.is_(False)
+        )
     )
     active_tasks = active_result.scalar() or 0
 
@@ -32,11 +34,12 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     )
     completed_last_month = completed_result.scalar() or 0
 
-    # Overdue tasks (explicit deadline in the past and not done)
+    # Overdue tasks (explicit deadline in the past, not done, not archived)
     overdue_result = await db.execute(
         select(func.count(Task.id)).where(
             task_filter,
             Task.status != KanbanStatus.DONE,
+            Task.is_archived.is_(False),
             Task.deadline < now,
             Task.deadline.isnot(None),
         )
@@ -103,6 +106,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     )
     habits = habits_result.scalars().all()
     habit_progress = []
+    today = date.today()
 
     for habit in habits:
         logs_result = await db.execute(
@@ -113,21 +117,22 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         log_count = logs_result.scalar() or 0
         completion_rate = round(log_count / period_days, 2)
 
-        # Calculate streak
-        streak = 0
-        today = date.today()
-        check_date = today
-        while True:
-            log_exists = await db.execute(
-                select(HabitLog.id).where(
-                    and_(HabitLog.habit_id == habit.id, HabitLog.date == check_date)
+        # Calculate streak — single query, O(1) instead of O(N) queries
+        streak_logs_result = await db.execute(
+            select(HabitLog.date).where(
+                and_(
+                    HabitLog.habit_id == habit.id,
+                    HabitLog.date >= today - timedelta(days=365),
+                    HabitLog.date <= today,
                 )
             )
-            if log_exists.scalar_one_or_none():
-                streak += 1
-                check_date -= timedelta(days=1)
-            else:
-                break
+        )
+        logged_dates = {row[0] for row in streak_logs_result.all()}
+        streak = 0
+        check_date = today
+        while check_date in logged_dates:
+            streak += 1
+            check_date -= timedelta(days=1)
 
         habit_progress.append(
             HabitProgress(

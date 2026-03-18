@@ -67,6 +67,9 @@ class Task(Base):
     board_id: Mapped[int | None] = mapped_column(
         ForeignKey("boards.id", ondelete="SET NULL"), nullable=True, index=True
     )
+    parent_id: Mapped[int | None] = mapped_column(
+        ForeignKey("tasks.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     title: Mapped[str] = mapped_column(String(255))
     color: Mapped[str] = mapped_column(String(7), default="#6B7280")
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -98,3 +101,17 @@ class Task(Base):
     )
 
     board: Mapped[Board | None] = relationship("Board", back_populates="tasks")
+
+    subtasks: Mapped[list["Task"]] = relationship(
+        "Task",
+        back_populates="parent",
+        foreign_keys="Task.parent_id",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    parent: Mapped["Task | None"] = relationship(
+        "Task",
+        back_populates="subtasks",
+        foreign_keys="Task.parent_id",
+        remote_side="Task.id",
+    )

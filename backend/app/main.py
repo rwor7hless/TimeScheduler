@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -6,6 +7,12 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
+
+if settings.secret_key == "change-me-in-production":
+    logging.warning(
+        "SECRET_KEY is set to the default insecure value! "
+        "Set SECRET_KEY in your .env file before deploying to production."
+    )
 from app.database import Base, engine
 from app.routers import admin, auth, backup, boards, budget, export, habits, notes, stats, tags, tasks, telegram
 from app.services.backup import run_backup
