@@ -17,17 +17,34 @@ const PRIORITY_CONFIG: Record<Priority, { icon: string; className: string }> = {
   urgent: { icon: '⚡', className: 'text-red-500' },
 }
 
+function getDeadlineStatus(deadline: string | null): 'overdue' | 'soon' | null {
+  if (!deadline) return null
+  const now = new Date()
+  const dl = new Date(deadline)
+  if (dl < now) return 'overdue'
+  const hoursLeft = (dl.getTime() - now.getTime()) / (1000 * 60 * 60)
+  if (hoursLeft <= 24) return 'soon'
+  return null
+}
+
 export default function TaskCard({ task, onClick, compact = false, className }: TaskCardProps) {
   const color = task.color || '#6B7280'
   const prio = PRIORITY_CONFIG[task.priority]
   const isCancelled = task.status === 'done'
+  const deadlineStatus = !isCancelled ? getDeadlineStatus(task.deadline) : null
+
+  const subtasksDone = task.subtasks?.filter(s => s.status === 'done').length ?? 0
+  const subtasksTotal = task.subtasks?.length ?? 0
 
   return (
     <div
       onClick={onClick}
       className={clsx(
-        'bg-white rounded-lg border border-gray-200 cursor-pointer hover:shadow-md transition-shadow overflow-hidden',
+        'bg-white rounded-lg border cursor-pointer hover:shadow-md transition-shadow overflow-hidden',
         isCancelled && 'opacity-60',
+        deadlineStatus === 'overdue' && 'border-red-400 ring-1 ring-red-200',
+        deadlineStatus === 'soon' && 'border-amber-400 ring-1 ring-amber-200',
+        !deadlineStatus && 'border-gray-200',
         className
       )}
     >
@@ -73,6 +90,42 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
               {task.tags.map((tag) => (
                 <TagBadge key={tag.id} tag={tag} />
               ))}
+            </div>
+          )}
+          {/* Deadline indicator */}
+          {!compact && deadlineStatus && (
+            <div className={clsx(
+              'text-[10px] font-medium mt-1.5 flex items-center gap-1',
+              deadlineStatus === 'overdue' ? 'text-red-600' : 'text-amber-600'
+            )}>
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+              </svg>
+              {deadlineStatus === 'overdue'
+                ? `Просрочено`
+                : `Дедлайн < 24ч`}
+            </div>
+          )}
+          {/* Subtask list */}
+          {!compact && subtasksTotal > 0 && (
+            <div className="mt-1.5 space-y-0.5">
+              {task.subtasks.map((sub) => (
+                <div key={sub.id} className="flex items-center gap-1.5">
+                  <div className={`w-2.5 h-2.5 rounded-full border flex-shrink-0 ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`} />
+                  <span className={`text-[11px] truncate ${sub.status === 'done' ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                    {sub.title}
+                  </span>
+                </div>
+              ))}
+              <div className="flex items-center gap-1.5 pt-0.5">
+                <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-emerald-500 rounded-full transition-all"
+                    style={{ width: `${(subtasksDone / subtasksTotal) * 100}%` }}
+                  />
+                </div>
+                <span className="text-[10px] text-gray-400 flex-shrink-0">{subtasksDone}/{subtasksTotal}</span>
+              </div>
             </div>
           )}
           {!compact && task.scheduled_start && (

@@ -88,6 +88,7 @@ class Task(Base):
     tg_remind: Mapped[bool] = mapped_column(Boolean, default=False)
     tg_remind_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     tg_reminded: Mapped[bool] = mapped_column(Boolean, default=False)
+    deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default="now()"
@@ -107,7 +108,7 @@ class Task(Base):
         back_populates="parent",
         foreign_keys="Task.parent_id",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="noload",
     )
     parent: Mapped["Task | None"] = relationship(
         "Task",

@@ -13,10 +13,10 @@ function downloadBlob(data: Blob, filename: string) {
 }
 
 export const exportApi = {
-  tasks: (format: 'csv' | 'json' = 'json') =>
+  tasks: (format: 'csv' | 'json' = 'json', params?: Record<string, string>) =>
     api
       .get('/export/tasks', {
-        params: { format },
+        params: { format, ...params },
         responseType: 'blob',
       })
       .then((r) => downloadBlob(r.data, `tasks.${format}`))

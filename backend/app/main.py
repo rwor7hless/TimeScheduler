@@ -3,8 +3,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from app.config import settings
 
@@ -14,7 +18,7 @@ if settings.secret_key == "change-me-in-production":
         "Set SECRET_KEY in your .env file before deploying to production."
     )
 from app.database import Base, engine
-from app.routers import admin, auth, backup, boards, budget, export, habits, notes, stats, tags, tasks, telegram
+from app.routers import admin, auth, backup, boards, budget, export, habits, notes, search, stats, tags, tasks, telegram
 from app.services.backup import run_backup
 from app.services.telegram_bot import poll_telegram_updates, send_telegram_reminders
 
@@ -104,7 +108,19 @@ async def lifespan(app: FastAPI):
     await engine.dispose()
 
 
+limiter = Limiter(key_func=get_remote_address, default_limits=["200/minute"])
+
 app = FastAPI(title="TimeScheduler", version="1.0.0", lifespan=lifespan)
+app.state.limiter = limiter
+
+
+@app.exception_handler(RateLimitExceeded)
+async def rate_limit_handler(request: Request, exc: RateLimitExceeded):
+    return JSONResponse(
+        status_code=429,
+        content={"detail": "Too many requests. Please try again later."},
+    )
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -126,6 +142,7 @@ app.include_router(backup.router)
 app.include_router(telegram.router)
 app.include_router(notes.router)
 app.include_router(budget.router)
+app.include_router(search.router)
 
 
 @app.get("/api/health")

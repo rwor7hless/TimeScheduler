@@ -9,9 +9,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.dependencies import get_current_user, get_db
-from app.models.task import Task
+from app.models.task import KanbanStatus, Priority, Tag, Task
 from app.models.user import User
-from app.schemas.task import TaskResponse
 from app.services.stats import get_stats
 
 router = APIRouter(prefix="/api/export", tags=["export"], dependencies=[Depends(get_current_user)])
@@ -20,15 +19,33 @@ router = APIRouter(prefix="/api/export", tags=["export"], dependencies=[Depends(
 @router.get("/tasks")
 async def export_tasks(
     format: str = Query("json", pattern="^(csv|json)$"),
+    priority: Priority | None = None,
+    status: KanbanStatus | None = None,
+    board_id: int | None = None,
+    tag: str | None = None,
+    include_archived: bool = Query(False),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
+    query = (
         select(Task)
         .options(selectinload(Task.tags))
-        .where(Task.user_id == current_user.id)
-        .order_by(Task.created_at)
+        .where(Task.user_id == current_user.id, Task.deleted_at.is_(None))
     )
+
+    if not include_archived:
+        query = query.where(Task.is_archived.is_(False))
+    if priority:
+        query = query.where(Task.priority == priority)
+    if status:
+        query = query.where(Task.status == status)
+    if board_id is not None:
+        query = query.where(Task.board_id == board_id)
+    if tag:
+        query = query.join(Task.tags).where(Tag.name == tag, Tag.user_id == current_user.id)
+
+    query = query.order_by(Task.created_at)
+    result = await db.execute(query)
     tasks = result.scalars().unique().all()
 
     task_dicts = [
@@ -38,11 +55,14 @@ async def export_tasks(
             "description": t.description or "",
             "priority": t.priority.value,
             "status": t.status.value,
+            "board_id": t.board_id,
             "scheduled_start": t.scheduled_start.isoformat() if t.scheduled_start else "",
             "scheduled_end": t.scheduled_end.isoformat() if t.scheduled_end else "",
+            "deadline": t.deadline.isoformat() if t.deadline else "",
             "repeat_days": t.repeat_days or [],
             "completed_at": t.completed_at.isoformat() if t.completed_at else "",
             "created_at": t.created_at.isoformat(),
+            "is_archived": t.is_archived,
             "tags": ", ".join(tag.name for tag in t.tags),
         }
         for t in tasks

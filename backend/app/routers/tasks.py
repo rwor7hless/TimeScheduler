@@ -14,6 +14,11 @@ from app.schemas.task import KanbanReorder, TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"], dependencies=[Depends(get_current_user)])
 
+_TASK_LOAD_OPTS = (
+    selectinload(Task.tags),
+    selectinload(Task.subtasks).selectinload(Task.tags),
+)
+
 
 async def _validate_board_ownership(
     board_id: int | None, user_id: int, db: AsyncSession
@@ -25,6 +30,22 @@ async def _validate_board_ownership(
     )
     if result.scalar_one_or_none() is None:
         raise HTTPException(status_code=404, detail="Board not found")
+
+
+async def _check_circular_parent(task_id: int, parent_id: int, db: AsyncSession) -> None:
+    """Prevent circular subtask chains: A -> B -> A."""
+    visited: set[int] = {task_id}
+    current = parent_id
+    while current is not None:
+        if current in visited:
+            raise HTTPException(
+                status_code=400,
+                detail="Circular subtask relationship detected",
+            )
+        visited.add(current)
+        result = await db.execute(select(Task.parent_id).where(Task.id == current))
+        row = result.one_or_none()
+        current = row[0] if row else None
 
 
 @router.get("", response_model=list[TaskResponse])
@@ -39,13 +60,26 @@ async def list_tasks(
     search: str | None = None,
     board_id: int | None = None,
     default_board: bool = Query(False, description="Filter tasks with board_id IS NULL"),
+    scope: str | None = Query(None, description="calendar | today | all"),
+    include_subtasks: bool = Query(False, description="Include subtasks as top-level items"),
 ):
     query = (
         select(Task)
-        .options(selectinload(Task.tags))
-        .where(Task.user_id == current_user.id, Task.is_archived.is_(False))
+        .options(*_TASK_LOAD_OPTS)
+        .where(Task.user_id == current_user.id, Task.is_archived.is_(False), Task.deleted_at.is_(None))
         .order_by(Task.kanban_order)
     )
+
+    # By default, exclude subtasks from top-level listing
+    if not include_subtasks:
+        query = query.where(Task.parent_id.is_(None))
+
+    # Scope filtering — lets frontend request only relevant tasks
+    if scope == "calendar":
+        query = query.where(Task.scheduled_start.isnot(None))
+    elif scope == "today":
+        # today scope: scheduled for today OR active kanban tasks without schedule/board
+        pass  # handled client-side for now (repeat_days logic is date-dependent)
 
     if status_filter:
         query = query.where(Task.status == status_filter)
@@ -76,8 +110,8 @@ async def list_archived_tasks(
 ):
     result = await db.execute(
         select(Task)
-        .options(selectinload(Task.tags))
-        .where(Task.user_id == current_user.id, Task.is_archived.is_(True))
+        .options(*_TASK_LOAD_OPTS)
+        .where(Task.user_id == current_user.id, Task.is_archived.is_(True), Task.deleted_at.is_(None))
         .order_by(Task.completed_at.desc().nullslast(), Task.updated_at.desc())
     )
     return result.scalars().unique().all()
@@ -113,6 +147,9 @@ async def create_task(
         tg_remind_at=data.tg_remind_at,
     )
 
+    if data.deadline:
+        task.deadline = data.deadline
+
     if data.tag_ids:
         result = await db.execute(
             select(Tag).where(Tag.id.in_(data.tag_ids), Tag.user_id == current_user.id)
@@ -142,7 +179,7 @@ async def get_task(
 ):
     result = await db.execute(
         select(Task)
-        .options(selectinload(Task.tags))
+        .options(*_TASK_LOAD_OPTS)
         .where(Task.id == task_id, Task.user_id == current_user.id)
     )
     task = result.scalar_one_or_none()
@@ -161,12 +198,16 @@ async def update_task(
     await _validate_board_ownership(data.board_id, current_user.id, db)
     result = await db.execute(
         select(Task)
-        .options(selectinload(Task.tags))
+        .options(*_TASK_LOAD_OPTS)
         .where(Task.id == task_id, Task.user_id == current_user.id)
     )
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
+
+    # Check circular parent
+    if data.parent_id is not None and data.parent_id != task.parent_id:
+        await _check_circular_parent(task_id, data.parent_id, db)
 
     task.title = data.title
     task.description = data.description
@@ -175,6 +216,7 @@ async def update_task(
     task.priority = data.priority
     task.scheduled_start = data.scheduled_start
     task.scheduled_end = data.scheduled_end
+    task.deadline = data.deadline
     task.repeat_days = data.repeat_days if data.repeat_days else None
     task.board_id = data.board_id
     task.parent_id = data.parent_id
@@ -254,7 +296,7 @@ async def partial_update_task(
 ):
     result = await db.execute(
         select(Task)
-        .options(selectinload(Task.tags))
+        .options(*_TASK_LOAD_OPTS)
         .where(Task.id == task_id, Task.user_id == current_user.id)
     )
     task = result.scalar_one_or_none()
@@ -262,6 +304,12 @@ async def partial_update_task(
         raise HTTPException(status_code=404, detail="Task not found")
 
     update_data = data.model_dump(exclude_unset=True)
+
+    # Check circular parent
+    if "parent_id" in update_data and update_data["parent_id"] is not None:
+        if update_data["parent_id"] != task.parent_id:
+            await _check_circular_parent(task_id, update_data["parent_id"], db)
+
     tag_ids = update_data.pop("tag_ids", None)
     repeat_days_val = update_data.pop("repeat_days", None)
     if repeat_days_val is not None:
@@ -313,7 +361,7 @@ async def unarchive_task(
 ):
     result = await db.execute(
         select(Task)
-        .options(selectinload(Task.tags))
+        .options(*_TASK_LOAD_OPTS)
         .where(Task.id == task_id, Task.user_id == current_user.id)
     )
     task = result.scalar_one_or_none()
@@ -329,6 +377,7 @@ async def unarchive_task(
 @router.delete("/{task_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_task(
     task_id: int,
+    permanent: bool = Query(False, description="Hard delete instead of soft delete"),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -338,5 +387,14 @@ async def delete_task(
     task = result.scalar_one_or_none()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
-    await db.delete(task)
+    if permanent:
+        await db.delete(task)
+    else:
+        task.deleted_at = datetime.now(timezone.utc)
+        # Also soft-delete subtasks
+        subtasks_result = await db.execute(
+            select(Task).where(Task.parent_id == task_id, Task.user_id == current_user.id)
+        )
+        for sub in subtasks_result.scalars().all():
+            sub.deleted_at = datetime.now(timezone.utc)
     await db.commit()

@@ -3,6 +3,7 @@ import { useStats } from '@/hooks/useStats'
 import { useTheme } from '@/context/ThemeContext'
 import Spinner from '@/components/ui/Spinner'
 import clsx from 'clsx'
+import type { BreakdownItem } from '@/types/stats'
 import {
   AreaChart,
   Area,
@@ -34,7 +35,6 @@ function fillDailyGaps(
   return result
 }
 
-// calculate streak of consecutive days with completions ending today
 function calcStreak(filled: { date: string; count: number }[]): number {
   let streak = 0
   for (let i = filled.length - 1; i >= 0; i--) {
@@ -66,6 +66,36 @@ function StatCard({
         )}
       >
         {value}
+      </div>
+    </div>
+  )
+}
+
+const DEFAULT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4']
+
+function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] }) {
+  if (items.length === 0) return null
+  const total = items.reduce((s, i) => s + i.count, 0)
+  if (total === 0) return null
+
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">{title}</h4>
+      <div className="space-y-1.5">
+        {items.map((item, idx) => {
+          const pct = Math.round((item.count / total) * 100)
+          const color = item.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+          return (
+            <div key={item.label} className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{item.label}</span>
+              <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right">{item.count}</span>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
@@ -253,6 +283,21 @@ export default function StatsPage() {
           )}
         </div>
       </div>
+
+      {/* Breakdowns */}
+      {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <BreakdownBar title="По приоритету" items={stats.by_priority} />
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <BreakdownBar title="По доскам" items={stats.by_board} />
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <BreakdownBar title="По тегам" items={stats.by_tag} />
+          </div>
+        </div>
+      )}
 
       {/* Habit progress */}
       {stats.habit_progress.length > 0 && (

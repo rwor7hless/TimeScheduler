@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Modal from '@/components/ui/Modal'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
 import TimeRangeInput from '@/components/ui/TimeRangeInput'
 import TimePicker from '@/components/ui/TimePicker'
-import { useCreateTask, useUpdateTask, useDeleteTask, useTags } from '@/hooks/useTasks'
+import { useCreateTask, useUpdateTask, useDeleteTask, usePatchTask, useTags } from '@/hooks/useTasks'
 import type { Task, TaskCreate, Priority, KanbanStatus } from '@/types/task'
 import { TASK_COLOR_PALETTE, WEEKDAY_LABELS } from '@/types/task'
 import toast from 'react-hot-toast'
@@ -60,6 +60,7 @@ function parseDatetime(isoString: string): { date: string; startTime: string } {
 export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultStatus, boardId }: TaskModalProps) {
   const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
   const [showSubtaskInput, setShowSubtaskInput] = useState(false)
+  const [localSubtasks, setLocalSubtasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [priority, setPriority] = useState<Priority>('medium')
@@ -82,6 +83,21 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const createTask = useCreateTask()
   const updateTask = useUpdateTask()
   const deleteTask = useDeleteTask()
+  const patchTask = usePatchTask()
+
+  // Initialize localSubtasks only when the modal opens for a new task (not on every re-render)
+  const openedTaskIdRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (isOpen && task) {
+      if (openedTaskIdRef.current !== task.id) {
+        openedTaskIdRef.current = task.id
+        setLocalSubtasks(task.subtasks ?? [])
+      }
+    } else if (!isOpen) {
+      openedTaskIdRef.current = null
+      setLocalSubtasks([])
+    }
+  }, [isOpen, task?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (task) {
@@ -235,13 +251,14 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const handleAddSubtask = async () => {
     if (!task || !newSubtaskTitle.trim()) return
     try {
-      await createTask.mutateAsync({
+      const created = await createTask.mutateAsync({
         title: newSubtaskTitle.trim(),
         priority: 'medium',
         status: 'todo',
         board_id: task.board_id,
         parent_id: task.id,
       })
+      setLocalSubtasks((prev) => [...prev, created])
       setNewSubtaskTitle('')
       setShowSubtaskInput(false)
       toast.success('Подзадача добавлена')
@@ -390,9 +407,9 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
             <div className="flex items-center justify-between">
               <label className="text-xs font-medium text-gray-600">
                 Подзадачи
-                {task.subtasks.length > 0 && (
+                {localSubtasks.length > 0 && (
                   <span className="ml-1.5 text-gray-400 font-normal">
-                    ({task.subtasks.filter((s) => s.status === 'done').length}/{task.subtasks.length})
+                    ({localSubtasks.filter((s) => s.status === 'done').length}/{localSubtasks.length})
                   </span>
                 )}
               </label>
@@ -406,12 +423,50 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
               </button>
             </div>
 
-            {task.subtasks.length > 0 && (
+            {localSubtasks.length > 0 && (
               <ul className="space-y-1">
-                {task.subtasks.map((sub) => (
-                  <li key={sub.id} className="flex items-center gap-2 text-xs text-gray-700 py-0.5 px-1.5 rounded hover:bg-gray-50">
-                    <div className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`} />
-                    <span className={sub.status === 'done' ? 'line-through text-gray-400' : ''}>{sub.title}</span>
+                {localSubtasks.map((sub) => (
+                  <li key={sub.id} className="flex items-center gap-2 text-xs text-gray-700 py-0.5 px-1.5 rounded hover:bg-gray-50 group/sub">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const newStatus = sub.status === 'done' ? 'todo' : 'done'
+                        // Optimistic update
+                        setLocalSubtasks((prev) =>
+                          prev.map((s) => s.id === sub.id ? { ...s, status: newStatus } : s)
+                        )
+                        try {
+                          await patchTask.mutateAsync({ id: sub.id, data: { status: newStatus } })
+                        } catch {
+                          // Rollback
+                          setLocalSubtasks((prev) =>
+                            prev.map((s) => s.id === sub.id ? { ...s, status: sub.status } : s)
+                          )
+                        }
+                      }}
+                      className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'}`}
+                    />
+                    <span className={`flex-1 ${sub.status === 'done' ? 'line-through text-gray-400' : ''}`}>{sub.title}</span>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        // Optimistic remove
+                        setLocalSubtasks((prev) => prev.filter((s) => s.id !== sub.id))
+                        try {
+                          await deleteTask.mutateAsync(sub.id)
+                        } catch {
+                          // Rollback
+                          setLocalSubtasks((prev) => [...prev, sub])
+                          toast.error('Не удалось удалить подзадачу')
+                        }
+                      }}
+                      className="w-4 h-4 flex items-center justify-center text-gray-300 hover:text-red-400 opacity-0 group-hover/sub:opacity-100 transition-all flex-shrink-0"
+                      title="Удалить подзадачу"
+                    >
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                      </svg>
+                    </button>
                   </li>
                 ))}
               </ul>

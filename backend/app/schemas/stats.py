@@ -15,6 +15,12 @@ class DailyCompletion(BaseModel):
     count: int
 
 
+class BreakdownItem(BaseModel):
+    label: str
+    count: int
+    color: str | None = None
+
+
 class StatsResponse(BaseModel):
     active_tasks: int
     completed_last_month: int
@@ -24,3 +30,6 @@ class StatsResponse(BaseModel):
     most_active_hours: list[int]
     habit_progress: list[HabitProgress]
     daily_completions: list[DailyCompletion]
+    by_priority: list[BreakdownItem]
+    by_board: list[BreakdownItem]
+    by_tag: list[BreakdownItem]

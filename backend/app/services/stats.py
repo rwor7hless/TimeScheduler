@@ -3,18 +3,21 @@ from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-
+from app.models.board import Board
 from app.models.habit import Habit
 from app.models.habit_log import HabitLog
-from app.models.task import KanbanStatus, Task
-from app.schemas.stats import DailyCompletion, HabitProgress, StatsResponse
+from app.models.task import KanbanStatus, Tag, Task, task_tags
+from app.schemas.stats import BreakdownItem, DailyCompletion, HabitProgress, StatsResponse
+
+PRIORITY_LABELS = {"low": "Низкий", "medium": "Средний", "high": "Высокий", "urgent": "Срочный"}
+PRIORITY_COLORS = {"low": "#9CA3AF", "medium": "#3B82F6", "high": "#F59E0B", "urgent": "#EF4444"}
 
 
 async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> StatsResponse:
     now = datetime.now(timezone.utc)
     period_start = now - timedelta(days=period_days)
 
-    task_filter = Task.user_id == user_id
+    task_filter = (Task.user_id == user_id) & (Task.deleted_at.is_(None))
 
     # Active tasks (not done, not archived)
     active_result = await db.execute(
@@ -24,7 +27,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     )
     active_tasks = active_result.scalar() or 0
 
-    # Completed last month
+    # Completed in period
     completed_result = await db.execute(
         select(func.count(Task.id)).where(
             task_filter,
@@ -34,7 +37,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     )
     completed_last_month = completed_result.scalar() or 0
 
-    # Overdue tasks (explicit deadline in the past, not done, not archived)
+    # Overdue tasks
     overdue_result = await db.execute(
         select(func.count(Task.id)).where(
             task_filter,
@@ -61,7 +64,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
     avg_seconds = avg_result.scalar()
     avg_completion_hours = round(avg_seconds / 3600, 1) if avg_seconds else None
 
-    # Productivity: completed / total created in period
+    # Productivity
     total_created_result = await db.execute(
         select(func.count(Task.id)).where(task_filter, Task.created_at >= period_start)
     )
@@ -70,7 +73,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         round(completed_last_month / total_created * 100, 1) if total_created > 0 else None
     )
 
-    # Most active hours (based on completed_at)
+    # Most active hours
     completed_tasks_result = await db.execute(
         select(Task.completed_at).where(
             task_filter,
@@ -100,6 +103,48 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         DailyCompletion(date=row.day, count=row.cnt) for row in daily_result.all()
     ]
 
+    # === Breakdowns ===
+
+    # By priority (completed in period)
+    priority_result = await db.execute(
+        select(Task.priority, func.count(Task.id))
+        .where(task_filter, Task.completed_at >= period_start, Task.completed_at.isnot(None))
+        .group_by(Task.priority)
+    )
+    by_priority = [
+        BreakdownItem(
+            label=PRIORITY_LABELS.get(row[0].value, row[0].value),
+            count=row[1],
+            color=PRIORITY_COLORS.get(row[0].value),
+        )
+        for row in priority_result.all()
+    ]
+
+    # By board (completed in period)
+    board_result = await db.execute(
+        select(Board.name, func.count(Task.id))
+        .outerjoin(Board, Task.board_id == Board.id)
+        .where(task_filter, Task.completed_at >= period_start, Task.completed_at.isnot(None))
+        .group_by(Board.name)
+    )
+    by_board = [
+        BreakdownItem(label=row[0] or "Основная", count=row[1])
+        for row in board_result.all()
+    ]
+
+    # By tag (completed in period)
+    tag_result = await db.execute(
+        select(Tag.name, Tag.color, func.count(Task.id))
+        .join(task_tags, task_tags.c.task_id == Task.id)
+        .join(Tag, Tag.id == task_tags.c.tag_id)
+        .where(task_filter, Task.completed_at >= period_start, Task.completed_at.isnot(None))
+        .group_by(Tag.name, Tag.color)
+    )
+    by_tag = [
+        BreakdownItem(label=row[0], count=row[1], color=row[2])
+        for row in tag_result.all()
+    ]
+
     # Habit progress
     habits_result = await db.execute(
         select(Habit).where(Habit.user_id == user_id, Habit.is_active.is_(True))
@@ -117,7 +162,6 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         log_count = logs_result.scalar() or 0
         completion_rate = round(log_count / period_days, 2)
 
-        # Calculate streak — single query, O(1) instead of O(N) queries
         streak_logs_result = await db.execute(
             select(HabitLog.date).where(
                 and_(
@@ -152,4 +196,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         most_active_hours=most_active_hours,
         habit_progress=habit_progress,
         daily_completions=daily_completions,
+        by_priority=by_priority,
+        by_board=by_board,
+        by_tag=by_tag,
     )

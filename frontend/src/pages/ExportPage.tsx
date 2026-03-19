@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import Button from '@/components/ui/Button'
 import { exportApi } from '@/api/export'
+import { useBoards, useTags } from '@/hooks/useTasks'
 import toast from 'react-hot-toast'
 
 const DownloadIcon = () => (
@@ -28,6 +29,14 @@ const ChartIcon = () => (
 
 export default function ExportPage() {
   const [loading, setLoading] = useState(false)
+  const [priority, setPriority] = useState('')
+  const [status, setStatus] = useState('')
+  const [boardId, setBoardId] = useState('')
+  const [tag, setTag] = useState('')
+  const [includeArchived, setIncludeArchived] = useState(false)
+
+  const { data: boards } = useBoards()
+  const { data: tags } = useTags()
 
   const handleExport = async (
     type: 'tasks' | 'stats',
@@ -36,7 +45,13 @@ export default function ExportPage() {
     setLoading(true)
     try {
       if (type === 'tasks') {
-        await exportApi.tasks(format)
+        const params: Record<string, string> = { format }
+        if (priority) params.priority = priority
+        if (status) params.status = status
+        if (boardId) params.board_id = boardId
+        if (tag) params.tag = tag
+        if (includeArchived) params.include_archived = 'true'
+        await exportApi.tasks(format, params)
       } else {
         await exportApi.stats(format)
       }
@@ -65,10 +80,65 @@ export default function ExportPage() {
             </div>
             <div>
               <h3 className="font-medium text-gray-900 dark:text-gray-100">Задачи</h3>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Все задачи с приоритетами и тегами</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">С фильтрами по приоритету, статусу, доске и тегам</p>
             </div>
           </div>
-          <div className="flex gap-2 mt-auto pt-4">
+
+          {/* Filters */}
+          <div className="grid grid-cols-2 gap-2 mb-3">
+            <select
+              value={priority}
+              onChange={(e) => setPriority(e.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700"
+            >
+              <option value="">Все приоритеты</option>
+              <option value="low">Низкий</option>
+              <option value="medium">Средний</option>
+              <option value="high">Высокий</option>
+              <option value="urgent">Срочный</option>
+            </select>
+            <select
+              value={status}
+              onChange={(e) => setStatus(e.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700"
+            >
+              <option value="">Все статусы</option>
+              <option value="todo">К выполнению</option>
+              <option value="in_progress">В работе</option>
+              <option value="done">Готово</option>
+            </select>
+            <select
+              value={boardId}
+              onChange={(e) => setBoardId(e.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700"
+            >
+              <option value="">Все доски</option>
+              {boards?.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+            <select
+              value={tag}
+              onChange={(e) => setTag(e.target.value)}
+              className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700"
+            >
+              <option value="">Все теги</option>
+              {tags?.map((t) => (
+                <option key={t.id} value={t.name}>{t.name}</option>
+              ))}
+            </select>
+          </div>
+          <label className="flex items-center gap-2 text-xs text-gray-600 mb-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={includeArchived}
+              onChange={(e) => setIncludeArchived(e.target.checked)}
+              className="w-3.5 h-3.5 rounded border-gray-300 text-amber-500"
+            />
+            Включить архивные
+          </label>
+
+          <div className="flex gap-2 mt-auto">
             <Button
               variant="secondary"
               onClick={() => handleExport('tasks', 'json')}

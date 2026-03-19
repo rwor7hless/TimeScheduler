@@ -10,6 +10,12 @@ export interface DailyCompletion {
   count: number
 }
 
+export interface BreakdownItem {
+  label: string
+  count: number
+  color: string | null
+}
+
 export interface Stats {
   active_tasks: number
   completed_last_month: number
@@ -19,4 +25,7 @@ export interface Stats {
   most_active_hours: number[]
   habit_progress: HabitProgress[]
   daily_completions: DailyCompletion[]
+  by_priority: BreakdownItem[]
+  by_board: BreakdownItem[]
+  by_tag: BreakdownItem[]
 }
