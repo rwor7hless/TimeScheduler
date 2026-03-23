@@ -14,7 +14,7 @@ import type { Task } from '@/types/task'
 type ViewMode = 'day' | 'week' | 'month'
 
 export default function CalendarPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('day')
+  const [viewMode, setViewMode] = useState<ViewMode>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -136,6 +136,7 @@ export default function CalendarPage() {
           onTaskClick={handleTaskClick}
           onSlotClick={handleSlotClick}
           onTaskMove={handleTaskMove}
+          onDayClick={handleDayClick}
         />
       )}
       {viewMode === 'month' && (

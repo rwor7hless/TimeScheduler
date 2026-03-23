@@ -23,7 +23,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/30" />
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto overflow-x-hidden overscroll-contain">
@@ -38,13 +38,13 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] min-h-0 flex flex-col rounded-xl bg-white dark:bg-gray-800 shadow-xl overflow-hidden ${
+                className={`modal-glass w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] min-h-0 flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
                   maxWidth === '2xl' ? 'max-w-2xl' : maxWidth === '4xl' ? 'max-w-4xl' : 'max-w-md'
                 }`}
               >
-                <div className={`flex-1 min-h-0 px-4 sm:px-7 py-4 sm:py-6 overflow-y-auto overflow-x-hidden`}>
+                <div className="flex-1 min-h-0 px-5 sm:px-6 py-5 overflow-y-auto overflow-x-hidden">
                   {title && (
-                    <Dialog.Title className="text-lg font-semibold text-gray-900 mb-4 shrink-0">
+                    <Dialog.Title className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 shrink-0">
                       {title}
                     </Dialog.Title>
                   )}

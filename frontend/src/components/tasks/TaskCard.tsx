@@ -56,11 +56,18 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
 
         <div
           className={clsx(
-            'flex-1',
-            compact ? 'px-2 py-1.5' : 'px-3 py-2'
+            'flex-1 min-w-0',
+            compact ? 'px-1.5 py-1' : 'px-3 py-2'
           )}
           style={{ backgroundColor: `${color}26` }}
         >
+          {/* Compact: время сверху + название */}
+          {compact && task.scheduled_start && (
+            <div className="text-[9px] font-mono text-gray-500 dark:text-gray-400 leading-none mb-0.5 tabular-nums">
+              {new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              {task.scheduled_end && ` – ${new Date(task.scheduled_end).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+            </div>
+          )}
           <div className="flex items-start justify-between gap-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0 flex-1">
               {isCancelled && (
@@ -71,8 +78,8 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
               <h4
                 className={clsx(
                   'font-medium leading-snug break-words flex-1 min-w-0',
-                  compact ? 'text-xs' : 'text-sm',
-                  isCancelled ? 'text-gray-400 line-through' : 'text-gray-900',
+                  compact ? 'text-[11px]' : 'text-sm',
+                  isCancelled ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100',
                 )}
               >
                 {task.title}

@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react'
-import { format, startOfWeek, addDays, addHours, startOfDay, isSameDay, parseISO } from 'date-fns'
+import { format, startOfWeek, addDays, addHours, startOfDay, isSameDay, parseISO, subDays } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import type { Task } from '@/types/task'
 import TaskCard from '@/components/tasks/TaskCard'
@@ -10,14 +10,23 @@ interface WeekViewProps {
   onTaskClick: (task: Task) => void
   onSlotClick: (datetime: string) => void
   onTaskMove?: (task: Task, newStart: string, newEnd: string) => void
+  onDayClick?: (date: Date) => void
 }
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const TOTAL_MINUTES = 24 * 60
 const SNAP = 15
-// В неделе делаем более плотную сетку по вертикали,
-// чтобы задачи выглядели компактнее, чем в дневном виде.
-const HOUR_H = 70
+const HOUR_H = 80
+
+function useIsMobile() {
+  const [mobile, setMobile] = useState(() => window.innerWidth < 640)
+  useEffect(() => {
+    const handler = () => setMobile(window.innerWidth < 640)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return mobile
+}
 
 function getLocalNow(): { minutesFromMidnight: number; dateStr: string } {
   const now = new Date()
@@ -99,9 +108,16 @@ interface GhostState {
   dayIdx: number
 }
 
-export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTaskMove }: WeekViewProps) {
+export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTaskMove, onDayClick }: WeekViewProps) {
+  const isMobile = useIsMobile()
   const weekStart = startOfWeek(date, { weekStartsOn: 1 })
-  const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart])
+  // На мобильном — 3 дня (вчера/сегодня/завтра), на десктопе — 7
+  const days = useMemo(() => {
+    if (isMobile) {
+      return [subDays(date, 1), date, addDays(date, 1)]
+    }
+    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+  }, [isMobile, weekStart, date])
 
   const dayColRefs = useRef<(HTMLDivElement | null)[]>([])
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -268,28 +284,30 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
   const today = new Date()
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden flex flex-col h-full min-h-0 min-w-[520px]">
+    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full min-h-0">
       {/* Day headers - fixed */}
-      <div className="flex border-b border-gray-200 bg-gray-50 flex-shrink-0">
-        <div className="w-10 sm:w-16 flex-shrink-0" />
+      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+        <div className="w-10 sm:w-14 flex-shrink-0" />
         {days.map((day) => {
           const isToday = isSameDay(day, today)
           return (
-            <div
+            <button
               key={day.toISOString()}
-              className="flex-1 text-center py-2 border-l border-gray-100"
+              type="button"
+              onClick={() => onDayClick?.(day)}
+              className="flex-1 text-center py-2.5 border-l border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
             >
-              <div className="text-xs text-gray-400 capitalize">
-                {format(day, 'EEE', { locale: ru })}
+              <div className="text-[11px] font-medium text-gray-400 dark:text-gray-500 capitalize mb-0.5">
+                {format(day, isMobile ? 'EEE' : 'EEEE', { locale: ru })}
               </div>
               <div
-                className={`text-xs sm:text-sm font-semibold mx-auto w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center rounded-full ${
-                  isToday ? 'bg-amber-500 text-white' : 'text-gray-700'
+                className={`text-sm font-bold mx-auto w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
+                  isToday ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {format(day, 'd')}
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
@@ -298,14 +316,14 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+          <div className="w-10 sm:w-14 flex-shrink-0 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-400 select-none"
+                className="flex items-start justify-end pr-2 pt-1 text-[10px] font-mono text-gray-400 dark:text-gray-500 select-none"
               >
-                {`${String(hour).padStart(2, '0')}:00`}
+                {hour === 0 ? '' : `${String(hour).padStart(2, '0')}:00`}
               </div>
             ))}
           </div>
@@ -321,13 +339,13 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
               <div
                 key={key}
                 ref={el => { dayColRefs.current[dayIdx] = el }}
-                className={`flex-1 relative border-l border-gray-100 ${isToday ? 'bg-amber-50/20' : ''}`}
+                className={`flex-1 relative border-l border-gray-100 dark:border-gray-700/60 ${isToday ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}
               >
                 {HOURS.map((hour) => (
                   <div
                     key={hour}
                     style={{ height: `${HOUR_H}px` }}
-                    className="border-t border-gray-100 cursor-pointer hover:bg-amber-50/40 transition-colors relative"
+                    className="border-t border-gray-100 dark:border-gray-700/40 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors relative"
                     onClick={() => {
                       if (ghost) return
                       onSlotClick(format(addHours(startOfDay(day), hour), "yyyy-MM-dd'T'HH:mm"))
@@ -377,7 +395,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                         height: pos.height,
                         left: l?.left ?? '2px',
                         width: l?.width ?? 'calc(100% - 4px)',
-                        minHeight: '20px',
+                        minHeight: '36px',
                         cursor: onTaskMove ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
                         touchAction: 'none',
                       }}
