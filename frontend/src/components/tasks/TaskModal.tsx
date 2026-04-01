@@ -158,9 +158,6 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setShowSubtaskInput(false)
       setNewSubtaskTitle('')
 
-      const pad = (n: number) => String(n).padStart(2, '0')
-      const today = new Date()
-      const todayStr = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
       if (defaultDate) {
         const defaultDateStr = defaultDate.includes('T') ? defaultDate : `${defaultDate}T09:00`
         const p = parseDatetime(defaultDateStr)
@@ -170,9 +167,9 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         setStartTime(p.startTime)
         setEndTime(`${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
       } else {
-        setScheduledDate(todayStr)
-        setStartTime('09:00')
-        setEndTime('10:00')
+        setScheduledDate('')
+        setStartTime('')
+        setEndTime('')
       }
     }
   }, [task, isOpen, defaultDate, defaultStatus])
@@ -313,9 +310,20 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
 
         {/* Date/Time */}
         <div className="p-3 bg-gray-50/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 rounded-xl">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Дата и время</span>
+            {scheduledDate && (
+              <button
+                type="button"
+                onClick={() => { setScheduledDate(''); setStartTime(''); setEndTime('') }}
+                className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              >
+                Очистить
+              </button>
+            )}
+          </div>
           <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-            <div className="flex-1 flex flex-col gap-1">
-              <label className="text-xs font-medium text-gray-500 dark:text-gray-400">Дата</label>
+            <div className="flex-1">
               <input
                 type="date"
                 value={scheduledDate}
@@ -323,15 +331,16 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                 className="w-full px-3 h-[34px] border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-100"
               />
             </div>
-            <TimeRangeInput
-              label="Время"
-              startTime={startTime || '09:00'}
-              endTime={endTime || '10:00'}
-              onRangeChange={(start, end) => {
-                setStartTime(start)
-                setEndTime(end)
-              }}
-            />
+            {scheduledDate && (
+              <TimeRangeInput
+                startTime={startTime || '09:00'}
+                endTime={endTime || '10:00'}
+                onRangeChange={(start, end) => {
+                  setStartTime(start)
+                  setEndTime(end)
+                }}
+              />
+            )}
           </div>
         </div>
 

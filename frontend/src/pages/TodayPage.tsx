@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useTasks, usePatchTask } from '@/hooks/useTasks'
+import { useTasks, usePatchTask, useBoards } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
 import Spinner from '@/components/ui/Spinner'
@@ -241,6 +241,7 @@ export default function TodayPage() {
   const wd = weekdayIndex(today)
 
   const { data: allTasks, isLoading: tasksLoading } = useTasks()
+  const { data: boards } = useBoards()
   const { data: habits, isLoading: habitsLoading } = useHabits()
   const patchTask = usePatchTask()
   const toggleLog = useToggleHabitLog()
@@ -260,7 +261,7 @@ export default function TodayPage() {
       .sort((a, b) => new Date(a.scheduled_start!).getTime() - new Date(b.scheduled_start!).getTime())
 
     const active = allTasks.filter(
-      (t) => t.scheduled_start == null && t.board_id == null && t.status !== 'done'
+      (t) => t.scheduled_start == null && t.status !== 'done'
     )
 
     return { scheduledTasks: scheduled, activeTasks: active }
@@ -370,19 +371,43 @@ export default function TodayPage() {
           {/* Active board tasks */}
           {activeTasks.length > 0 && (
             <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+              <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-3">
                 Активные задачи
               </h2>
-              <div className="space-y-1.5">
-                {activeTasks.map((task) => (
-                  <ActiveTaskRow
-                    key={task.id}
-                    task={task}
-                    onDone={() => handleMarkDone(task)}
-                    onStatusChange={(status) => handleStatusChange(task, status)}
-                    onClick={() => openEdit(task)}
-                  />
-                ))}
+              <div className="space-y-4">
+                {(() => {
+                  const groups: { boardId: number | null; name: string; tasks: Task[] }[] = []
+                  for (const task of activeTasks) {
+                    const existing = groups.find((g) => g.boardId === task.board_id)
+                    if (existing) {
+                      existing.tasks.push(task)
+                    } else {
+                      const boardName = task.board_id == null
+                        ? 'Основная'
+                        : (boards?.find((b) => b.id === task.board_id)?.name ?? `Доска ${task.board_id}`)
+                      groups.push({ boardId: task.board_id, name: boardName, tasks: [task] })
+                    }
+                  }
+                  return groups.map((group) => (
+                    <div key={group.boardId ?? 'main'}>
+                      <div className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
+                        {group.name}
+                      </div>
+                      <div className="space-y-1.5">
+                        {group.tasks.map((task) => (
+                          <ActiveTaskRow
+                            key={task.id}
+                            task={task}
+                            onDone={() => handleMarkDone(task)}
+                            onStatusChange={(status) => handleStatusChange(task, status)}
+                            onClick={() => openEdit(task)}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))
+                })()}
               </div>
             </section>
           )}

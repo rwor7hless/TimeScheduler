@@ -16,7 +16,7 @@ function SpinNum({ value, min, max, step = 1, onChange }: {
   step?: number
   onChange: (v: number) => void
 }) {
-  const range = max - min + 1
+  const range = max - min + step
   const inc = () => onChange(min + (value - min + step) % range)
   const dec = () => onChange(min + (value - min - step + range) % range)
 
@@ -25,22 +25,34 @@ function SpinNum({ value, min, max, step = 1, onChange }: {
     if (e.deltaY < 0) inc(); else dec()
   }
 
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const y = e.clientY - rect.top
-    if (y < rect.height / 2) inc(); else dec()
-  }
-
   return (
     <div
-      onClick={handleClick}
       onWheel={handleWheel}
-      className="relative flex items-center justify-center w-8 h-full cursor-ns-resize select-none group/spin rounded-md hover:bg-white/70 dark:hover:bg-white/10 transition-colors"
-      title="↑ больше · ↓ меньше"
+      className="flex flex-col items-center select-none"
     >
-      <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-gray-100 group-hover/spin:text-indigo-600 dark:group-hover/spin:text-indigo-400 transition-colors leading-none">
+      <button
+        type="button"
+        onClick={inc}
+        className="w-7 h-5 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-white/10"
+        tabIndex={-1}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="18 15 12 9 6 15" />
+        </svg>
+      </button>
+      <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-gray-100 leading-none w-7 text-center py-0.5">
         {pad(value)}
       </span>
+      <button
+        type="button"
+        onClick={dec}
+        className="w-7 h-5 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-white/10"
+        tabIndex={-1}
+      >
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
+      </button>
     </div>
   )
 }
@@ -59,9 +71,9 @@ export default function TimePicker({ value, onChange, label, className }: TimePi
       {label && (
         <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
       )}
-      <div className="flex items-center h-[34px] bg-gray-100/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-1 gap-0.5">
+      <div className="flex items-center h-[34px] bg-gray-100/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-2 gap-1">
         <SpinNum value={hourNum} min={0} max={23} onChange={setH} />
-        <span className="text-sm font-bold text-gray-300 dark:text-gray-600 select-none">:</span>
+        <span className="text-sm font-bold text-gray-400 dark:text-gray-500 select-none pb-0.5">:</span>
         <SpinNum value={minNum} min={0} max={55} step={5} onChange={setM} />
       </div>
     </div>

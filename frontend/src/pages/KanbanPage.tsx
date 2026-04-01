@@ -403,7 +403,7 @@ export default function KanbanPage() {
     if (!tasks) return []
     return tasks.filter((t) => {
       if (selectedBoardId === null) {
-        return t.board_id == null && t.scheduled_start == null
+        return t.board_id == null
       }
       return t.board_id === selectedBoardId
     })
