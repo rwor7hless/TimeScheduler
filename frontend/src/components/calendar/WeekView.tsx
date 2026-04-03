@@ -36,8 +36,10 @@ function getLocalNow(): { minutesFromMidnight: number; dateStr: string } {
   return { minutesFromMidnight, dateStr }
 }
 
-function computeOverlapLayout(tasks: Task[]): Map<number, { left: string; width: string }> {
-  const result = new Map<number, { left: string; width: string }>()
+const STACK_OFFSET = 10 // px сдвига каждой вложенной задачи (меньше чем в DayView т.к. колонки уже)
+
+function computeOverlapLayout(tasks: Task[]): Map<number, { left: string; width: string; overlapping: boolean; zIndex: number }> {
+  const result = new Map<number, { left: string; width: string; overlapping: boolean; zIndex: number }>()
   if (!tasks.length) return result
 
   const items = tasks.map(t => {
@@ -65,28 +67,31 @@ function computeOverlapLayout(tasks: Task[]): Map<number, { left: string; width:
       }
     }
 
+    if (group.length === 1) {
+      result.set(group[0].id, { left: '2px', width: 'calc(100% - 4px)', overlapping: false, zIndex: 10 })
+      continue
+    }
+
+    // Родительская — наибольший охват, при равенстве — раньше начавшаяся
     group.sort((a, b) => {
       const durA = a.end - a.start
       const durB = b.end - b.start
-      if (durA !== durB) return durB - durA // длиннее левее, короче правее
+      if (durA !== durB) return durB - durA
       return a.start - b.start
     })
 
-    const colEnds: number[] = []
-    const colMap = new Map<number, number>()
-    for (const t of group) {
-      const free = colEnds.findIndex(e => e <= t.start)
-      if (free >= 0) { colMap.set(t.id, free); colEnds[free] = t.end }
-      else { colMap.set(t.id, colEnds.length); colEnds.push(t.end) }
-    }
-    const n = colEnds.length
-    for (const t of group) {
-      const col = colMap.get(t.id)!
-      result.set(t.id, {
-        left: `calc(${(col / n) * 100}% + 2px)`,
-        width: `calc(${(1 / n) * 100}% - 4px)`,
+    const [parent, ...children] = group
+    result.set(parent.id, { left: '2px', width: 'calc(100% - 4px)', overlapping: false, zIndex: 10 })
+
+    children.forEach((child, i) => {
+      const offset = (i + 1) * STACK_OFFSET
+      result.set(child.id, {
+        left: `${offset + 2}px`,
+        width: `calc(100% - ${offset + 4}px)`,
+        overlapping: true,
+        zIndex: 11 + i,
       })
-    }
+    })
   }
   return result
 }
@@ -389,13 +394,14 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                   return (
                     <div
                       key={task.id}
-                      className={`absolute overflow-hidden z-10 select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
+                      className={`absolute overflow-hidden select-none transition-opacity ${isDragging ? 'opacity-30' : ''}`}
                       style={{
                         top: pos.top,
                         height: pos.height,
                         left: l?.left ?? '2px',
                         width: l?.width ?? 'calc(100% - 4px)',
                         minHeight: '36px',
+                        zIndex: l?.zIndex ?? 10,
                         cursor: onTaskMove ? (isDragging ? 'grabbing' : 'grab') : 'pointer',
                         touchAction: 'none',
                       }}
@@ -404,7 +410,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                       onPointerUp={handleTaskPU}
                       onPointerCancel={handleTaskPC}
                     >
-                      <TaskCard task={task} onClick={() => {}} compact className="h-full pointer-events-none" />
+                      <TaskCard task={task} onClick={() => {}} compact overlapping={l?.overlapping ?? false} className="h-full pointer-events-none" />
                     </div>
                   )
                 })}

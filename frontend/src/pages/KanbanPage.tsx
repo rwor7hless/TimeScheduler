@@ -72,20 +72,9 @@ function SortableTaskCard({
         transition,
         opacity: isDragging ? 0 : 1,
       }}
-      className="relative group"
+      className="relative group outline-none"
       {...(!selectMode ? { ...attributes, ...listeners } : {})}
     >
-      {selectMode && (
-        <div className="absolute top-2 left-2 z-10">
-          <input
-            type="checkbox"
-            checked={selected}
-            onChange={() => onToggleSelect(task.id)}
-            className="w-4 h-4 accent-amber-500 cursor-pointer"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
       <div
         className={clsx(selectMode && selected && 'ring-2 ring-amber-400 rounded-xl')}
         onClick={() => selectMode ? onToggleSelect(task.id) : onClick()}

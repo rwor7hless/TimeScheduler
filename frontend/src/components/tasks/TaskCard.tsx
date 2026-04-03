@@ -8,6 +8,7 @@ interface TaskCardProps {
   onClick?: () => void
   compact?: boolean
   className?: string
+  overlapping?: boolean
 }
 
 const PRIORITY_CONFIG: Record<Priority, { icon: string; className: string }> = {
@@ -27,7 +28,7 @@ function getDeadlineStatus(deadline: string | null): 'overdue' | 'soon' | null {
   return null
 }
 
-export default function TaskCard({ task, onClick, compact = false, className }: TaskCardProps) {
+export default function TaskCard({ task, onClick, compact = false, className, overlapping = false }: TaskCardProps) {
   const color = task.color || '#6B7280'
   const prio = PRIORITY_CONFIG[task.priority]
   const isCancelled = task.status === 'done'
@@ -40,30 +41,37 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
     <div
       onClick={onClick}
       className={clsx(
-        'bg-white rounded-lg border cursor-pointer hover:shadow-md transition-shadow overflow-hidden',
-        isCancelled && 'opacity-60',
-        deadlineStatus === 'overdue' && 'border-red-400 ring-1 ring-red-200',
-        deadlineStatus === 'soon' && 'border-amber-400 ring-1 ring-amber-200',
-        !deadlineStatus && 'border-gray-200',
+        'rounded-lg border cursor-pointer hover:shadow-md transition-shadow overflow-hidden outline-none',
+        overlapping ? 'border-transparent shadow-lg' : 'bg-white',
+        !overlapping && isCancelled && 'opacity-60',
+        !overlapping && deadlineStatus === 'overdue' && 'border-red-400 ring-1 ring-red-200',
+        !overlapping && deadlineStatus === 'soon' && 'border-amber-400 ring-1 ring-amber-200',
+        !overlapping && !deadlineStatus && 'border-gray-200',
         className
       )}
+      style={overlapping ? { backgroundColor: color, borderColor: color } : undefined}
     >
       <div className="flex h-full">
-        <div
-          className="w-1.5 rounded-l-lg"
-          style={{ backgroundColor: color }}
-        />
+        {!overlapping && (
+          <div
+            className="w-1.5 rounded-l-lg flex-shrink-0"
+            style={{ backgroundColor: color }}
+          />
+        )}
 
         <div
           className={clsx(
             'flex-1 min-w-0',
             compact ? 'px-1.5 py-1' : 'px-3 py-2'
           )}
-          style={{ backgroundColor: `${color}26` }}
+          style={overlapping ? undefined : { backgroundColor: `${color}26` }}
         >
           {/* Compact: время сверху + название */}
           {compact && task.scheduled_start && (
-            <div className="text-[9px] font-mono text-gray-500 dark:text-gray-400 leading-none mb-0.5 tabular-nums">
+            <div className={clsx(
+              'text-[9px] font-mono leading-none mb-0.5 tabular-nums',
+              overlapping ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+            )}>
               {new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
               {task.scheduled_end && ` – ${new Date(task.scheduled_end).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
             </div>
@@ -79,13 +87,13 @@ export default function TaskCard({ task, onClick, compact = false, className }: 
                 className={clsx(
                   'font-medium leading-snug break-words flex-1 min-w-0',
                   compact ? 'text-[11px]' : 'text-sm',
-                  isCancelled ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100',
+                  overlapping ? 'text-white drop-shadow-sm' : (isCancelled ? 'text-gray-400 line-through' : 'text-gray-900 dark:text-gray-100'),
                 )}
               >
                 {task.title}
               </h4>
             </div>
-            <span className={clsx('flex-shrink-0 text-xs font-bold leading-none mt-0.5', prio.className)} title={task.priority}>
+            <span className={clsx('flex-shrink-0 text-xs font-bold leading-none mt-0.5', overlapping ? 'text-white/90' : prio.className)} title={task.priority}>
               {prio.icon}
             </span>
           </div>

@@ -34,6 +34,7 @@ export default function ExportPage() {
   const [boardId, setBoardId] = useState('')
   const [tag, setTag] = useState('')
   const [includeArchived, setIncludeArchived] = useState(false)
+  const [statsPeriod, setStatsPeriod] = useState<'week' | 'month' | 'year'>('month')
 
   const { data: boards } = useBoards()
   const { data: tags } = useTags()
@@ -53,7 +54,7 @@ export default function ExportPage() {
         if (includeArchived) params.include_archived = 'true'
         await exportApi.tasks(format, params)
       } else {
-        await exportApi.stats(format)
+        await exportApi.stats(format, statsPeriod)
       }
       toast.success(`${type === 'tasks' ? 'Задачи' : 'Статистика'} экспортированы в ${format.toUpperCase()}`)
     } catch {
@@ -168,7 +169,16 @@ export default function ExportPage() {
               <p className="text-xs text-gray-500 dark:text-gray-400">Метрики продуктивности и аналитика</p>
             </div>
           </div>
-          <div className="flex gap-2 mt-auto pt-4">
+          <select
+            value={statsPeriod}
+            onChange={(e) => setStatsPeriod(e.target.value as 'week' | 'month' | 'year')}
+            className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-300 mb-3"
+          >
+            <option value="week">Неделя</option>
+            <option value="month">Месяц</option>
+            <option value="year">Год</option>
+          </select>
+          <div className="flex gap-2 mt-auto">
             <Button
               variant="secondary"
               onClick={() => handleExport('stats', 'json')}

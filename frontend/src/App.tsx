@@ -11,7 +11,6 @@ import BoardsPage from '@/pages/BoardsPage'
 import KanbanPage from '@/pages/KanbanPage'
 import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
-import ExportPage from '@/pages/ExportPage'
 import TodayPage from '@/pages/TodayPage'
 import BudgetPage from '@/pages/BudgetPage'
 import { queryClient } from '@/lib/queryClient'
@@ -51,7 +50,6 @@ export default function App() {
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/budget" element={<BudgetPage />} />
-                <Route path="/export" element={<ExportPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminPage />} />
                 </Route>

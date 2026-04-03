@@ -32,11 +32,6 @@ const StatsIcon = () => (
   </svg>
 )
 
-const ExportIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-  </svg>
-)
 
 const AdminIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -63,7 +58,7 @@ const navItems = (isAdmin: boolean) => [
   { to: '/habits', label: 'Привычки', Icon: HabitsIcon },
   { to: '/budget', label: 'Бюджет', Icon: BudgetIcon },
   { to: '/stats', label: 'Статистика', Icon: StatsIcon },
-  { to: '/export', label: 'Экспорт', Icon: ExportIcon },
+
   ...(isAdmin ? [{ to: '/admin', label: 'Админ', Icon: AdminIcon }] : []),
 ]
 
@@ -92,9 +87,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           <div className="px-5 py-5 border-b border-gray-100 dark:border-gray-700">
-            <span className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100">
+            <NavLink to="/today" className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100 hover:opacity-75 transition-opacity">
               Time<span className="text-amber-600">Scheduler</span>
-            </span>
+            </NavLink>
             {user && (
               <div className="flex items-center gap-2 mt-3">
                 <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400">

@@ -1196,24 +1196,20 @@ export default function BudgetPage() {
   }
 
   const handleCheckPlanned = (item: PlannedPurchaseResponse) => {
-    if (item.done) {
-      updatePlan.mutate({ id: item.id, data: { done: false } })
-    } else {
-      createTx.mutate({
-        type: 'expense',
-        amount: item.amount,
-        category: item.category,
-        description: item.description,
-        date: format(new Date(), 'yyyy-MM-dd'),
-        tag_ids: [],
-      }, {
-        onSuccess: () => {
-          updatePlan.mutate({ id: item.id, data: { done: true } })
-          toast.success('Перенесено в расходы')
-        },
-        onError: () => toast.error('Ошибка'),
-      })
-    }
+    createTx.mutate({
+      type: 'expense',
+      amount: item.amount,
+      category: item.category,
+      description: item.description,
+      date: format(new Date(), 'yyyy-MM-dd'),
+      tag_ids: [],
+    }, {
+      onSuccess: () => {
+        deletePlan.mutate(item.id)
+        toast.success('Перенесено в расходы')
+      },
+      onError: () => toast.error('Ошибка'),
+    })
   }
 
   const handleDeletePlanned = (id: number) => {

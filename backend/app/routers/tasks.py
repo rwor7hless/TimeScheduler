@@ -368,7 +368,6 @@ async def unarchive_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     task.is_archived = False
-    task.status = KanbanStatus.TODO
     await db.commit()
     await db.refresh(task)
     return task
