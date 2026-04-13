@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip show:*)",
+      "WebSearch",
+      "WebFetch(domain:developers.sber.ru)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:docs.litellm.ai)",
+      "Bash(curl:*)",
+      "WebFetch(domain:user.xmission.com)",
+      "WebFetch(domain:ascii.co.uk)",
+      "WebFetch(domain:www.asciiart.eu)",
+      "Bash(node -e ':*)",
+      "Bash(node:*)"
+    ]
+  }
+}

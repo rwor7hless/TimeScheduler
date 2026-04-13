@@ -35,6 +35,7 @@ class TaskCreate(BaseModel):
     parent_id: int | None = None
     tg_remind: bool = False
     tg_remind_at: datetime | None = None
+    my_day: bool = False
 
     @model_validator(mode="after")
     def validate_fields(self):
@@ -63,6 +64,7 @@ class TaskUpdate(BaseModel):
     parent_id: int | None = None
     tg_remind: bool | None = None
     tg_remind_at: datetime | None = None
+    my_day: bool | None = None
 
     @model_validator(mode="after")
     def validate_fields(self):
@@ -98,6 +100,7 @@ class TaskResponse(BaseModel):
     tg_remind: bool = False
     tg_remind_at: datetime | None = None
     tg_reminded: bool = False
+    my_day: bool = False
     subtasks: list["TaskResponse"] = []
 
     model_config = {"from_attributes": True}

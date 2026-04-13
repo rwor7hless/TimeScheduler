@@ -18,9 +18,10 @@ if settings.secret_key == "change-me-in-production":
         "Set SECRET_KEY in your .env file before deploying to production."
     )
 from app.database import Base, engine
-from app.routers import admin, auth, backup, boards, budget, export, habits, search, stats, tags, tasks, telegram
+from app.routers import admin, auth, backup, boards, budget, export, habits, reports, search, stats, tags, tasks, telegram
 from app.services.backup import run_backup
 from app.services.telegram_bot import poll_telegram_updates, send_telegram_reminders
+from app.services.weekly_report import run_weekly_reports
 
 scheduler = AsyncIOScheduler()
 
@@ -100,6 +101,17 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
     )
 
+    # Weekly AI report: every Sunday at 21:00 UTC
+    scheduler.add_job(
+        run_weekly_reports,
+        "cron",
+        day_of_week="sun",
+        hour=21,
+        minute=0,
+        id="weekly_reports",
+        replace_existing=True,
+    )
+
     scheduler.start()
 
     yield
@@ -142,6 +154,7 @@ app.include_router(backup.router)
 app.include_router(telegram.router)
 app.include_router(budget.router)
 app.include_router(search.router)
+app.include_router(reports.router)
 
 
 @app.get("/api/health")

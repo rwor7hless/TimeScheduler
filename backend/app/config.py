@@ -17,7 +17,14 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     telegram_bot_token: str = ""
-    user_timezone: str = "Europe/Moscow"  # IANA timezone, e.g. Europe/London, America/New_York
+    user_timezone: str = "Europe/Moscow"
+    gigachat_api_key: str = ""  # API ключ из cloud.ru (foundation-models)
+
+    # ntfy.sh push-уведомления
+    # Тема: произвольная строка, например "timescheduler-roman-7x3k"
+    # Подпишись на неё в приложении ntfy на телефоне
+    ntfy_topic: str = ""          # если пусто — пуши отключены
+    ntfy_server: str = "https://ntfy.sh"  # или адрес своего сервера
 
     model_config = {"env_file": "../.env", "env_file_encoding": "utf-8"}
 

@@ -141,7 +141,7 @@ async def get_stats(db: AsyncSession, user_id: int, period_days: int = 30) -> St
         .group_by(Tag.name, Tag.color)
     )
     by_tag = [
-        BreakdownItem(label=row[0], count=row[1], color=row[2])
+        BreakdownItem(label=row[0], count=row[2], color=row[1])
         for row in tag_result.all()
     ]
 

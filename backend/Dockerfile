@@ -17,7 +17,8 @@ RUN pip install --no-cache-dir \
     "apscheduler>=3.10.0" \
     "python-multipart>=0.0.9" \
     "httpx>=0.27.0" \
-    "slowapi>=0.1.9"
+    "slowapi>=0.1.9" \
+    "openai>=1.0.0"
 
 COPY . .
 

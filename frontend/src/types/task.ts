@@ -34,6 +34,7 @@ export interface Task {
   tg_remind: boolean
   tg_remind_at: string | null
   tg_reminded: boolean
+  my_day: boolean
   subtasks: Task[]
 }
 
@@ -52,6 +53,7 @@ export interface TaskCreate {
   parent_id?: number | null
   tg_remind?: boolean
   tg_remind_at?: string | null
+  my_day?: boolean
 }
 
 export interface TaskUpdate {
@@ -68,6 +70,7 @@ export interface TaskUpdate {
   board_id?: number | null
   tg_remind?: boolean | null
   tg_remind_at?: string | null
+  my_day?: boolean | null
 }
 
 export const WEEKDAY_LABELS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'] as const

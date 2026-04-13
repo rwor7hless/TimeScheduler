@@ -561,7 +561,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                 </div>
               )}
 
-              {/* Telegram reminder — compact button row */}
+              {/* Telegram reminder hidden — TG banned */}
+              {false && (
               <div className="space-y-2">
                 <button
                   type="button"
@@ -601,6 +602,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                   </div>
                 )}
               </div>
+              )}
             </div>
           )}
         </div>
