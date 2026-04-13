@@ -101,13 +101,14 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
     )
 
-    # Weekly AI report: every Sunday at 21:00 UTC
+    # Weekly AI report: every Sunday at 21:00 Moscow time
     scheduler.add_job(
         run_weekly_reports,
         "cron",
         day_of_week="sun",
         hour=21,
         minute=0,
+        timezone="Europe/Moscow",
         id="weekly_reports",
         replace_existing=True,
     )

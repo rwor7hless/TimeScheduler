@@ -4,11 +4,10 @@ import { ru } from 'date-fns/locale'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import remarkBreaks from 'remark-breaks'
-import clsx from 'clsx'
 import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportsApi } from '@/api/reports'
-import { useReports, useGenerateReport, markReportsSeen } from '@/hooks/useReports'
+import { useReports, markReportsSeen } from '@/hooks/useReports'
 import Spinner from '@/components/ui/Spinner'
 import type { WeeklyReport } from '@/types/report'
 
@@ -128,7 +127,6 @@ function ReportCard({ report, streamingContent, isStreaming }: ReportCardProps) 
 export default function NotificationsPage() {
   const qc = useQueryClient()
   const { data: reports, isLoading } = useReports()
-  const generate = useGenerateReport()
 
   // Сбрасываем счётчик непрочитанных при открытии страницы
   useEffect(() => { markReportsSeen() }, [])
@@ -146,8 +144,6 @@ export default function NotificationsPage() {
   const [streamMap, setStreamMap] = useState<Record<number, string>>({})
   // set of currently-streaming report IDs
   const [streamingIds, setStreamingIds] = useState<Set<number>>(new Set())
-
-  const hasPending = reports?.some((r) => r.status === 'pending') || streamingIds.size > 0
 
   const startStream = useCallback(
     (reportId: number) => {
@@ -178,51 +174,14 @@ export default function NotificationsPage() {
     [qc],
   )
 
-  const handleGenerate = async () => {
-    try {
-      const report = await generate.mutateAsync(undefined)
-      startStream(report.id)
-    } catch {
-      toast.error('Не удалось запустить генерацию')
-    }
-  }
-
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Уведомления</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            AI-отчёт генерируется автоматически каждое воскресенье в 21:00
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={handleGenerate}
-          disabled={generate.isPending || hasPending}
-          className={clsx(
-            'flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all flex-shrink-0',
-            generate.isPending || hasPending
-              ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
-              : 'bg-amber-400 hover:bg-amber-500 text-white shadow-sm',
-          )}
-        >
-          {generate.isPending || hasPending ? (
-            <>
-              <Spinner className="!w-4 !h-4" />
-              Генерируется…
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-              </svg>
-              Сгенерировать отчёт
-            </>
-          )}
-        </button>
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Уведомления</h1>
+        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          AI-отчёт генерируется автоматически каждое воскресенье в 21:00
+        </p>
       </div>
 
       {/* Content */}
@@ -234,7 +193,7 @@ export default function NotificationsPage() {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
           <p className="text-sm">Отчётов пока нет</p>
-          <p className="text-xs mt-1">Нажми «Сгенерировать отчёт» чтобы получить первый AI-анализ</p>
+          <p className="text-xs mt-1">Первый отчёт появится в воскресенье вечером</p>
         </div>
       )}
 

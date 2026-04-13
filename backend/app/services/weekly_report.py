@@ -5,6 +5,7 @@
 Промпт (тон, структура, правила) — в weekly_report_prompt.py.
 """
 import logging
+import re
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func, select
@@ -28,6 +29,13 @@ from app.services.weekly_report_prompt import (
 )
 
 logger = logging.getLogger(__name__)
+
+_INTRO_HEADING_RE = re.compile(r'^##\s*(?:Вступление|ВСТУПЛЕНИЕ)[^\n]*\n+', re.UNICODE)
+
+
+def _strip_intro_heading(text: str) -> str:
+    return _INTRO_HEADING_RE.sub('', text).lstrip('\n')
+
 
 PRIORITY_RU = {
     Priority.LOW: "низкий",
@@ -233,7 +241,7 @@ async def generate_report_for_user(user_id: int, week_start: date) -> None:
             prompt = build_prompt(data)
             content = await chat_completion([{"role": "user", "content": prompt}])
             report.status = ReportStatus.DONE
-            report.content = content
+            report.content = _strip_intro_heading(content)
             report.error_msg = None
             logger.info(f"Weekly report generated for user_id={user_id}, week={week_start}")
             await ntfy_send(

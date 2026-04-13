@@ -1,4 +1,5 @@
 import json
+import re
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,6 +18,14 @@ from app.services.gigachat import chat_completion, chat_completion_stream
 from app.services.ntfy import send as ntfy_send
 from app.services.weekly_report import build_weekly_data
 from app.services.weekly_report_prompt import build_prompt
+
+# Заголовок «Вступление», который GigaChat иногда добавляет вопреки инструкции
+_INTRO_HEADING_RE = re.compile(r'^##\s*(?:Вступление|ВСТУПЛЕНИЕ)[^\n]*\n+', re.UNICODE)
+
+
+def _strip_intro_heading(text: str) -> str:
+    return _INTRO_HEADING_RE.sub('', text).lstrip('\n')
+
 
 router = APIRouter(
     prefix="/api/reports",
@@ -203,10 +212,33 @@ async def stream_report(
 
     async def event_stream():
         full_chunks: list[str] = []
+        # Буфер для детектирования заголовка «Вступление» в начале ответа
+        header_buf = ""
+        header_checked = False
+
         try:
             async for chunk in chat_completion_stream([{"role": "user", "content": prompt}]):
-                full_chunks.append(chunk)
-                yield f"data: {json.dumps({'t': chunk}, ensure_ascii=False)}\n\n"
+                if not header_checked:
+                    header_buf += chunk
+                    # Ждём первый перенос строки или накопим 200 символов
+                    if '\n' in header_buf or len(header_buf) >= 200:
+                        header_checked = True
+                        cleaned = _strip_intro_heading(header_buf)
+                        if cleaned:
+                            full_chunks.append(cleaned)
+                            yield f"data: {json.dumps({'t': cleaned}, ensure_ascii=False)}\n\n"
+                    # Пока буферизируем — не отправляем клиенту
+                else:
+                    full_chunks.append(chunk)
+                    yield f"data: {json.dumps({'t': chunk}, ensure_ascii=False)}\n\n"
+
+            # Если поток закончился, а заголовок так и не был проверен (очень короткий ответ)
+            if not header_checked and header_buf:
+                cleaned = _strip_intro_heading(header_buf)
+                if cleaned:
+                    full_chunks.append(cleaned)
+                    yield f"data: {json.dumps({'t': cleaned}, ensure_ascii=False)}\n\n"
+
         except Exception as exc:
             err_msg = str(exc)[:500]
             yield f"data: {json.dumps({'error': err_msg}, ensure_ascii=False)}\n\n"

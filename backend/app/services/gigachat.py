@@ -38,12 +38,12 @@ async def chat_completion(messages: list[dict], max_tokens: int = 2500) -> str:
     return response.choices[0].message.content
 
 
-async def chat_completion_stream(messages: list[dict]):
+async def chat_completion_stream(messages: list[dict], max_tokens: int = 4096):
     """Стриминговый вариант — async-генератор текстовых чанков."""
     client = _client()
     stream = await client.chat.completions.create(
         messages=messages,
-        max_tokens=2500,
+        max_tokens=max_tokens,
         stream=True,
         **_BASE_PARAMS,
     )
