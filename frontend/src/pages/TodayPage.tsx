@@ -28,6 +28,24 @@ function weekdayIndex(d: Date) {
   return (d.getDay() + 6) % 7
 }
 
+function formatRelativeDate(
+  dateStr: string | null | undefined,
+  todayStr: string,
+): { text: string; tomorrow: boolean } | null {
+  if (!dateStr) return null
+  const dateOnly = dateStr.slice(0, 10)
+  if (dateOnly === todayStr) return null
+
+  const today = parseISO(todayStr)
+  const target = parseISO(dateOnly)
+  const diffDays = Math.round((target.getTime() - today.getTime()) / 86400000)
+
+  if (diffDays === 1) return { text: 'завтра', tomorrow: true }
+  if (diffDays === -1) return { text: 'вчера', tomorrow: false }
+
+  return { text: format(target, 'd MMM', { locale: ru }), tomorrow: false }
+}
+
 type TodayTaskType = 'scheduled' | 'deadline' | 'my_day'
 
 // ─── Unified task row ────────────────────────────────────────────────────────
@@ -35,12 +53,14 @@ type TodayTaskType = 'scheduled' | 'deadline' | 'my_day'
 function TodayTaskRow({
   task,
   type,
+  todayStr,
   onToggle,
   onRemove,
   onClick,
 }: {
   task: Task
   type: TodayTaskType
+  todayStr: string
   onToggle: () => void
   onRemove?: () => void
   onClick: () => void
@@ -54,6 +74,11 @@ function TodayTaskRow({
           minute: '2-digit',
         })
       : null
+
+  const dateLabel = formatRelativeDate(
+    task.scheduled_start ?? task.deadline,
+    todayStr,
+  )
 
   return (
     <div
@@ -115,6 +140,20 @@ function TodayTaskRow({
         {task.title}
       </button>
 
+      {/* Date badge (shows "завтра" in amber or formatted date) */}
+      {!done && dateLabel && (
+        <span
+          className={clsx(
+            'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
+            dateLabel.tomorrow
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+              : 'text-gray-400 dark:text-gray-500',
+          )}
+        >
+          {dateLabel.text}
+        </span>
+      )}
+
       {/* Deadline badge */}
       {!done && type === 'deadline' && (
         <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
@@ -154,6 +193,10 @@ function BacklogTaskRow({
   onClick: () => void
 }) {
   const isOverdue = task.deadline != null && task.deadline.slice(0, 10) < todayStr
+  const dateLabel = formatRelativeDate(
+    task.scheduled_start ?? task.deadline,
+    todayStr,
+  )
 
   return (
     <div
@@ -186,6 +229,18 @@ function BacklogTaskRow({
       >
         {task.title}
       </button>
+      {!isOverdue && dateLabel && (
+        <span
+          className={clsx(
+            'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
+            dateLabel.tomorrow
+              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+              : 'text-gray-400 dark:text-gray-500',
+          )}
+        >
+          {dateLabel.text}
+        </span>
+      )}
       {isOverdue && (
         <span className="text-[10px] font-medium text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
           Просрочено
@@ -292,6 +347,26 @@ export default function TodayPage() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [showPicker])
+
+  // Auto-clear scheduled date on tasks whose scheduled day has already passed
+  // — they drop into the backlog instead of lingering as "overdue scheduled".
+  const clearedOverdueRef = useRef<Set<number>>(new Set())
+  useEffect(() => {
+    if (!allTasks) return
+    for (const t of allTasks) {
+      if (clearedOverdueRef.current.has(t.id)) continue
+      if (t.is_archived) continue
+      if (t.status === 'done') continue
+      if (t.repeat_days && t.repeat_days.length > 0) continue
+      if (!t.scheduled_start) continue
+      if (t.scheduled_start.slice(0, 10) >= todayStr) continue
+      clearedOverdueRef.current.add(t.id)
+      patchTask.mutate({
+        id: t.id,
+        data: { scheduled_start: null, scheduled_end: null },
+      })
+    }
+  }, [allTasks, todayStr, patchTask])
 
   // ── Unified "today" list: scheduled → deadline → my_day ──────────────────
   const todayUnified = useMemo(() => {
@@ -598,6 +673,7 @@ export default function TodayPage() {
                   key={task.id}
                   task={task}
                   type={type}
+                  todayStr={todayStr}
                   onToggle={() => handleTaskToggle(task)}
                   onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
                   onClick={() => openEdit(task)}
