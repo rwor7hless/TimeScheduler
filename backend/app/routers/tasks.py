@@ -145,6 +145,7 @@ async def create_task(
         parent_id=data.parent_id,
         tg_remind=data.tg_remind,
         tg_remind_at=data.tg_remind_at,
+        my_day=data.my_day,
     )
 
     if data.deadline:

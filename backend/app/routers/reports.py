@@ -17,7 +17,8 @@ from app.schemas.report import WeeklyReportResponse
 from app.services.gigachat import chat_completion, chat_completion_stream
 from app.services.ntfy import send as ntfy_send
 from app.services.weekly_report import build_weekly_data
-from app.services.weekly_report_prompt import build_prompt
+from prompts.pet_tip import build_pet_prompt
+from prompts.weekly_report import build_prompt
 
 # Заголовок «Вступление», который GigaChat иногда добавляет вопреки инструкции
 _INTRO_HEADING_RE = re.compile(r'^##\s*(?:Вступление|ВСТУПЛЕНИЕ)[^\n]*\n+', re.UNICODE)
@@ -131,7 +132,7 @@ async def get_daily_tip(
 
     my_day_rows = (
         await db.execute(
-            select(Task.title).where(base, Task.my_day.is_(True)).limit(8)
+            select(Task.title).where(base, Task.my_day.is_(True)).limit(6)
         )
     ).scalars().all()
 
@@ -142,7 +143,28 @@ async def get_daily_tip(
                 Task.my_day.is_(False),
                 Task.scheduled_start >= today_start,
                 Task.scheduled_start < today_end,
+            ).limit(4)
+        )
+    ).scalars().all()
+
+    deadline_today_rows = (
+        await db.execute(
+            select(Task.title).where(
+                base,
+                Task.my_day.is_(False),
+                Task.deadline >= today_start,
+                Task.deadline < today_end,
+                Task.scheduled_start.is_(None),
             ).limit(5)
+        )
+    ).scalars().all()
+
+    overdue_rows = (
+        await db.execute(
+            select(Task.title).where(
+                base,
+                Task.deadline < today_start,
+            ).limit(3)
         )
     ).scalars().all()
 
@@ -157,28 +179,16 @@ async def get_daily_tip(
 
     all_tasks = list(my_day_rows) + [t for t in sched_rows if t not in my_day_rows]
 
-    prompt = _build_pet_prompt(all_tasks, list(habit_names))
-    tip = await chat_completion([{"role": "user", "content": prompt}], max_tokens=180)
+    prompt = build_pet_prompt(
+        all_tasks,
+        list(habit_names),
+        list(deadline_today_rows),
+        list(overdue_rows),
+    )
+    tip = await chat_completion([{"role": "user", "content": prompt}], max_tokens=200)
 
     return {"tip": tip.strip(), "date": str(today)}
 
-
-def _build_pet_prompt(tasks: list[str], habits: list[str]) -> str:
-    lines = [
-        "Ты — маленький ASCII-кот, живущий в приложении продуктивности пользователя.",
-        "Напиши короткое напутствие на сегодняшний день — ровно 2 предложения.",
-        "Говори от своего лица, обращайся на «ты». Будь живым и немного ироничным.",
-        "Упомяни 1-2 конкретные задачи из списка если они есть.",
-        "Запрещено: «желаю успехов», «удачи», «конечно», «привет», смайлики, markdown.",
-        "",
-    ]
-    if tasks:
-        lines.append("Задачи на сегодня: " + ", ".join(f'«{t}»' for t in tasks))
-    else:
-        lines.append("Задач на сегодня нет.")
-    if habits:
-        lines.append("Привычки: " + ", ".join(habits))
-    return "\n".join(lines)
 
 
 @router.get("/{report_id}/stream")

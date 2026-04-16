@@ -25,8 +25,8 @@ from app.services.weekly_report_prompt import (
     ProjectStats,
     TaskEntry,
     WeeklyData,
-    build_prompt,
 )
+from prompts.weekly_report import build_prompt
 
 logger = logging.getLogger(__name__)
 

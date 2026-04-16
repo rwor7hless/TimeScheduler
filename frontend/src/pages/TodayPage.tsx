@@ -7,6 +7,7 @@ import TaskModal from '@/components/tasks/TaskModal'
 import AsciiPet from '@/components/today/AsciiPet'
 import Spinner from '@/components/ui/Spinner'
 import { useDailyTip } from '@/hooks/useDailyTip'
+import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
 import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
 import clsx from 'clsx'
@@ -27,74 +28,85 @@ function weekdayIndex(d: Date) {
   return (d.getDay() + 6) % 7
 }
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+type TodayTaskType = 'scheduled' | 'deadline' | 'my_day'
 
-function ProgressBar({ label, done, total, color }: { label: string; done: number; total: number; color: string }) {
-  const pct = total > 0 ? Math.round((done / total) * 100) : 0
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div className="flex justify-between text-sm mb-2">
-        <span className="text-gray-500 dark:text-gray-400">{label}</span>
-        <span className="font-semibold text-gray-900 dark:text-gray-100">{done}/{total}</span>
-      </div>
-      <div className="h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div
-          className="h-full rounded-full transition-all duration-500"
-          style={{ width: `${pct}%`, backgroundColor: color }}
-        />
-      </div>
-    </div>
-  )
-}
+// ─── Unified task row ────────────────────────────────────────────────────────
 
-function MyDayTaskRow({
+function TodayTaskRow({
   task,
+  type,
   onToggle,
   onRemove,
   onClick,
 }: {
   task: Task
+  type: TodayTaskType
   onToggle: () => void
-  onRemove: () => void
+  onRemove?: () => void
   onClick: () => void
 }) {
   const done = task.status === 'done'
+
+  const timeLabel =
+    type === 'scheduled' && task.scheduled_start
+      ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', {
+          hour: '2-digit',
+          minute: '2-digit',
+        })
+      : null
+
   return (
     <div
       className={clsx(
-        'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all',
+        'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group',
         done
-          ? 'opacity-50'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          ? 'opacity-40 border-gray-100 dark:border-gray-700/50'
+          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
       )}
-      style={done ? { backgroundColor: `${task.color}15`, borderColor: `${task.color}50` } : undefined}
+      style={
+        done
+          ? { backgroundColor: `${task.color}08`, borderColor: `${task.color}30` }
+          : undefined
+      }
     >
       {/* Checkbox */}
       <button
         type="button"
         onClick={onToggle}
         className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all',
-          done ? 'text-white' : 'border-2 border-gray-300 dark:border-gray-600 hover:border-amber-400'
+          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border-2',
+          done
+            ? 'text-white border-transparent'
+            : 'border-gray-300 dark:border-gray-600 hover:border-amber-400'
         )}
         style={done ? { backgroundColor: task.color } : undefined}
       >
         {done && (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="9" height="9" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
+          >
             <polyline points="20 6 9 17 4 12" />
           </svg>
         )}
       </button>
 
       {/* Color accent */}
-      <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+
+      {/* Time badge (scheduled) */}
+      {timeLabel && (
+        <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500 flex-shrink-0 w-10 select-none">
+          {timeLabel}
+        </span>
+      )}
 
       {/* Title */}
       <button
         type="button"
         onClick={onClick}
         className={clsx(
-          'flex-1 text-sm font-medium text-left transition-colors truncate',
+          'flex-1 text-sm font-medium text-left truncate transition-colors',
           done
             ? 'line-through text-gray-400 dark:text-gray-500'
             : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
@@ -103,128 +115,70 @@ function MyDayTaskRow({
         {task.title}
       </button>
 
-      {/* Remove from My Day */}
-      <button
-        type="button"
-        onClick={onRemove}
-        title="Убрать из My Day"
-        className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
-      >
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18" />
-          <line x1="6" y1="6" x2="18" y2="18" />
-        </svg>
-      </button>
+      {/* Deadline badge */}
+      {!done && type === 'deadline' && (
+        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
+          Дедлайн
+        </span>
+      )}
+
+      {/* Remove from today (manual my_day tasks only) */}
+      {type === 'my_day' && onRemove && !done && (
+        <button
+          type="button"
+          onClick={onRemove}
+          title="Убрать из сегодня"
+          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-200 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 }
 
-function ScheduledTaskRow({
+// ─── Backlog task row ─────────────────────────────────────────────────────────
+
+function BacklogTaskRow({
   task,
-  onToggle,
+  todayStr,
+  onDone,
   onClick,
 }: {
   task: Task
-  onToggle: () => void
+  todayStr: string
+  onDone: () => void
   onClick: () => void
 }) {
-  const done = task.status === 'done'
-  const startTime = task.scheduled_start
-    ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-    : ''
+  const isOverdue = task.deadline != null && task.deadline.slice(0, 10) < todayStr
 
   return (
     <div
       className={clsx(
         'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all',
-        done
-          ? 'opacity-50'
+        isOverdue
+          ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800/50 hover:border-red-300'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       )}
-      style={done ? { backgroundColor: `${task.color}15`, borderColor: `${task.color}50` } : undefined}
     >
-      {/* Checkbox */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all',
-          done ? 'text-white' : 'border-2 border-gray-300 dark:border-gray-600 hover:border-amber-400'
-        )}
-        style={done ? { backgroundColor: task.color } : undefined}
-      >
-        {done && (
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </button>
-
-      {/* Time */}
-      <span className="text-xs font-mono text-gray-400 dark:text-gray-500 w-10 flex-shrink-0 select-none">
-        {startTime}
-      </span>
-
-      {/* Title */}
-      <button
-        type="button"
-        onClick={onClick}
-        className={clsx(
-          'flex-1 text-sm font-medium text-left transition-colors truncate',
-          done
-            ? 'line-through text-gray-400 dark:text-gray-500'
-            : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
-        )}
-      >
-        {task.title}
-      </button>
-
-      {/* Color dot */}
-      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
-    </div>
-  )
-}
-
-const STATUS_CYCLE: Record<string, 'todo' | 'in_progress' | 'done'> = {
-  todo: 'in_progress',
-  in_progress: 'done',
-  done: 'todo',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  todo: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600',
-  in_progress: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50',
-}
-
-const STATUS_LABEL: Record<string, string> = {
-  todo: 'To do',
-  in_progress: 'В работе',
-}
-
-function BacklogTaskRow({
-  task,
-  onDone,
-  onStatusChange,
-  onClick,
-}: {
-  task: Task
-  onDone: () => void
-  onStatusChange: (status: 'todo' | 'in_progress' | 'done') => void
-  onClick: () => void
-}) {
-  return (
-    <div className="flex items-center gap-3 px-3 py-2 rounded-xl border bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-all">
       <button
         type="button"
         onClick={onDone}
         title="Отметить выполненной"
         className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all group"
       >
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="opacity-0 group-hover:opacity-100 text-emerald-500 transition-opacity">
+        <svg
+          width="9" height="9" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
+          className="opacity-0 group-hover:opacity-100 text-emerald-500 transition-opacity"
+        >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </button>
-      <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
       <button
         type="button"
         onClick={onClick}
@@ -232,27 +186,18 @@ function BacklogTaskRow({
       >
         {task.title}
       </button>
-      <button
-        type="button"
-        onClick={() => onStatusChange(STATUS_CYCLE[task.status])}
-        title="Сменить статус"
-        className={clsx('text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 transition-colors', STATUS_COLOR[task.status])}
-      >
-        {STATUS_LABEL[task.status]}
-      </button>
+      {isOverdue && (
+        <span className="text-[10px] font-medium text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
+          Просрочено
+        </span>
+      )}
     </div>
   )
 }
 
-function HabitRow({
-  habit,
-  done,
-  onToggle,
-}: {
-  habit: Habit
-  done: boolean
-  onToggle: () => void
-}) {
+// ─── Habit row ────────────────────────────────────────────────────────────────
+
+function HabitRow({ habit, done, onToggle }: { habit: Habit; done: boolean; onToggle: () => void }) {
   return (
     <button
       type="button"
@@ -295,7 +240,22 @@ function HabitRow({
   )
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Quick-add highlight helpers ─────────────────────────────────────────────
+
+function buildSegments(text: string, spans: TokenSpan[]) {
+  if (!text || spans.length === 0) return [{ text, highlighted: false }]
+  const segs: { text: string; highlighted: boolean }[] = []
+  let pos = 0
+  for (const span of spans) {
+    if (span.start > pos) segs.push({ text: text.slice(pos, span.start), highlighted: false })
+    if (span.end > span.start) segs.push({ text: text.slice(span.start, span.end), highlighted: true })
+    pos = span.end
+  }
+  if (pos < text.length) segs.push({ text: text.slice(pos), highlighted: false })
+  return segs
+}
+
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function TodayPage() {
   const today = useMemo(() => new Date(), [])
@@ -316,10 +276,11 @@ export default function TodayPage() {
   const [quickAdd, setQuickAdd] = useState('')
   const [showPicker, setShowPicker] = useState(false)
   const [pickerSearch, setPickerSearch] = useState('')
-  const [backlogOpen, setBacklogOpen] = useState(true)
+  const [backlogOpen, setBacklogOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
+  const quickAddInputRef = useRef<HTMLInputElement>(null)
+  const quickAddBackdropRef = useRef<HTMLDivElement>(null)
 
-  // Close picker on outside click
   useEffect(() => {
     if (!showPicker) return
     function handleClick(e: MouseEvent) {
@@ -332,27 +293,55 @@ export default function TodayPage() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [showPicker])
 
-  const { myDayTasks, scheduledTasks, backlogTasks } = useMemo(() => {
-    if (!allTasks) return { myDayTasks: [], scheduledTasks: [], backlogTasks: [] }
+  // ── Unified "today" list: scheduled → deadline → my_day ──────────────────
+  const todayUnified = useMemo(() => {
+    if (!allTasks) return []
+    const seen = new Set<number>()
+    const result: Array<{ task: Task; type: TodayTaskType }> = []
 
-    const myDay = allTasks.filter((t) => t.my_day && !t.is_archived)
-
-    const scheduled = allTasks
+    // 1. Scheduled today (sorted by time)
+    allTasks
       .filter((t) => {
-        if (t.my_day) return false
+        if (t.is_archived) return false
         if (!t.scheduled_start) return false
         if (t.repeat_days?.length) return t.repeat_days.includes(wd)
         return isSameDay(parseISO(t.scheduled_start), today)
       })
       .sort((a, b) => new Date(a.scheduled_start!).getTime() - new Date(b.scheduled_start!).getTime())
+      .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'scheduled' }) })
 
-    const backlog = allTasks.filter(
-      (t) => !t.my_day && t.scheduled_start == null && t.status !== 'done' && !t.is_archived
+    // 2. Deadline today (not already shown)
+    allTasks
+      .filter(
+        (t) =>
+          !t.is_archived &&
+          !seen.has(t.id) &&
+          t.deadline?.slice(0, 10) === todayStr &&
+          t.status !== 'done'
+      )
+      .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'deadline' }) })
+
+    // 3. My Day (manual, not already shown)
+    allTasks
+      .filter((t) => !t.is_archived && !seen.has(t.id) && t.my_day)
+      .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'my_day' }) })
+
+    return result
+  }, [allTasks, today, todayStr, wd])
+
+  // ── Backlog ───────────────────────────────────────────────────────────────
+  const backlogTasks = useMemo(() => {
+    if (!allTasks) return []
+    const todayIds = new Set(todayUnified.map((e) => e.task.id))
+    return allTasks.filter(
+      (t) =>
+        !t.is_archived &&
+        t.status !== 'done' &&
+        !todayIds.has(t.id)
     )
+  }, [allTasks, todayUnified])
 
-    return { myDayTasks: myDay, scheduledTasks: scheduled, backlogTasks: backlog }
-  }, [allTasks, today, wd])
-
+  // ── Picker (add from list) ────────────────────────────────────────────────
   const allPickerTasks = useMemo(() => {
     if (!allTasks) return []
     return allTasks.filter((t) => !t.my_day && !t.is_archived && t.status !== 'done')
@@ -360,25 +349,26 @@ export default function TodayPage() {
 
   const pickerTasks = useMemo(() => {
     const q = pickerSearch.trim().toLowerCase()
-    const getBoardName = (t: Task) =>
-      t.board_id == null ? '' : (boards?.find((b) => b.id === t.board_id)?.name ?? '')
     return allPickerTasks
       .filter((t) => !q || t.title.toLowerCase().includes(q))
       .sort((a, b) => {
-        const ba = getBoardName(a).toLowerCase()
-        const bb = getBoardName(b).toLowerCase()
+        const ba = a.board_id == null ? '' : (boards?.find((board) => board.id === a.board_id)?.name ?? '')
+        const bb = b.board_id == null ? '' : (boards?.find((board) => board.id === b.board_id)?.name ?? '')
         if (ba < bb) return -1
         if (ba > bb) return 1
         return a.title.localeCompare(b.title, 'ru')
       })
   }, [allPickerTasks, pickerSearch, boards])
 
+  // ── Progress ──────────────────────────────────────────────────────────────
   const activeHabits = useMemo(() => habits?.filter((h) => h.is_active) ?? [], [habits])
   const isHabitDone = (h: Habit) => h.logs.some((l) => l.date === todayStr)
-
-  const doneMyDay = myDayTasks.filter((t) => t.status === 'done').length
+  const doneTodayCount = todayUnified.filter(({ task }) => task.status === 'done').length
   const doneHabits = activeHabits.filter(isHabitDone).length
+  const taskPct = todayUnified.length > 0 ? Math.round((doneTodayCount / todayUnified.length) * 100) : 0
+  const habitPct = activeHabits.length > 0 ? Math.round((doneHabits / activeHabits.length) * 100) : 0
 
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleTaskToggle = async (task: Task) => {
     const newStatus = task.status === 'done' ? 'todo' : 'done'
     try {
@@ -391,14 +381,6 @@ export default function TodayPage() {
   const handleMarkDone = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { status: 'done' } })
-    } catch {
-      toast.error('Не удалось обновить задачу')
-    }
-  }
-
-  const handleStatusChange = async (task: Task, status: 'todo' | 'in_progress' | 'done') => {
-    try {
-      await patchTask.mutateAsync({ id: task.id, data: { status } })
     } catch {
       toast.error('Не удалось обновить задачу')
     }
@@ -422,11 +404,37 @@ export default function TodayPage() {
     }
   }
 
+  const parsedPreview = useMemo(() => {
+    if (!quickAdd.trim()) return null
+    return parseTaskInput(quickAdd, today)
+  }, [quickAdd, today])
+
   const handleQuickAdd = async () => {
-    const title = quickAdd.trim()
-    if (!title) return
+    const raw = quickAdd.trim()
+    if (!raw) return
+    const parsed = parseTaskInput(raw, today)
     try {
-      await createTask.mutateAsync({ title, my_day: true })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const taskData: any = { title: parsed.title || raw }
+
+      if (parsed.scheduledDate && parsed.startTime && parsed.endTime) {
+        // Full scheduled slot — not my_day unless it's today
+        taskData.scheduled_start = new Date(`${parsed.scheduledDate}T${parsed.startTime}:00`).toISOString()
+        taskData.scheduled_end   = new Date(`${parsed.scheduledDate}T${parsed.endTime}:00`).toISOString()
+        taskData.my_day = parsed.scheduledDate === todayStr
+      } else if (parsed.scheduledDate && parsed.scheduledDate !== todayStr) {
+        // Future date with no time → treat as deadline so it shows up there
+        taskData.deadline = new Date(`${parsed.scheduledDate}T23:59:00`).toISOString()
+        taskData.my_day = false
+      } else {
+        taskData.my_day = true
+      }
+
+      if (parsed.deadline) {
+        taskData.deadline = new Date(`${parsed.deadline}T23:59:00`).toISOString()
+      }
+
+      await createTask.mutateAsync(taskData)
       setQuickAdd('')
     } catch {
       toast.error('Не удалось создать задачу')
@@ -449,58 +457,98 @@ export default function TodayPage() {
   if (tasksLoading || habitsLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      {/* Header */}
-      <div>
-        <p className="text-sm text-gray-400 dark:text-gray-500">{getGreeting()}</p>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 capitalize">
-          {format(today, 'EEEE, d MMMM', { locale: ru })}
-        </h1>
+    <div className="space-y-5 max-w-3xl mx-auto">
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
+      <div className="flex items-end justify-between">
+        <div>
+          <p className="text-xs text-gray-400 dark:text-gray-500">{getGreeting()}</p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 capitalize">
+            {format(today, 'EEEE, d MMMM', { locale: ru })}
+          </h1>
+        </div>
       </div>
 
-      {/* Progress bars */}
-      <div className="grid grid-cols-2 gap-3">
-        <ProgressBar
-          label="My Day"
-          done={doneMyDay}
-          total={myDayTasks.length}
-          color="#F59E0B"
-        />
-        <ProgressBar
-          label="Привычки"
-          done={doneHabits}
-          total={activeHabits.length}
-          color="#10B981"
-        />
+      {/* ── Compact progress ────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-5">
+        <div className="flex items-center gap-2 flex-1">
+          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-amber-400 rounded-full transition-all duration-500"
+              style={{ width: `${taskPct}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+            {doneTodayCount}/{todayUnified.length} задач
+          </span>
+        </div>
+        <div className="flex items-center gap-2 flex-1">
+          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div
+              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+              style={{ width: `${habitPct}%` }}
+            />
+          </div>
+          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+            {doneHabits}/{activeHabits.length} привычек
+          </span>
+        </div>
       </div>
 
-      {/* Питомец — только на мобиле, над задачами */}
+      {/* ── Pet (mobile) ────────────────────────────────────────────────────── */}
       <div className="lg:hidden">
         <AsciiPet tip={tip} isLoading={tipLoading} />
       </div>
 
-      {/* Main grid */}
+      {/* ── Main grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
 
-        {/* Left — tasks */}
-        <div className="space-y-5">
+        {/* Left — tasks + backlog */}
+        <div className="space-y-4">
 
-          {/* My Day */}
-          <section>
-            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-              My Day
-            </h2>
-
-            {/* Quick-add input */}
-            <div className="flex gap-2 mb-2">
-              <input
-                type="text"
-                value={quickAdd}
-                onChange={(e) => setQuickAdd(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
-                placeholder="Добавить задачу на сегодня..."
-                className="flex-1 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors"
-              />
+          {/* Quick-add with inline token highlight */}
+          <div className="space-y-1.5">
+            <div className="flex gap-2">
+              {/* Backdrop + transparent input trick */}
+              <div className="relative flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus-within:border-amber-400 dark:focus-within:border-amber-500 transition-colors">
+                {/* Backdrop: renders plain text + underlined tokens, scrolls in sync with input */}
+                <div
+                  ref={quickAddBackdropRef}
+                  aria-hidden
+                  className="absolute inset-0 px-3 py-2 text-sm pointer-events-none select-none overflow-hidden whitespace-pre rounded-xl"
+                >
+                  {quickAdd === '' ? (
+                    <span className="text-gray-400 dark:text-gray-500">Встреча завтра в 11:00 на 2 часа...</span>
+                  ) : (
+                    buildSegments(quickAdd, parsedPreview?.spans ?? []).map((seg, i) =>
+                      seg.highlighted ? (
+                        <span
+                          key={i}
+                          className="text-gray-900 dark:text-gray-100 underline decoration-amber-400 decoration-2 underline-offset-2"
+                        >
+                          {seg.text}
+                        </span>
+                      ) : (
+                        <span key={i} className="text-gray-900 dark:text-gray-100">{seg.text}</span>
+                      )
+                    )
+                  )}
+                </div>
+                {/* Actual input — transparent text so backdrop shows through */}
+                <input
+                  ref={quickAddInputRef}
+                  type="text"
+                  value={quickAdd}
+                  onChange={(e) => setQuickAdd(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
+                  onScroll={() => {
+                    if (quickAddBackdropRef.current && quickAddInputRef.current) {
+                      quickAddBackdropRef.current.scrollLeft = quickAddInputRef.current.scrollLeft
+                    }
+                  }}
+                  className="quick-add relative w-full text-sm px-3 py-2 rounded-xl bg-transparent border-0 text-transparent caret-gray-900 dark:caret-gray-100 focus:outline-none"
+                />
+              </div>
               <button
                 type="button"
                 onClick={handleQuickAdd}
@@ -508,134 +556,138 @@ export default function TodayPage() {
                 className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" />
-                  <line x1="5" y1="12" x2="19" y2="12" />
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
               </button>
             </div>
 
-            {/* Tasks list */}
-            {myDayTasks.length > 0 && (
-              <div className="space-y-1.5 mb-2">
-                {myDayTasks.map((task) => (
-                  <MyDayTaskRow
-                    key={task.id}
-                    task={task}
-                    onToggle={() => handleTaskToggle(task)}
-                    onRemove={() => handleRemoveFromMyDay(task)}
-                    onClick={() => openEdit(task)}
-                  />
-                ))}
-              </div>
-            )}
-
-            {myDayTasks.length === 0 && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 py-2">
-                Добавь задачи, которые хочешь сделать сегодня
-              </p>
-            )}
-
-            {/* Add from picker */}
-            {allPickerTasks.length > 0 && (
-              <div className="relative" ref={pickerRef}>
-                <button
-                  type="button"
-                  onClick={() => { setShowPicker((v) => !v); setPickerSearch('') }}
-                  className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-                >
-                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="12" y1="5" x2="12" y2="19" />
-                    <line x1="5" y1="12" x2="19" y2="12" />
-                  </svg>
-                  Добавить из списка
-                </button>
-
-                {showPicker && (
-                  <div className="absolute top-6 left-0 z-20 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
-                    <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-                      <input
-                        type="text"
-                        autoFocus
-                        value={pickerSearch}
-                        onChange={(e) => setPickerSearch(e.target.value)}
-                        placeholder="Поиск..."
-                        className="w-full text-sm px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none border border-transparent focus:border-amber-400 transition-colors"
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {pickerTasks.length === 0 ? (
-                        <p className="text-xs text-gray-400 dark:text-gray-500 p-3 text-center">Ничего не найдено</p>
-                      ) : (
-                        pickerTasks.map((task) => {
-                          const boardName = task.board_id == null
-                            ? null
-                            : (boards?.find((b) => b.id === task.board_id)?.name ?? null)
-                          return (
-                            <button
-                              key={task.id}
-                              type="button"
-                              onClick={() => handleAddToMyDay(task)}
-                              className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                              <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
-                              <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{task.title}</span>
-                              {boardName && (
-                                <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 truncate max-w-[60px]">{boardName}</span>
-                              )}
-                            </button>
-                          )
-                        })
-                      )}
-                    </div>
-                  </div>
+            {/* Parsed result summary — shown below input */}
+            {parsedPreview && quickAdd.trim() && (parsedPreview.scheduledDate || parsedPreview.startTime || parsedPreview.deadline) && (
+              <div className="flex items-center gap-1.5 px-1 flex-wrap">
+                <span className="text-xs text-amber-700 dark:text-amber-400 font-medium truncate max-w-[180px]">
+                  {parsedPreview.title || quickAdd.trim()}
+                </span>
+                {parsedPreview.scheduledDate && (
+                  <span className="text-[11px] bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                    {friendlyDate(parsedPreview.scheduledDate, todayStr)}
+                  </span>
+                )}
+                {parsedPreview.startTime && parsedPreview.endTime && (
+                  <span className="text-[11px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-mono">
+                    {parsedPreview.startTime}–{parsedPreview.endTime}
+                  </span>
+                )}
+                {parsedPreview.deadline && (
+                  <span className="text-[11px] bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+                    дедлайн {friendlyDate(parsedPreview.deadline, todayStr)}
+                  </span>
                 )}
               </div>
             )}
-          </section>
+          </div>
 
-          {/* Schedule */}
-          {scheduledTasks.length > 0 && (
-            <section>
-              <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-                Расписание
-              </h2>
-              <div className="space-y-1.5">
-                {scheduledTasks.map((task) => (
-                  <ScheduledTaskRow
-                    key={task.id}
-                    task={task}
-                    onToggle={() => handleTaskToggle(task)}
-                    onClick={() => openEdit(task)}
-                  />
-                ))}
-              </div>
-            </section>
+          {/* Unified today list */}
+          {todayUnified.length === 0 ? (
+            <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
+              Нет задач на сегодня — добавь или назначь дедлайн
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {todayUnified.map(({ task, type }) => (
+                <TodayTaskRow
+                  key={task.id}
+                  task={task}
+                  type={type}
+                  onToggle={() => handleTaskToggle(task)}
+                  onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
+                  onClick={() => openEdit(task)}
+                />
+              ))}
+            </div>
           )}
 
-          {/* Backlog — collapsible */}
+          {/* Add from picker */}
+          {allPickerTasks.length > 0 && (
+            <div className="relative" ref={pickerRef}>
+              <button
+                type="button"
+                onClick={() => { setShowPicker((v) => !v); setPickerSearch('') }}
+                className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              >
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+                Добавить из списка
+              </button>
+
+              {showPicker && (
+                <div className="absolute top-6 left-0 z-20 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
+                  <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={pickerSearch}
+                      onChange={(e) => setPickerSearch(e.target.value)}
+                      placeholder="Поиск..."
+                      className="w-full text-sm px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none border border-transparent focus:border-amber-400 transition-colors"
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {pickerTasks.length === 0 ? (
+                      <p className="text-xs text-gray-400 dark:text-gray-500 p-3 text-center">Ничего не найдено</p>
+                    ) : (
+                      pickerTasks.map((task) => {
+                        const boardName =
+                          task.board_id == null
+                            ? null
+                            : (boards?.find((b) => b.id === task.board_id)?.name ?? `Проект ${task.board_id}`)
+                        return (
+                          <button
+                            key={task.id}
+                            type="button"
+                            onClick={() => handleAddToMyDay(task)}
+                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                          >
+                            <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+                            <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{task.title}</span>
+                            {boardName && (
+                              <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 truncate max-w-[60px]">
+                                {boardName}
+                              </span>
+                            )}
+                          </button>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Backlog — collapsed by default */}
           {backlogTasks.length > 0 && (
-            <section>
+            <section className="pt-1">
               <button
                 type="button"
                 onClick={() => setBacklogOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors mb-2"
+                className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
               >
                 <svg
-                  width="10" height="10"
-                  viewBox="0 0 24 24"
-                  fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
                   className={clsx('transition-transform', backlogOpen ? 'rotate-90' : '')}
                 >
                   <polyline points="9 18 15 12 9 6" />
                 </svg>
-                Backlog
+                Беклог
                 <span className="ml-0.5 text-[10px] font-normal normal-case tracking-normal">
                   ({backlogTasks.length})
                 </span>
               </button>
 
               {backlogOpen && (
-                <div className="space-y-4">
+                <div className="mt-2 space-y-4">
                   {(() => {
                     const groups: { boardId: number | null; name: string; tasks: Task[] }[] = []
                     for (const task of backlogTasks) {
@@ -643,9 +695,10 @@ export default function TodayPage() {
                       if (existing) {
                         existing.tasks.push(task)
                       } else {
-                        const boardName = task.board_id == null
-                          ? 'Основная'
-                          : (boards?.find((b) => b.id === task.board_id)?.name ?? `Доска ${task.board_id}`)
+                        const boardName =
+                          task.board_id == null
+                            ? 'Входящие'
+                            : (boards?.find((b) => b.id === task.board_id)?.name ?? `Проект ${task.board_id}`)
                         groups.push({ boardId: task.board_id, name: boardName, tasks: [task] })
                       }
                     }
@@ -660,8 +713,8 @@ export default function TodayPage() {
                             <BacklogTaskRow
                               key={task.id}
                               task={task}
+                              todayStr={todayStr}
                               onDone={() => handleMarkDone(task)}
-                              onStatusChange={(status) => handleStatusChange(task, status)}
                               onClick={() => openEdit(task)}
                             />
                           ))}
@@ -677,31 +730,30 @@ export default function TodayPage() {
 
         {/* Right — pet + habits */}
         <div className="space-y-5">
-          {/* Питомец — только на десктопе */}
           <div className="hidden lg:block">
             <AsciiPet tip={tip} isLoading={tipLoading} />
           </div>
 
           <div>
-          <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
-            Привычки
-          </h2>
-          {activeHabits.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">
-              Нет активных привычек
-            </p>
-          ) : (
-            <div className="space-y-1.5">
-              {activeHabits.map((habit) => (
-                <HabitRow
-                  key={habit.id}
-                  habit={habit}
-                  done={isHabitDone(habit)}
-                  onToggle={() => handleHabitToggle(habit.id)}
-                />
-              ))}
-            </div>
-          )}
+            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+              Привычки
+            </h2>
+            {activeHabits.length === 0 ? (
+              <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">
+                Нет активных привычек
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                {activeHabits.map((habit) => (
+                  <HabitRow
+                    key={habit.id}
+                    habit={habit}
+                    done={isHabitDone(habit)}
+                    onToggle={() => handleHabitToggle(habit.id)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

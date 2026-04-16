@@ -108,6 +108,13 @@ body {
   border-color: #334155 !important;
 }
 
+/* Transparent-text inputs (backdrop highlight trick) — don't override */
+.dark input.quick-add {
+  background-color: transparent !important;
+  color: transparent !important;
+  border-color: transparent !important;
+}
+
 .dark input::placeholder,
 .dark textarea::placeholder {
   color: #64748B !important;

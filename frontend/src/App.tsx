@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
@@ -8,13 +8,18 @@ import LoginPage from '@/pages/LoginPage'
 import AdminPage from '@/pages/AdminPage'
 import CalendarPage from '@/pages/CalendarPage'
 import BoardsPage from '@/pages/BoardsPage'
-import KanbanPage from '@/pages/KanbanPage'
+import TodoListPage from '@/pages/TodoListPage'
 import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import TodayPage from '@/pages/TodayPage'
 import BudgetPage from '@/pages/BudgetPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import { queryClient } from '@/lib/queryClient'
+
+function KanbanRedirect() {
+  const { boardId } = useParams<{ boardId: string }>()
+  return <Navigate to={`/project/${boardId}`} replace />
+}
 
 function ProtectedRoute() {
   const { isAuthenticated } = useAuth()
@@ -45,9 +50,12 @@ export default function App() {
                 <Route path="/calendar/day" element={<CalendarPage />} />
                 <Route path="/calendar/week" element={<CalendarPage />} />
                 <Route path="/calendar/month" element={<CalendarPage />} />
-                <Route path="/boards" element={<BoardsPage />} />
-                <Route path="/kanban" element={<KanbanPage />} />
-                <Route path="/kanban/:boardId" element={<KanbanPage />} />
+                <Route path="/boards" element={<Navigate to="/projects" replace />} />
+                <Route path="/kanban" element={<Navigate to="/project" replace />} />
+                <Route path="/kanban/:boardId" element={<KanbanRedirect />} />
+                <Route path="/projects" element={<BoardsPage />} />
+                <Route path="/project" element={<TodoListPage />} />
+                <Route path="/project/:boardId" element={<TodoListPage />} />
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/budget" element={<BudgetPage />} />
