@@ -34,7 +34,8 @@ router = APIRouter(
 
 # Если отчёт в in_progress дольше этого времени — считаем стрим мёртвым
 # (например, клиент отвалился, сеть упала) и разрешаем перегенерацию.
-STALE_IN_PROGRESS = timedelta(minutes=10)
+# 3 минуты — с запасом: реальная генерация укладывается в 10-30 сек.
+STALE_IN_PROGRESS = timedelta(minutes=3)
 
 
 def _monday_of(d: date) -> date:
@@ -403,7 +404,18 @@ async def stream_report(
                 pass
         finally:
             content = "".join(full_chunks) if final_status == ReportStatus.DONE else None
-            await _finalize(final_status, content, final_error)
+            # asyncio.shield: если клиент отвалился и текущий таск отменяется,
+            # без shield await _finalize тоже мгновенно получит CancelledError
+            # и БД не обновится — отчёт останется залипшим в in_progress.
+            # shield позволяет finalize-таску добежать до конца независимо.
+            try:
+                await asyncio.shield(
+                    asyncio.ensure_future(_finalize(final_status, content, final_error))
+                )
+            except asyncio.CancelledError:
+                # outer cancel дошёл до await — shielded task всё равно работает в фоне,
+                # просто дожидаться его мы больше не можем.
+                pass
 
     return StreamingResponse(
         event_stream(),
