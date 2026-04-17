@@ -17,7 +17,12 @@
       "Bash(python3 *)",
       "Bash(git pull *)",
       "Bash(git stash *)",
-      "Bash(grep \"\\\\.py$\")"
+      "Bash(grep \"\\\\.py$\")",
+      "mcp__claude_ai_Context7__query-docs",
+      "Bash(./.venv/Scripts/python.exe backend/llm_probe.py)",
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe.py)",
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe2.py)",
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe3.py)"
     ]
   }
 }

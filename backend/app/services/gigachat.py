@@ -17,7 +17,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://foundation-models.api.cloud.ru/v1"
-MODEL = "zai-org/GLM-4.7"
+MODEL = "ai-sage/GigaChat3-10B-A1.8B"
 
 # Нестримовый клиент: жёсткий таймаут на весь запрос (короткие ответы типа daily-tip).
 SHORT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=10.0)
@@ -43,6 +43,15 @@ _BASE_PARAMS = dict(
     top_p=0.95,
 )
 
+# Гибридные модели Z.ai (GLM-4.5/4.6/4.7) по умолчанию «размышляют» перед
+# ответом — для нашего кейса это ест время и токены (вся генерация улетает
+# в reasoning_content, а в content остаётся мало). Шлюз cloud.ru игнорирует
+# параметр `thinking.type=disabled` из официального API Z.ai, зато пробрасывает
+# `chat_template_kwargs.enable_thinking=false` напрямую в vLLM-сервер → это и
+# отключает thinking в шаблоне чата модели. Проверено эмпирически: 55с → 7с.
+# Для моделей без thinking параметр безобидный (vLLM просто не найдёт ключ).
+_EXTRA_BODY = {"chat_template_kwargs": {"enable_thinking": False}}
+
 
 def _wrap_error(exc: Exception) -> RuntimeError:
     if isinstance(exc, RateLimitError):
@@ -63,6 +72,7 @@ async def chat_completion(messages: list[dict], max_tokens: int = 2500) -> str:
         response = await client.chat.completions.create(
             messages=messages,
             max_tokens=max_tokens,
+            extra_body=_EXTRA_BODY,
             **_BASE_PARAMS,
         )
     except (APIError, APIConnectionError, APITimeoutError, RateLimitError) as exc:
@@ -85,6 +95,7 @@ async def chat_completion_stream(messages: list[dict], max_tokens: int = 4096):
             messages=messages,
             max_tokens=max_tokens,
             stream=True,
+            extra_body=_EXTRA_BODY,
             **_BASE_PARAMS,
         )
     except (APIError, APIConnectionError, APITimeoutError, RateLimitError) as exc:

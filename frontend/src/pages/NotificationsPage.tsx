@@ -57,6 +57,52 @@ function StreamCursor() {
   )
 }
 
+// ─── Thinking indicator (до первого токена от LLM) ────────────────────────────
+
+const THINKING_MESSAGES = [
+  'Собираю данные за неделю…',
+  'Считаю закрытые задачи…',
+  'Смотрю на провалы и просрочки…',
+  'Анализирую привычки…',
+  'Формулирую честный разбор…',
+  'ИИ думает над ответом…',
+]
+
+function ThinkingIndicator() {
+  const [msgIdx, setMsgIdx] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setMsgIdx((i) => (i + 1) % THINKING_MESSAGES.length)
+    }, 2200)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex items-end gap-1 h-5">
+        <span
+          className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce"
+          style={{ animationDelay: '0ms', animationDuration: '1s' }}
+        />
+        <span
+          className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce"
+          style={{ animationDelay: '150ms', animationDuration: '1s' }}
+        />
+        <span
+          className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-bounce"
+          style={{ animationDelay: '300ms', animationDuration: '1s' }}
+        />
+      </div>
+      <span
+        key={msgIdx}
+        className="text-sm text-gray-500 dark:text-gray-400"
+      >
+        {THINKING_MESSAGES[msgIdx]}
+      </span>
+    </div>
+  )
+}
+
 // ─── Report card ──────────────────────────────────────────────────────────────
 
 interface ReportCardProps {
@@ -87,10 +133,12 @@ function ReportCard({ report, streamingContent, isStreaming }: ReportCardProps) 
       <div className="px-5 py-5">
         {/* Pending but not yet streaming */}
         {report.status === 'pending' && !content && (
-          <div className="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
-            <Spinner className="!w-5 !h-5" />
-            <span>ИИ анализирует твою неделю…</span>
-          </div>
+          <ThinkingIndicator />
+        )}
+
+        {/* Streaming started from this tab, но первый токен ещё не пришёл */}
+        {isStreaming && !content && report.status !== 'pending' && (
+          <ThinkingIndicator />
         )}
 
         {/* In progress but not from this tab */}

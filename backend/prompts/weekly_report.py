@@ -32,16 +32,23 @@ def build_prompt(data: WeeklyData) -> str:
             "чтобы не расслаблялся."
         )
 
-    # ── Лучший и худший проект ──
-    if data.projects:
-        best = max(data.projects, key=lambda p: p.completion_rate)
-        worst = min(data.projects, key=lambda p: p.completion_rate)
+    # «Без проекта» — виртуальный бакет для задач без доски, это не настоящий
+    # проект, называть его в отчёте по имени нельзя.
+    DEFAULT_BUCKET = "Без проекта"
+    real_projects = [p for p in data.projects if p.name != DEFAULT_BUCKET]
+
+    # ── Лучший и худший проект (только реальные, без бакета) ──
+    if real_projects:
+        best = max(real_projects, key=lambda p: p.completion_rate)
+        worst = min(real_projects, key=lambda p: p.completion_rate)
     else:
         best = worst = None
 
     # Примеры имён для живых образцов — подставляем реальные данные,
     # чтобы слабая LLM не копировала шаблон с квадратными скобками.
-    example_project = (worst.name if worst else (best.name if best else "проект"))
+    example_project = (
+        worst.name if worst else (best.name if best else "один из проектов")
+    )
     example_habit = data.habits[0].name if data.habits else "привычка"
     example_habit_pct = data.habits[0].pct if data.habits else 0
 
@@ -78,6 +85,11 @@ def build_prompt(data: WeeklyData) -> str:
         "   В финальном ответе квадратных скобок быть не должно вообще.",
         "8. Не копируй примеры дословно — бери из них только стиль и переписывай своими словами,",
         "   используя реальные названия проектов и цифры из секции ДАННЫЕ выше.",
+        f"9. Группа «{DEFAULT_BUCKET}» — это НЕ проект, а задачи без доски.",
+        f"   НИКОГДА не называй её «проект {DEFAULT_BUCKET}» или «{DEFAULT_BUCKET}».",
+        "   Говори о таких задачах как «разрозненные задачи», «задачи вне проектов»",
+        "   или просто ссылайся на них по названию задачи. В списках «лучший/худший проект»",
+        "   этот бакет не участвует.",
         "",
     ]
 
@@ -96,9 +108,13 @@ def build_prompt(data: WeeklyData) -> str:
     # ── ПРОЕКТЫ ──
     lines.append("▸ ПРОЕКТЫ (1 канбан-доска = 1 проект):")
     for p in data.projects:
+        if p.name == DEFAULT_BUCKET:
+            header = "  ── Задачи вне проектов (НЕ называй это проектом) ──"
+        else:
+            header = f"  ── Проект «{p.name}» ──"
         lines += [
             "",
-            f"  ── Проект «{p.name}» ──",
+            header,
             f"  Выполнено: {p.done_count} | В работе: {p.in_progress_count} | "
             f"Очередь: {p.todo_count} | Просрочено: {p.overdue_count} | "
             f"Процент выполнения: {p.completion_rate}%",
