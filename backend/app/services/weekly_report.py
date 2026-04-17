@@ -5,7 +5,6 @@
 Промпт (тон, структура, правила) — в weekly_report_prompt.py.
 """
 import logging
-import re
 from datetime import date, datetime, timedelta, timezone
 
 from sqlalchemy import func, select
@@ -30,11 +29,11 @@ from prompts.weekly_report import build_prompt
 
 logger = logging.getLogger(__name__)
 
-_INTRO_HEADING_RE = re.compile(r'^##\s*(?:Вступление|ВСТУПЛЕНИЕ)[^\n]*\n+', re.UNICODE)
-
-
 def _strip_intro_heading(text: str) -> str:
-    return _INTRO_HEADING_RE.sub('', text).lstrip('\n')
+    # Оставлено для совместимости с вызовами из reports.py/стримом.
+    # Раньше мы срезали заголовок «## Вступление» — теперь это полноценный
+    # раздел, срезать не нужно, просто чистим ведущие пустые строки.
+    return text.lstrip('\n')
 
 
 PRIORITY_RU = {
