@@ -344,21 +344,14 @@ async def stream_report(
                 report_id, t_data - t0, len(prompt),
             )
 
-            # Heartbeat: пока LLM ещё не прислал первый токен, шлём комменты
-            # каждые 10 сек, чтобы прокси не закрыл соединение.
+            # Прямой async-for по стриму. НЕ оборачивать в asyncio.wait_for —
+            # отмена __anext__ ломает внутренний httpx-итератор OpenAI SDK
+            # и роняет скорость до 2-3 токенов/сек. nginx буферизацию мы
+            # выключили в конфиге, heartbeat не нужен.
             t_llm_open = time.monotonic()
-            stream_gen = chat_completion_stream([{"role": "user", "content": prompt}])
             got_first = False
 
-            while True:
-                try:
-                    chunk = await asyncio.wait_for(stream_gen.__anext__(), timeout=10.0)
-                except asyncio.TimeoutError:
-                    yield ": ping\n\n"
-                    continue
-                except StopAsyncIteration:
-                    break
-
+            async for chunk in chat_completion_stream([{"role": "user", "content": prompt}]):
                 if not got_first:
                     logger.info(
                         "report %s: ttft=%.2fs (llm first token)",
