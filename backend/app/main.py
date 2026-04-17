@@ -81,6 +81,17 @@ async def lifespan(app: FastAPI):
             admin.is_admin = True
             await session.commit()
 
+        # Сбрасываем зависшие in_progress отчёты после рестарта —
+        # их стрим оборвался вместе с процессом.
+        from app.models.report import ReportStatus, WeeklyReport
+        stuck = await session.execute(
+            select(WeeklyReport).where(WeeklyReport.status == ReportStatus.IN_PROGRESS.value)
+        )
+        for r in stuck.scalars().all():
+            r.status = ReportStatus.ERROR.value
+            r.error_msg = "Генерация прервана рестартом сервера"
+        await session.commit()
+
     # Schedule periodic backup
     scheduler.add_job(
         run_backup,

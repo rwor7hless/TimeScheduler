@@ -27,9 +27,24 @@ router = APIRouter(
     dependencies=[Depends(get_current_user)],
 )
 
+# Если отчёт в in_progress дольше этого времени — считаем стрим мёртвым
+# (например, клиент отвалился, сеть упала) и разрешаем перегенерацию.
+STALE_IN_PROGRESS = timedelta(minutes=10)
+
 
 def _monday_of(d: date) -> date:
     return d - timedelta(days=d.weekday())
+
+
+def _is_stale_in_progress(report: WeeklyReport) -> bool:
+    if report.status != ReportStatus.IN_PROGRESS.value:
+        return False
+    updated = report.updated_at
+    if updated is None:
+        return True
+    if updated.tzinfo is None:
+        updated = updated.replace(tzinfo=timezone.utc)
+    return datetime.now(timezone.utc) - updated > STALE_IN_PROGRESS
 
 
 @router.get("", response_model=list[WeeklyReportResponse])
@@ -130,7 +145,7 @@ async def request_summary(
             status=ReportStatus.PENDING,
         )
         db.add(report)
-    elif report.status == ReportStatus.IN_PROGRESS.value:
+    elif report.status == ReportStatus.IN_PROGRESS.value and not _is_stale_in_progress(report):
         # Уже пишется в другой вкладке — не мешаем.
         return report
     else:
@@ -270,7 +285,7 @@ async def stream_report(
     if not report:
         raise HTTPException(status_code=404, detail="Отчёт не найден")
 
-    if report.status == ReportStatus.IN_PROGRESS:
+    if report.status == ReportStatus.IN_PROGRESS.value and not _is_stale_in_progress(report):
         raise HTTPException(
             status_code=409,
             detail="Отчёт уже генерируется в другой вкладке.",
