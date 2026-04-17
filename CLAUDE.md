@@ -11,20 +11,25 @@ TimeScheduler is a personal task/habit scheduling app with a FastAPI backend and
 ### Backend (`backend/`)
 - **FastAPI** application with async SQLAlchemy + PostgreSQL (`asyncpg`)
 - **Alembic** for migrations (auto-run on startup via `alembic upgrade head`)
-- **APScheduler** runs background jobs: periodic DB backup, Telegram polling (every 5s), Telegram reminders (every 1m)
+- **APScheduler** runs background jobs: periodic DB backup, Telegram long-polling (every 30s), Telegram reminders (every 1m), weekly AI report (Sunday 21:00 in `settings.user_timezone`)
 - On startup, the app creates the admin user from `settings.user_login` / `settings.user_password` if missing, or updates the password hash if it changed
 - All routes are prefixed with `/api` and use JWT Bearer auth. `get_current_user` and `get_admin_user` are the dependency functions in `backend/app/dependencies.py`
 - Config is loaded from `.env` (at repo root, one level above `backend/`) via `pydantic-settings`
 
 **Key models:**
-- `Task` — main entity with priority, kanban status/order, schedule, deadline, repeat days, board reference, tags (M2M), Telegram reminder fields, archive flag
+- `Task` — main entity with priority, kanban status/order, schedule, deadline, repeat days, board reference, tags (M2M), Telegram reminder fields, archive flag, subtasks (self-FK with `delete-orphan` cascade)
 - `Habit` + `HabitLog` — habit tracking with daily logs
-- `Board` — kanban boards; tasks belong to a board via `board_id`
+- `Board` — kanban boards; tasks belong to a board via `board_id` (`SET NULL` on delete)
 - `Tag` — per-user tags with color, linked to tasks via `task_tags` junction
 - `User` — auth; `telegram_chat_id` stored here after Telegram linkage
 - `TelegramKey` — one-time keys for linking user accounts to Telegram
+- `TelegramState` — one-row table holding the long-poll `last_update_id`
+- `Transaction`, `PlannedPurchase`, `BudgetTag`, `BudgetAllocation` — backend-persisted budget data
+- `WeeklyReport` — generated AI weekly summaries (status: pending/in_progress/done/error)
 
-**Router structure:** `auth`, `admin`, `tasks`, `boards`, `tags`, `habits`, `stats`, `export`, `backup`, `telegram`
+**Router structure:** `auth`, `admin`, `tasks`, `boards`, `tags`, `habits`, `stats`, `export`, `backup`, `telegram`, `budget`, `search`, `reports`
+
+**LLM integration:** `backend/app/services/gigachat.py` wraps the OpenAI-compatible cloud.ru endpoint (GigaChat). Uses `GIGACHAT_API_KEY`. All errors are mapped to `RuntimeError` with human-readable messages — call sites translate them to HTTP 503.
 
 ### Frontend (`frontend/`)
 - **React 18** + **TypeScript** + **Vite**
@@ -36,11 +41,11 @@ TimeScheduler is a personal task/habit scheduling app with a FastAPI backend and
 - **recharts** + **react-activity-calendar** for stats visualizations
 - **framer-motion** for animations
 
-**Pages:** Today, Calendar (day/week/month views), Boards, Kanban (per-board), Habits, Stats, Notes, Budget, Export, Admin
+**Pages:** Today, Calendar (day/week/month views), Boards, Kanban (per-board), Habits, Stats, Budget, Export, Notifications, Admin. (Notes were dropped in migration `012_drop_notes_table.py` and removed from the UI.)
 
-**Auth flow:** JWT stored in `localStorage`. On 401 response, the axios interceptor clears the token and redirects to `/login`. `AuthContext` provides `isAuthenticated` and `isAdmin`.
+**Auth flow:** JWT stored in `localStorage`. On 401 response, the axios interceptor (`src/api/client.ts`) shows a toast and redirects to `/login` after a short delay. `AuthContext` provides `isAuthenticated` and `isAdmin`.
 
-**localStorage-only features (no backend sync):** Notes (`notes` key) and Budget (`budget_data` key) are stored entirely in `localStorage`. They are per-browser and do not sync across devices or users. If backend persistence is needed for these features, it must be built from scratch.
+**localStorage-only state:** Theme preference (`ThemeContext`), daily-tip cache (`useDailyTip`), and last-seen-reports timestamp (`useReports`). Budget is **backend-persisted**, not localStorage.
 
 ## Development Commands
 
@@ -73,14 +78,20 @@ Environment variables (`.env` at repo root, read by `backend/app/config.py`):
 | `USER_LOGIN` | `Wor7hless` | Admin username |
 | `USER_PASSWORD` | `change-me` | Admin password |
 | `TELEGRAM_BOT_TOKEN` | `` | Optional; enables Telegram reminders |
-| `CLEAN_DB_ON_STARTUP` | `false` | Truncates all data on next startup (one-time reset) |
+| `CLEAN_DB_ON_STARTUP` | `false` | ⚠️ Truncates ALL tables on next startup (one-time reset). Includes a 3-sec warning delay in logs. |
 | `BACKUP_INTERVAL_HOURS` | `24` | DB backup frequency |
 | `BACKUP_DIR` | `./backups` | Backup storage path |
+| `USER_TIMEZONE` | `Europe/Moscow` | Timezone for weekly-report cron and Telegram reminder display |
+| `GIGACHAT_API_KEY` | `` | API key for cloud.ru GigaChat (daily tip + weekly report). Empty disables LLM features. |
+| `NTFY_TOPIC` | `` | ntfy.sh topic for mobile push notifications (empty disables) |
+| `NTFY_SERVER` | `https://ntfy.sh` | ntfy server URL |
 
 ## Key Conventions
 
-- All DB timestamps are stored as UTC. The Telegram reminder service hardcodes UTC+3 (Moscow) for display — this is intentional.
+- All DB timestamps are stored as UTC. The Telegram reminder service converts to `settings.user_timezone` for display.
 - `repeat_days` on `Task` is a PostgreSQL `ARRAY(Integer)` where 0=Monday, 6=Sunday.
-- New Alembic migrations go in `backend/alembic/versions/` and are numbered sequentially (`001_`, `002_`, etc.).
+- New Alembic migrations go in `backend/alembic/versions/` and are numbered sequentially (`001_`, `002_`, etc.). The filename prefix must match the `revision = '...'` inside the file.
 - The backend runs migrations automatically at startup — no separate migration step needed in production.
-- `CLEAN_DB_ON_STARTUP=true` uses a raw `TRUNCATE` SQL statement and should only be set once for a reset, then removed.
+- `CLEAN_DB_ON_STARTUP=true` uses a raw `TRUNCATE ... CASCADE` over every table from `Base.metadata.sorted_tables`, logs a warning and sleeps 3 sec before executing. Should only be set once for a reset, then removed.
+- Report status uses the `ReportStatus` enum: `pending` → `in_progress` → `done`/`error`. `/api/reports/{id}/stream` atomically transitions to `in_progress` on entry; a parallel call gets 409.
+- Telegram long-poll `last_update_id` lives in the one-row `telegram_state` table (not in a Python global). Polling is scheduled every 30s with `max_instances=1` to prevent overlap.

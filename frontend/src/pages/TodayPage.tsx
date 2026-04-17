@@ -4,6 +4,7 @@ import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask, useCreateTask, useBoards } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
+import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import AsciiPet from '@/components/today/AsciiPet'
 import Spinner from '@/components/ui/Spinner'
 import { useDailyTip } from '@/hooks/useDailyTip'
@@ -140,6 +141,11 @@ function TodayTaskRow({
         {task.title}
       </button>
 
+      {/* Tags */}
+      {!done && task.tags && task.tags.length > 0 && (
+        <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
+      )}
+
       {/* Date badge (shows "завтра" in amber or formatted date) */}
       {!done && dateLabel && (
         <span
@@ -229,6 +235,9 @@ function BacklogTaskRow({
       >
         {task.title}
       </button>
+      {task.tags && task.tags.length > 0 && (
+        <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
+      )}
       {!isOverdue && dateLabel && (
         <span
           className={clsx(
@@ -349,23 +358,56 @@ export default function TodayPage() {
   }, [showPicker])
 
   // Auto-clear scheduled date on tasks whose scheduled day has already passed
-  // — they drop into the backlog instead of lingering as "overdue scheduled".
-  const clearedOverdueRef = useRef<Set<number>>(new Set())
+  // — они уходят в бэклог вместо «висящих просроченных». Делаем это один раз
+  // за визит, показываем один тост со всеми и даём Undo.
+  const cleanupRanRef = useRef(false)
   useEffect(() => {
-    if (!allTasks) return
+    if (!allTasks || cleanupRanRef.current) return
+
+    const overdue: Array<{ id: number; prevStart: string; prevEnd: string | null }> = []
     for (const t of allTasks) {
-      if (clearedOverdueRef.current.has(t.id)) continue
       if (t.is_archived) continue
       if (t.status === 'done') continue
       if (t.repeat_days && t.repeat_days.length > 0) continue
       if (!t.scheduled_start) continue
       if (t.scheduled_start.slice(0, 10) >= todayStr) continue
-      clearedOverdueRef.current.add(t.id)
-      patchTask.mutate({
-        id: t.id,
-        data: { scheduled_start: null, scheduled_end: null },
-      })
+      overdue.push({ id: t.id, prevStart: t.scheduled_start, prevEnd: t.scheduled_end ?? null })
     }
+    if (overdue.length === 0) return
+
+    cleanupRanRef.current = true
+    for (const { id } of overdue) {
+      patchTask.mutate({ id, data: { scheduled_start: null, scheduled_end: null } })
+    }
+
+    const label =
+      overdue.length === 1
+        ? '1 просроченная задача перенесена в бэклог'
+        : `${overdue.length} просроченных задач перенесены в бэклог`
+
+    toast(
+      (toastObj) => (
+        <div className="flex items-center gap-3">
+          <span>{label}</span>
+          <button
+            type="button"
+            className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
+            onClick={() => {
+              for (const item of overdue) {
+                patchTask.mutate({
+                  id: item.id,
+                  data: { scheduled_start: item.prevStart, scheduled_end: item.prevEnd },
+                })
+              }
+              toast.dismiss(toastObj.id)
+            }}
+          >
+            Отменить
+          </button>
+        </div>
+      ),
+      { duration: 6000 },
+    )
   }, [allTasks, todayStr, patchTask])
 
   // ── Unified "today" list: scheduled → deadline → my_day ──────────────────

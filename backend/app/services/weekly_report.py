@@ -253,7 +253,7 @@ async def generate_report_for_user(user_id: int, week_start: date) -> None:
         except Exception as e:
             report.status = ReportStatus.ERROR
             report.error_msg = str(e)[:500]
-            logger.error(f"Weekly report failed for user_id={user_id}: {e}")
+            logger.exception("Weekly report failed for user_id=%s", user_id)
 
         await db.commit()
 

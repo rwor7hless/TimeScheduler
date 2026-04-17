@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import AppShell from '@/components/layout/AppShell'
+import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import LoginPage from '@/pages/LoginPage'
 import AdminPage from '@/pages/AdminPage'
 import CalendarPage from '@/pages/CalendarPage'
@@ -40,6 +41,7 @@ export default function App() {
       <ThemeProvider>
       <AuthProvider>
         <BrowserRouter>
+          <ErrorBoundary>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route element={<ProtectedRoute />}>
@@ -66,6 +68,7 @@ export default function App() {
               </Route>
             </Route>
           </Routes>
+          </ErrorBoundary>
         </BrowserRouter>
         <Toaster
           position="bottom-right"

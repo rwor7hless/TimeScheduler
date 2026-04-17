@@ -10,3 +10,4 @@ class UserInfo(BaseModel):
     username: str
     user_id: int
     is_admin: bool = False
+    can_request_summary: bool = False

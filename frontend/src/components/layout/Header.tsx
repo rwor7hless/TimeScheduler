@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTheme } from '@/context/ThemeContext'
 import { searchApi, type SearchResult } from '@/api/search'
-import TelegramSettingsModal from './TelegramSettingsModal'
+import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 
 interface HeaderProps {
   onMenuToggle: () => void
@@ -15,7 +15,6 @@ const PRIORITY_COLOR: Record<string, string> = {
 
 export default function Header({ onMenuToggle, searchRef }: HeaderProps) {
   const { theme, toggle } = useTheme()
-  const [tgModalOpen, setTgModalOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [results, setResults] = useState<SearchResult | null>(null)
@@ -120,6 +119,7 @@ export default function Header({ onMenuToggle, searchRef }: HeaderProps) {
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => results && setShowResults(true)}
                 placeholder="Поиск задач, привычек, досок... (Enter)"
+                aria-label="Поиск задач, привычек и досок"
                 className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500"
               />
               <button
@@ -152,6 +152,9 @@ export default function Header({ onMenuToggle, searchRef }: HeaderProps) {
                       >
                         <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: t.color }} />
                         <span className="text-sm text-gray-800 dark:text-gray-200 flex-1 truncate">{t.title}</span>
+                        {t.tags && t.tags.length > 0 && (
+                          <TagBadgeGroup tags={t.tags} className="flex-shrink-0" />
+                        )}
                         <span className={`text-[10px] font-medium ${PRIORITY_COLOR[t.priority]}`}>
                           {t.priority}
                         </span>
@@ -229,20 +232,6 @@ export default function Header({ onMenuToggle, searchRef }: HeaderProps) {
           </button>
         )}
 
-        {/* Telegram button hidden — TG banned */}
-        {false && (
-        <button
-          type="button"
-          onClick={() => setTgModalOpen(true)}
-          title="Telegram напоминания"
-          aria-label="Telegram напоминания"
-          className="p-2.5 min-w-[44px] min-h-[44px] rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500 dark:text-gray-400 transition-colors flex items-center justify-center touch-manipulation"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.9l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.659z" />
-          </svg>
-        </button>
-        )}
         <button
           type="button"
           onClick={toggle}
@@ -262,7 +251,6 @@ export default function Header({ onMenuToggle, searchRef }: HeaderProps) {
           )}
         </button>
       </header>
-      <TelegramSettingsModal isOpen={tgModalOpen} onClose={() => setTgModalOpen(false)} />
     </>
   )
 }

@@ -15,13 +15,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-
-// ─── Color palette ─────────────────────────────────────────────────────────────
-
-const HABIT_COLORS = [
-  '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6', '#10B981',
-  '#F97316', '#EC4899', '#06B6D4', '#84CC16', '#6366F1',
-]
+import { PALETTE as HABIT_COLORS } from '@/lib/colors'
 
 // ─── Heatmap util ──────────────────────────────────────────────────────────────
 
@@ -97,7 +91,7 @@ export default function HabitsPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [deleteModalOpen, setDeleteModalOpen] = useState(false)
   const [newName, setNewName] = useState('')
-  const [newColor, setNewColor] = useState(HABIT_COLORS[0])
+  const [newColor, setNewColor] = useState<string>(HABIT_COLORS[0])
   const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null)
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null)
 

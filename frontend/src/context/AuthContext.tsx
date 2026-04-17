@@ -6,12 +6,14 @@ interface UserInfo {
   username: string
   user_id: number
   is_admin: boolean
+  can_request_summary: boolean
 }
 
 interface AuthContextType {
   isAuthenticated: boolean
   user: UserInfo | null
   isAdmin: boolean
+  canRequestSummary: boolean
   login: (username: string, password: string) => Promise<void>
   logout: () => void
 }
@@ -67,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated,
         user,
         isAdmin: user?.is_admin ?? false,
+        canRequestSummary: !!user && (user.is_admin || user.can_request_summary),
         login,
         logout,
       }}

@@ -1,6 +1,7 @@
 import asyncio
 import os
 from datetime import datetime
+from urllib.parse import unquote, urlsplit
 
 from app.config import settings
 
@@ -10,13 +11,14 @@ async def run_backup():
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     filename = os.path.join(settings.backup_dir, f"backup_{timestamp}.sql")
 
-    # Extract connection info from DATABASE_URL
-    db_url = settings.database_url.replace("postgresql+asyncpg://", "")
-    user_pass, host_db = db_url.split("@")
-    user, password = user_pass.split(":")
-    host_port, dbname = host_db.split("/")
-    host = host_port.split(":")[0]
-    port = host_port.split(":")[1] if ":" in host_port else "5432"
+    # Парсим DATABASE_URL через urlsplit — выдерживает спецсимволы в пароле
+    normalized = settings.database_url.replace("postgresql+asyncpg://", "postgresql://")
+    parts = urlsplit(normalized)
+    user = unquote(parts.username or "")
+    password = unquote(parts.password or "")
+    host = parts.hostname or "localhost"
+    port = str(parts.port or 5432)
+    dbname = (parts.path or "/").lstrip("/")
 
     env = os.environ.copy()
     env["PGPASSWORD"] = password

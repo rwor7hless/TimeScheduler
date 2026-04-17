@@ -1,5 +1,4 @@
 import json
-import re
 from datetime import date, datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,6 +6,7 @@ from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.database import async_session
 from app.dependencies import get_current_user, get_db
 from app.models.habit import Habit
@@ -16,16 +16,9 @@ from app.models.user import User
 from app.schemas.report import WeeklyReportResponse
 from app.services.gigachat import chat_completion, chat_completion_stream
 from app.services.ntfy import send as ntfy_send
-from app.services.weekly_report import build_weekly_data
+from app.services.weekly_report import _strip_intro_heading, build_weekly_data
 from prompts.pet_tip import build_pet_prompt
 from prompts.weekly_report import build_prompt
-
-# Заголовок «Вступление», который GigaChat иногда добавляет вопреки инструкции
-_INTRO_HEADING_RE = re.compile(r'^##\s*(?:Вступление|ВСТУПЛЕНИЕ)[^\n]*\n+', re.UNICODE)
-
-
-def _strip_intro_heading(text: str) -> str:
-    return _INTRO_HEADING_RE.sub('', text).lstrip('\n')
 
 
 router = APIRouter(
@@ -96,6 +89,61 @@ async def generate_report(
     return report
 
 
+@router.post("/request-summary", response_model=WeeklyReportResponse)
+async def request_summary(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Self-service запрос отчёта на текущую неделю.
+    Доступно, если is_admin или can_request_summary. Без лимитов — каждый клик
+    создаёт/пересбрасывает отчёт, чтобы его можно было перегенерировать.
+    Если прямо сейчас идёт стриминг (in_progress) — возвращаем его, чтобы
+    параллельный запрос не перехватывал сессию.
+    """
+    if not (current_user.is_admin or current_user.can_request_summary):
+        raise HTTPException(
+            status_code=403,
+            detail="Нет права запрашивать саммари. Обратитесь к администратору.",
+        )
+
+    if not settings.gigachat_api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="LLM отключён в конфигурации (GIGACHAT_API_KEY не задан).",
+        )
+
+    ws = _monday_of(date.today())
+
+    result = await db.execute(
+        select(WeeklyReport).where(
+            WeeklyReport.user_id == current_user.id,
+            WeeklyReport.week_start == ws,
+        )
+    )
+    report = result.scalar_one_or_none()
+
+    if report is None:
+        report = WeeklyReport(
+            user_id=current_user.id,
+            week_start=ws,
+            status=ReportStatus.PENDING,
+        )
+        db.add(report)
+    elif report.status == ReportStatus.IN_PROGRESS.value:
+        # Уже пишется в другой вкладке — не мешаем.
+        return report
+    else:
+        # done / pending / error — сбрасываем в pending, фронт сразу стартует стрим.
+        report.status = ReportStatus.PENDING
+        report.content = None
+        report.error_msg = None
+
+    await db.commit()
+    await db.refresh(report)
+    return report
+
+
 @router.post("/test-push")
 async def test_push(current_user: User = Depends(get_current_user)):
     """Тестовый пуш — проверить что ntfy настроен и телефон получает уведомления."""
@@ -120,6 +168,9 @@ async def get_daily_tip(
     Генерирует короткое напутствие на день от лица питомца.
     Кешировать на стороне клиента — вызывать раз в день.
     """
+    if not settings.gigachat_api_key:
+        return {"tip": None, "date": str(date.today()), "disabled": True}
+
     today = date.today()
     today_start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
     today_end = today_start + timedelta(days=1)
@@ -185,7 +236,10 @@ async def get_daily_tip(
         list(deadline_today_rows),
         list(overdue_rows),
     )
-    tip = await chat_completion([{"role": "user", "content": prompt}], max_tokens=200)
+    try:
+        tip = await chat_completion([{"role": "user", "content": prompt}], max_tokens=200)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
 
     return {"tip": tip.strip(), "date": str(today)}
 
@@ -215,6 +269,18 @@ async def stream_report(
     report = result.scalar_one_or_none()
     if not report:
         raise HTTPException(status_code=404, detail="Отчёт не найден")
+
+    if report.status == ReportStatus.IN_PROGRESS:
+        raise HTTPException(
+            status_code=409,
+            detail="Отчёт уже генерируется в другой вкладке.",
+        )
+
+    # Атомарно переводим в IN_PROGRESS, чтобы параллельный запрос получил 409
+    report.status = ReportStatus.IN_PROGRESS
+    report.error_msg = None
+    await db.commit()
+    await db.refresh(report)
 
     # Собираем данные в основной сессии (до открытия стрима)
     data = await build_weekly_data(db, current_user.id, report.week_start)

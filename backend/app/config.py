@@ -1,3 +1,6 @@
+import json
+
+from pydantic import field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -7,7 +10,7 @@ class Settings(BaseSettings):
     user_login: str = "Wor7hless"
     user_password: str = "change-me"
     jwt_algorithm: str = "HS256"
-    jwt_expire_minutes: int = 1440  # 24 hours
+    jwt_expire_minutes: int = 43200  # 30 days — single-user app, no refresh flow
 
     backup_interval_hours: int = 24
     backup_dir: str = "./backups"
@@ -25,6 +28,20 @@ class Settings(BaseSettings):
     # Подпишись на неё в приложении ntfy на телефоне
     ntfy_topic: str = ""          # если пусто — пуши отключены
     ntfy_server: str = "https://ntfy.sh"  # или адрес своего сервера
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _parse_cors(cls, v):
+        # pydantic-settings передаёт значение из .env как строку —
+        # принимаем JSON-массив или CSV.
+        if isinstance(v, str):
+            v = v.strip()
+            if not v:
+                return []
+            if v.startswith("["):
+                return json.loads(v)
+            return [x.strip() for x in v.split(",") if x.strip()]
+        return v
 
     model_config = {"env_file": "../.env", "env_file_encoding": "utf-8"}
 

@@ -13,6 +13,7 @@ def _utcnow() -> datetime:
 
 class ReportStatus(str, enum.Enum):
     PENDING = "pending"
+    IN_PROGRESS = "in_progress"
     DONE = "done"
     ERROR = "error"
 

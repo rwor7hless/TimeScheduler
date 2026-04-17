@@ -15,29 +15,3 @@ export const EXPENSE_CATEGORIES = [
 ] as const
 
 export type ExpenseCategoryId = typeof EXPENSE_CATEGORIES[number]['id']
-
-export interface Transaction {
-  id: string
-  type: TransactionType
-  amount: number
-  category: ExpenseCategoryId | null
-  description: string
-  date: string // yyyy-MM-dd
-  createdAt: number
-}
-
-export interface PlannedPurchase {
-  id: string
-  amount: number
-  category: ExpenseCategoryId | null
-  description: string
-  done: boolean
-  createdAt: number
-}
-
-export interface BudgetMonth {
-  year: number
-  month: number // 0-based
-  transactions: Transaction[]
-  plannedPurchases: PlannedPurchase[]
-}

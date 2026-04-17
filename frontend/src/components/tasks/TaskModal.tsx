@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import Modal from '@/components/ui/Modal'
-import Input from '@/components/ui/Input'
-import TimeRangeInput from '@/components/ui/TimeRangeInput'
-import TimePicker from '@/components/ui/TimePicker'
+import ConfirmModal from '@/components/ui/ConfirmModal'
+import TimeField from '@/components/ui/TimeField'
 import { useCreateTask, useUpdateTask, useDeleteTask, usePatchTask, useTags } from '@/hooks/useTasks'
 import type { Task, TaskCreate, Priority, KanbanStatus } from '@/types/task'
 import { TASK_COLOR_PALETTE, WEEKDAY_LABELS } from '@/types/task'
+import { parseTaskInput, friendlyDate } from '@/utils/parseTask'
 import toast from 'react-hot-toast'
+import clsx from 'clsx'
 
 interface TaskModalProps {
   isOpen: boolean
@@ -18,31 +19,15 @@ interface TaskModalProps {
 }
 
 const PRIORITY_CONFIG: { value: Priority; label: string; activeClass: string; ghostClass: string }[] = [
-  {
-    value: 'low',
-    label: 'Низкий',
-    activeClass: 'bg-gray-500 text-white',
-    ghostClass: 'text-gray-400 hover:text-gray-600 hover:bg-gray-100',
-  },
-  {
-    value: 'medium',
-    label: 'Средний',
-    activeClass: 'bg-blue-500 text-white',
-    ghostClass: 'text-blue-400 hover:text-blue-600 hover:bg-blue-50',
-  },
-  {
-    value: 'high',
-    label: 'Высокий',
-    activeClass: 'bg-orange-500 text-white',
-    ghostClass: 'text-orange-400 hover:text-orange-600 hover:bg-orange-50',
-  },
-  {
-    value: 'urgent',
-    label: 'Срочный',
-    activeClass: 'bg-red-500 text-white',
-    ghostClass: 'text-red-400 hover:text-red-600 hover:bg-red-50',
-  },
+  { value: 'low',    label: '↓',  activeClass: 'bg-gray-500 text-white',   ghostClass: 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10' },
+  { value: 'medium', label: '—',  activeClass: 'bg-blue-500 text-white',   ghostClass: 'text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30' },
+  { value: 'high',   label: '↑',  activeClass: 'bg-orange-500 text-white', ghostClass: 'text-orange-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30' },
+  { value: 'urgent', label: '⚡', activeClass: 'bg-red-500 text-white',    ghostClass: 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30' },
 ]
+
+const PRIORITY_TITLES: Record<Priority, string> = {
+  low: 'Низкий', medium: 'Средний', high: 'Высокий', urgent: 'Срочный',
+}
 
 function randomColor(): string {
   return TASK_COLOR_PALETTE[Math.floor(Math.random() * TASK_COLOR_PALETTE.length)]
@@ -51,17 +36,37 @@ function randomColor(): string {
 function parseDatetime(isoString: string): { date: string; startTime: string } {
   const d = new Date(isoString)
   const pad = (n: number) => String(n).padStart(2, '0')
-  const date = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-  const startTime = `${pad(d.getHours())}:${pad(d.getMinutes())}`
-  return { date, startTime }
+  return {
+    date: `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`,
+    startTime: `${pad(d.getHours())}:${pad(d.getMinutes())}`,
+  }
+}
+
+function describeApiError(err: unknown, fallback: string): string {
+  const e = err as { response?: { status?: number; data?: { detail?: unknown } } } | undefined
+  const detail = e?.response?.data?.detail
+  if (typeof detail === 'string' && detail.trim()) return detail
+  const status = e?.response?.status
+  if (status === 401) return 'Сессия истекла, войдите снова'
+  if (status === 403) return 'Нет прав на это действие'
+  if (status === 404) return 'Не найдено — возможно, удалено в другом месте'
+  if (status === 422) return 'Проверьте заполнение полей'
+  if (status === 429) return 'Слишком часто — попробуйте позже'
+  if (status && status >= 500) return 'Сервер недоступен, попробуйте позже'
+  return fallback
+}
+
+function formatWhen(date: string, start: string, end: string, todayStr: string): string {
+  const dateLabel = friendlyDate(date, todayStr)
+  if (start && end) return `${dateLabel} • ${start}–${end}`
+  if (start) return `${dateLabel} • ${start}`
+  return dateLabel
 }
 
 export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultStatus, boardId }: TaskModalProps) {
-  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
-  const [showSubtaskInput, setShowSubtaskInput] = useState(false)
-  const [localSubtasks, setLocalSubtasks] = useState<Task[]>([])
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [showDescription, setShowDescription] = useState(false)
   const [priority, setPriority] = useState<Priority>('medium')
   const [status, setStatus] = useState<KanbanStatus>('todo')
   const [scheduledDate, setScheduledDate] = useState('')
@@ -72,10 +77,15 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const [showDeadline, setShowDeadline] = useState(false)
   const [repeatDays, setRepeatDays] = useState<number[]>([])
   const [selectedTagIds, setSelectedTagIds] = useState<number[]>([])
-  const [tgRemind, setTgRemind] = useState(false)
-  const [tgRemindDate, setTgRemindDate] = useState('')
-  const [tgRemindTime, setTgRemindTime] = useState('')
-  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+
+  const [parserHint, setParserHint] = useState<string>('')
+  const parserArmedRef = useRef(false)  // только при создании новой задачи, однократно
+
+  const [newSubtaskTitle, setNewSubtaskTitle] = useState('')
+  const [showSubtaskInput, setShowSubtaskInput] = useState(false)
+  const [localSubtasks, setLocalSubtasks] = useState<Task[]>([])
+  const [pendingSubtaskIds, setPendingSubtaskIds] = useState<Set<number>>(new Set())
 
   const { data: tags } = useTags()
   const createTask = useCreateTask()
@@ -83,7 +93,13 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
   const deleteTask = useDeleteTask()
   const patchTask = usePatchTask()
 
-  // Initialize localSubtasks only when the modal opens for a new task (not on every re-render)
+  const todayStr = useMemo(() => {
+    const d = new Date()
+    const p = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+  }, [])
+
+  // Initialize localSubtasks только при смене задачи
   const openedTaskIdRef = useRef<number | null>(null)
   useEffect(() => {
     if (isOpen && task) {
@@ -101,84 +117,87 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     if (task) {
       setTitle(task.title)
       setDescription(task.description || '')
+      setShowDescription(!!task.description)
       setPriority(task.priority)
       setStatus(task.status)
       if (task.scheduled_start && task.scheduled_end) {
-        const startParsed = parseDatetime(task.scheduled_start)
-        const endParsed = parseDatetime(task.scheduled_end)
-        setScheduledDate(startParsed.date)
-        setStartTime(startParsed.startTime)
-        setEndTime(endParsed.startTime)
+        const s = parseDatetime(task.scheduled_start)
+        const e = parseDatetime(task.scheduled_end)
+        setScheduledDate(s.date); setStartTime(s.startTime); setEndTime(e.startTime)
       } else {
-        setScheduledDate('')
-        setStartTime('')
-        setEndTime('')
+        setScheduledDate(''); setStartTime(''); setEndTime('')
       }
       if (task.deadline) {
-        const parsed = parseDatetime(task.deadline)
-        setDeadlineDate(parsed.date)
-        setDeadlineTime(parsed.startTime)
-        setShowDeadline(true)
+        const p = parseDatetime(task.deadline)
+        setDeadlineDate(p.date); setDeadlineTime(p.startTime); setShowDeadline(true)
       } else {
-        setDeadlineDate('')
-        setDeadlineTime('')
-        setShowDeadline(false)
+        setDeadlineDate(''); setDeadlineTime(''); setShowDeadline(false)
       }
       setRepeatDays(task.repeat_days ?? [])
       setSelectedTagIds(task.tags.map((t) => t.id))
-      setTgRemind(task.tg_remind ?? false)
-      if (task.tg_remind_at) {
-        const parsed = parseDatetime(task.tg_remind_at)
-        setTgRemindDate(parsed.date)
-        setTgRemindTime(parsed.startTime)
-      } else {
-        setTgRemindDate('')
-        setTgRemindTime('')
-      }
-      const hasAdvanced =
-        (task.repeat_days && task.repeat_days.length > 0) ||
-        task.tags.length > 0 ||
-        task.tg_remind ||
-        task.status === 'done'
-      setShowAdvanced(hasAdvanced)
+      parserArmedRef.current = false
+      setParserHint('')
     } else {
       setTitle('')
       setDescription('')
+      setShowDescription(false)
       setPriority('medium')
       setStatus(defaultStatus ?? 'todo')
       setRepeatDays([])
       setSelectedTagIds([])
-      setTgRemind(false)
-      setTgRemindDate('')
-      setTgRemindTime('')
-      setDeadlineDate('')
-      setDeadlineTime('')
-      setShowDeadline(false)
-      setShowAdvanced(false)
+      setDeadlineDate(''); setDeadlineTime(''); setShowDeadline(false)
       setShowSubtaskInput(false)
       setNewSubtaskTitle('')
+      parserArmedRef.current = true
+      setParserHint('')
 
       if (defaultDate) {
         const defaultDateStr = defaultDate.includes('T') ? defaultDate : `${defaultDate}T09:00`
         const p = parseDatetime(defaultDateStr)
         const [h, m] = p.startTime.split(':').map(Number)
         const endH = (h + 1) % 24
-        setScheduledDate(p.date)
-        setStartTime(p.startTime)
+        setScheduledDate(p.date); setStartTime(p.startTime)
         setEndTime(`${String(endH).padStart(2, '0')}:${String(m).padStart(2, '0')}`)
       } else {
-        setScheduledDate('')
-        setStartTime('')
-        setEndTime('')
+        setScheduledDate(''); setStartTime(''); setEndTime('')
       }
     }
   }, [task, isOpen, defaultDate, defaultStatus])
+
+  // Quick-input парсер: срабатывает только при создании новой задачи,
+  // не перезатирает поля, уже заполненные руками.
+  useEffect(() => {
+    if (!isOpen || task) return
+    if (!parserArmedRef.current) return
+    if (!title.trim()) { setParserHint(''); return }
+
+    const parsed = parseTaskInput(title, new Date())
+    const bits: string[] = []
+    if (parsed.scheduledDate) {
+      setScheduledDate(parsed.scheduledDate)
+      bits.push(friendlyDate(parsed.scheduledDate, todayStr))
+    }
+    if (parsed.startTime) {
+      setStartTime(parsed.startTime)
+      if (parsed.endTime) setEndTime(parsed.endTime)
+      bits.push(parsed.endTime ? `${parsed.startTime}–${parsed.endTime}` : parsed.startTime)
+    }
+    if (parsed.deadline) {
+      setDeadlineDate(parsed.deadline)
+      if (!deadlineTime) setDeadlineTime('23:59')
+      setShowDeadline(true)
+      bits.push(`дедлайн ${friendlyDate(parsed.deadline, todayStr)}`)
+    }
+    setParserHint(bits.join(' • '))
+  }, [title, isOpen, task, todayStr]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!title.trim()) return
 
-    // Validate time range only at submit time
+    const parsed = !task && parserArmedRef.current ? parseTaskInput(title, new Date()) : null
+    const cleanTitle = parsed ? parsed.title : title.trim()
+
     if (scheduledDate && startTime && endTime) {
       const [sh, sm] = startTime.split(':').map(Number)
       const [eh, em] = endTime.split(':').map(Number)
@@ -194,17 +213,12 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     const scheduled_end = scheduledDate && startTime && endTime
       ? new Date(`${scheduledDate}T${endTime}:00`).toISOString()
       : null
-
     const deadline = showDeadline && deadlineDate
       ? new Date(`${deadlineDate}T${deadlineTime || '23:59'}:00`).toISOString()
       : null
 
-    const tg_remind_at = tgRemind && tgRemindDate && tgRemindTime
-      ? new Date(`${tgRemindDate}T${tgRemindTime}:00`).toISOString()
-      : null
-
     const data: TaskCreate = {
-      title: title.trim(),
+      title: cleanTitle,
       description: description || null,
       color: task ? task.color : randomColor(),
       priority,
@@ -216,8 +230,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       tag_ids: selectedTagIds,
       board_id: boardId ?? task?.board_id ?? null,
       parent_id: task?.parent_id ?? null,
-      tg_remind: tgRemind,
-      tg_remind_at,
+      tg_remind: task?.tg_remind ?? false,
+      tg_remind_at: task?.tg_remind_at ?? null,
     }
 
     try {
@@ -229,19 +243,28 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         toast.success('Задача создана')
       }
       onClose()
-    } catch {
-      toast.error('Не удалось сохранить задачу')
+    } catch (err) {
+      toast.error(describeApiError(err, 'Не удалось сохранить задачу'))
     }
   }
 
-  const handleDelete = async () => {
+  const subtaskCount = task?.subtasks?.length ?? 0
+
+  const handleDeleteClick = () => {
+    if (!task) return
+    if (subtaskCount > 0) setConfirmDeleteOpen(true)
+    else void doDelete()
+  }
+
+  const doDelete = async () => {
     if (!task) return
     try {
       await deleteTask.mutateAsync(task.id)
-      toast.success('Задача удалена')
+      toast.success(subtaskCount > 0 ? `Задача и ${subtaskCount} подзадач(и) удалены` : 'Задача удалена')
+      setConfirmDeleteOpen(false)
       onClose()
-    } catch {
-      toast.error('Не удалось удалить задачу')
+    } catch (err) {
+      toast.error(describeApiError(err, 'Не удалось удалить задачу'))
     }
   }
 
@@ -259,8 +282,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setNewSubtaskTitle('')
       setShowSubtaskInput(false)
       toast.success('Подзадача добавлена')
-    } catch {
-      toast.error('Не удалось добавить подзадачу')
+    } catch (err) {
+      toast.error(describeApiError(err, 'Не удалось добавить подзадачу'))
     }
   }
 
@@ -270,135 +293,289 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
     )
   }
 
+  const whenLabel = scheduledDate
+    ? formatWhen(scheduledDate, startTime, endTime, todayStr)
+    : ''
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование задачи' : 'Новая задача'} maxWidth="2xl">
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
 
-        {/* Title */}
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Что нужно сделать?"
-          required
-          autoFocus
-          className="w-full text-base font-medium px-1 py-1 bg-transparent border-0 border-b-2 border-gray-200 focus:border-indigo-400 focus:outline-none placeholder-gray-300 text-gray-900 dark:text-gray-100 dark:border-gray-600 dark:focus:border-indigo-400 transition-colors"
-        />
-
-        {/* Description */}
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full h-14 px-3 py-2 bg-gray-50/60 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-300 resize-none placeholder-gray-300 dark:text-gray-200 transition-colors"
-          placeholder="Описание (необязательно)..."
-        />
-
-        {/* Priority pills */}
-        <div className="flex gap-1.5">
-          {PRIORITY_CONFIG.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => setPriority(p.value)}
-              className={`flex-1 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                priority === p.value ? p.activeClass : `bg-gray-100/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 ${p.ghostClass}`
-              }`}
-            >
-              {p.label}
-            </button>
-          ))}
+        {/* Quick input */}
+        <div>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder={task ? 'Название' : 'Что нужно сделать? (например: купить хлеб завтра в 18:00)'}
+            required
+            autoFocus
+            className="w-full text-lg font-medium px-0 py-1 bg-transparent border-0 border-b-2 border-gray-200 dark:border-gray-700 focus:border-indigo-400 focus:outline-none placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
+          />
+          {parserHint && !task && (
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-indigo-500 dark:text-indigo-400">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+              <span>Распознано: {parserHint}</span>
+            </div>
+          )}
         </div>
 
-        {/* Date/Time */}
-        <div className="p-3 bg-gray-50/80 dark:bg-white/5 border border-gray-200/80 dark:border-white/10 rounded-xl">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-medium text-gray-500 dark:text-gray-400">Дата и время</span>
-            {scheduledDate && (
-              <button
-                type="button"
-                onClick={() => { setScheduledDate(''); setStartTime(''); setEndTime('') }}
-                className="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-              >
-                Очистить
-              </button>
-            )}
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
-            <div className="flex-1">
-              <input
-                type="date"
-                value={scheduledDate}
-                onChange={(e) => setScheduledDate(e.target.value)}
-                className="w-full px-3 h-[34px] border border-gray-200 dark:border-gray-600 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 bg-white dark:bg-gray-800 dark:text-gray-100"
-              />
-            </div>
-            {scheduledDate && (
-              <TimeRangeInput
-                startTime={startTime || '09:00'}
-                endTime={endTime || '10:00'}
-                onRangeChange={(start, end) => {
-                  setStartTime(start)
-                  setEndTime(end)
-                }}
-              />
-            )}
-          </div>
-        </div>
+        {/* Two columns: WHAT / WHEN */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-        {/* Deadline */}
-        {showDeadline ? (
-          <div className="p-3 bg-red-950/40 dark:bg-red-950/60 border border-red-800/60 rounded-xl space-y-2">
-            <div className="flex items-center justify-between">
-              <label className="text-xs font-semibold text-red-400 flex items-center gap-1.5 uppercase tracking-wide">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-                Дедлайн
-              </label>
-              <button
-                type="button"
-                onClick={() => { setShowDeadline(false); setDeadlineDate(''); setDeadlineTime('') }}
-                className="text-xs text-red-800 dark:text-red-700 hover:text-red-500 transition-colors"
-              >
-                убрать
-              </button>
+          {/* WHAT */}
+          <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-white/5 p-3 space-y-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Что</h3>
+
+            {/* Priority */}
+            <div>
+              <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Приоритет</div>
+              <div className="flex gap-1">
+                {PRIORITY_CONFIG.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    onClick={() => setPriority(p.value)}
+                    title={PRIORITY_TITLES[p.value]}
+                    className={clsx(
+                      'flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                      priority === p.value
+                        ? p.activeClass
+                        : `bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 ${p.ghostClass}`
+                    )}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
             </div>
-            <div className="flex gap-3 items-end">
-              <div className="flex-1 flex flex-col gap-1">
-                <label className="text-xs font-medium text-red-400/70">Дата</label>
+
+            {/* Tags */}
+            {tags && tags.length > 0 && (
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Теги</div>
+                <div className="flex flex-wrap gap-1">
+                  {tags.map((tag) => {
+                    const active = selectedTagIds.includes(tag.id)
+                    return (
+                      <button
+                        key={tag.id}
+                        type="button"
+                        onClick={() => toggleTag(tag.id)}
+                        className={clsx(
+                          'px-2 py-0.5 rounded-full text-[11px] font-medium transition-all',
+                          active
+                            ? 'text-white'
+                            : 'text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+                        )}
+                        style={active ? { backgroundColor: tag.color } : undefined}
+                      >
+                        {tag.name}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Status (edit only) */}
+            {task && (
+              <div>
+                <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Статус</div>
+                <div className="flex gap-1">
+                  {(['todo', 'in_progress', 'done'] as KanbanStatus[]).map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setStatus(s)}
+                      className={clsx(
+                        'flex-1 py-1 rounded-lg text-[11px] font-medium transition-all',
+                        status === s
+                          ? 'bg-indigo-500 text-white'
+                          : 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-indigo-300'
+                      )}
+                    >
+                      {s === 'todo' ? 'Ожидает' : s === 'in_progress' ? 'В работе' : 'Готово'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* WHEN */}
+          <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-white/5 p-3 space-y-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Когда</h3>
+
+            {/* Scheduled */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                  Расписание
+                  {scheduledDate && (
+                    <span className="ml-1.5 text-indigo-500 dark:text-indigo-400 font-normal normal-case">
+                      {whenLabel}
+                    </span>
+                  )}
+                </span>
+                {scheduledDate && (
+                  <button
+                    type="button"
+                    onClick={() => { setScheduledDate(''); setStartTime(''); setEndTime('') }}
+                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    очистить
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-1.5 items-center">
                 <input
                   type="date"
-                  value={deadlineDate}
-                  onChange={(e) => setDeadlineDate(e.target.value)}
-                  className="w-full px-3 h-[34px] border border-red-800/50 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 bg-black/20 text-red-100 dark:text-red-200"
+                  value={scheduledDate}
+                  onChange={(e) => {
+                    setScheduledDate(e.target.value)
+                    if (e.target.value && !startTime) { setStartTime('09:00'); setEndTime('10:00') }
+                  }}
+                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-gray-200 dark:border-white/10 rounded-lg text-sm bg-white dark:bg-white/5 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400"
                 />
+                {scheduledDate && (
+                  <>
+                    <TimeField
+                      value={startTime || '09:00'}
+                      onChange={(s) => {
+                        setStartTime(s)
+                        const [sh, sm] = s.split(':').map(Number)
+                        const [eh, em] = (endTime || '10:00').split(':').map(Number)
+                        if (eh * 60 + em <= sh * 60 + sm) {
+                          const next = sh * 60 + sm + 60
+                          const nh = Math.min(Math.floor(next / 60), 23)
+                          const nm = next % 60
+                          setEndTime(`${String(nh).padStart(2, '0')}:${String(nm).padStart(2, '0')}`)
+                        }
+                      }}
+                    />
+                    <span className="text-gray-400 text-xs">–</span>
+                    <TimeField
+                      value={endTime || '10:00'}
+                      onChange={setEndTime}
+                    />
+                  </>
+                )}
               </div>
-              <TimePicker
-                label="Время"
-                value={deadlineTime || '23:59'}
-                onChange={setDeadlineTime}
-              />
             </div>
-          </div>
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              setShowDeadline(true)
-              if (!deadlineTime) setDeadlineTime('23:59')
-            }}
-            className="text-xs text-red-500/80 hover:text-red-500 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-950/20 hover:bg-red-950/40 border border-red-900/40 hover:border-red-800/60 transition-all w-full"
-          >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-            Добавить дедлайн
-          </button>
-        )}
 
-        {/* Subtasks */}
+            {/* Deadline */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Дедлайн</span>
+                {showDeadline && (
+                  <button
+                    type="button"
+                    onClick={() => { setShowDeadline(false); setDeadlineDate(''); setDeadlineTime('') }}
+                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                  >
+                    убрать
+                  </button>
+                )}
+              </div>
+              {showDeadline ? (
+                <div className="flex gap-1.5 items-center">
+                  <input
+                    type="date"
+                    value={deadlineDate}
+                    onChange={(e) => setDeadlineDate(e.target.value)}
+                    className="flex-1 min-w-0 px-2.5 h-[34px] border border-red-200 dark:border-red-900/40 rounded-lg text-sm bg-red-50/40 dark:bg-red-950/20 text-red-700 dark:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                  />
+                  <TimeField
+                    tone="danger"
+                    value={deadlineTime || '23:59'}
+                    onChange={setDeadlineTime}
+                  />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setShowDeadline(true); if (!deadlineTime) setDeadlineTime('23:59') }}
+                  className="w-full px-3 py-2 text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/10 rounded-lg hover:border-red-300 transition-all"
+                >
+                  + добавить дедлайн
+                </button>
+              )}
+            </div>
+
+            {/* Repeat */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Повтор</span>
+                <button
+                  type="button"
+                  onClick={() => setRepeatDays(repeatDays.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6])}
+                  className={clsx(
+                    'text-[10px] font-medium px-2 py-0.5 rounded-full transition-all',
+                    repeatDays.length === 7
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-gray-100 dark:bg-white/5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                  )}
+                >
+                  Каждый день
+                </button>
+              </div>
+              <div className="flex gap-1">
+                {WEEKDAY_LABELS.map((label, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() =>
+                      setRepeatDays((prev) =>
+                        prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b)
+                      )
+                    }
+                    className={clsx(
+                      'flex-1 py-1 rounded-lg text-[11px] font-medium transition-all',
+                      repeatDays.includes(i)
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </section>
+        </div>
+
+        {/* Description — collapsible */}
+        <div>
+          {showDescription || description ? (
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full h-20 px-3 py-2 bg-gray-50/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-300 resize-none placeholder-gray-300 dark:placeholder-gray-600 dark:text-gray-200 transition-colors"
+              placeholder="Описание..."
+              autoFocus={showDescription && !description}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowDescription(true)}
+              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex items-center gap-1.5"
+            >
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              Добавить описание
+            </button>
+          )}
+        </div>
+
+        {/* Subtasks (edit only) */}
         {task && (
-          <div className="border-t border-gray-100/80 dark:border-white/10 pt-3 space-y-2">
+          <div className="border-t border-gray-100 dark:border-white/10 pt-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-gray-500 dark:text-gray-400">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
                 Подзадачи
                 {localSubtasks.length > 0 && (
-                  <span className="ml-1.5 text-gray-400 font-normal">
+                  <span className="ml-1.5 text-gray-400 font-normal normal-case tracking-normal">
                     {localSubtasks.filter((s) => s.status === 'done').length}/{localSubtasks.length}
                   </span>
                 )}
@@ -419,22 +596,28 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                   <li key={sub.id} className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 py-1 px-2 rounded-lg hover:bg-gray-50/80 dark:hover:bg-white/5 group/sub">
                     <button
                       type="button"
+                      disabled={pendingSubtaskIds.has(sub.id)}
                       onClick={async () => {
+                        if (pendingSubtaskIds.has(sub.id)) return
                         const newStatus = sub.status === 'done' ? 'todo' : 'done'
-                        setLocalSubtasks((prev) =>
-                          prev.map((s) => s.id === sub.id ? { ...s, status: newStatus } : s)
-                        )
+                        const prevStatus = sub.status
+                        setPendingSubtaskIds((s) => { const n = new Set(s); n.add(sub.id); return n })
+                        setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, status: newStatus } : s))
                         try {
                           await patchTask.mutateAsync({ id: sub.id, data: { status: newStatus } })
-                        } catch {
-                          setLocalSubtasks((prev) =>
-                            prev.map((s) => s.id === sub.id ? { ...s, status: sub.status } : s)
-                          )
+                        } catch (err) {
+                          setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, status: prevStatus } : s))
+                          toast.error(describeApiError(err, 'Не удалось обновить подзадачу'))
+                        } finally {
+                          setPendingSubtaskIds((s) => { const n = new Set(s); n.delete(sub.id); return n })
                         }
                       }}
-                      className={`w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'}`}
+                      className={clsx(
+                        'w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-wait',
+                        sub.status === 'done' ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'
+                      )}
                     />
-                    <span className={`flex-1 ${sub.status === 'done' ? 'line-through text-gray-400' : ''}`}>{sub.title}</span>
+                    <span className={clsx('flex-1', sub.status === 'done' && 'line-through text-gray-400')}>{sub.title}</span>
                     <button
                       type="button"
                       onClick={async () => {
@@ -465,7 +648,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask() } if (e.key === 'Escape') { setShowSubtaskInput(false); setNewSubtaskTitle('') } }}
                   placeholder="Название подзадачи..."
-                  className="flex-1 px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 bg-white/60 dark:bg-white/5 dark:border-white/10 dark:text-gray-200"
+                  className="flex-1 px-2.5 py-1.5 border border-gray-200 dark:border-white/10 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 bg-white dark:bg-white/5 dark:text-gray-200"
                   autoFocus
                 />
                 <button
@@ -481,164 +664,51 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
           </div>
         )}
 
-        {/* Advanced section */}
-        <div className="border-t border-gray-100/80 dark:border-white/10 pt-2">
-          <button
-            type="button"
-            onClick={() => setShowAdvanced((v) => !v)}
-            className="flex items-center gap-1.5 w-full text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-          >
-            <svg
-              width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"
-              className={`transition-transform ${showAdvanced ? 'rotate-180' : ''}`}
-            >
-              <polyline points="6 9 12 15 18 9"/>
-            </svg>
-            <span>Дополнительно</span>
-          </button>
-
-          {showAdvanced && (
-            <div className="mt-3 space-y-3">
-              {/* Repeat days */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Повтор</label>
-                  <button
-                    type="button"
-                    onClick={() => setRepeatDays(repeatDays.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6])}
-                    className={`text-[11px] font-medium px-2 py-0.5 rounded-full transition-all ${
-                      repeatDays.length === 7
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-gray-100 text-amber-700 hover:bg-amber-50'
-                    }`}
-                  >
-                    Ежедневно
-                  </button>
-                </div>
-                <div className="flex gap-1">
-                  {WEEKDAY_LABELS.map((label, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() =>
-                        setRepeatDays((prev) =>
-                          prev.includes(i) ? prev.filter((d) => d !== i) : [...prev, i].sort((a, b) => a - b)
-                        )
-                      }
-                      className={`flex-1 py-1 rounded-lg text-[11px] font-medium transition-all ${
-                        repeatDays.includes(i)
-                          ? 'bg-amber-500 text-white'
-                          : 'bg-gray-100/80 dark:bg-white/5 text-gray-500 hover:bg-gray-200/80 dark:hover:bg-white/10'
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Tags */}
-              {tags && tags.length > 0 && (
-                <div className="space-y-1.5">
-                  <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Теги</label>
-                  <div className="flex flex-wrap gap-1.5">
-                    {tags.map((tag) => (
-                      <button
-                        key={tag.id}
-                        type="button"
-                        onClick={() => toggleTag(tag.id)}
-                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-medium transition-all ${
-                          selectedTagIds.includes(tag.id)
-                            ? 'text-white ring-2 ring-offset-1'
-                            : 'text-gray-600 bg-gray-100/80 dark:bg-white/5 dark:text-gray-400 hover:bg-gray-200/80'
-                        }`}
-                        style={selectedTagIds.includes(tag.id) ? { backgroundColor: tag.color } : undefined}
-                      >
-                        {tag.name}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Telegram reminder hidden — TG banned */}
-              {false && (
-              <div className="space-y-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !tgRemind
-                    setTgRemind(next)
-                    if (next) {
-                      if (!tgRemindTime) setTgRemindTime('09:00')
-                      if (!tgRemindDate) setTgRemindDate(scheduledDate || new Date().toISOString().slice(0, 10))
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-all border ${
-                    tgRemind
-                      ? 'bg-blue-500 text-white border-blue-500'
-                      : 'bg-gray-50/80 dark:bg-white/5 text-gray-600 dark:text-gray-400 border-gray-200/80 dark:border-white/10 hover:border-blue-300 hover:text-blue-600'
-                  }`}
-                >
-                  <svg className="w-3.5 h-3.5 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.19 13.9l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.958.659z" />
-                  </svg>
-                  Напомнить в Telegram
-                  {tgRemind && <span className="ml-auto text-blue-200 text-[10px]">✓</span>}
-                </button>
-                {tgRemind && (
-                  <div className="grid grid-cols-2 gap-2 pl-1">
-                    <Input
-                      label="Дата"
-                      type="date"
-                      value={tgRemindDate}
-                      onChange={(e) => setTgRemindDate(e.target.value)}
-                    />
-                    <TimePicker
-                      label="Время"
-                      value={tgRemindTime || '09:00'}
-                      onChange={setTgRemindTime}
-                    />
-                  </div>
-                )}
-              </div>
-              )}
-            </div>
-          )}
-        </div>
-
         {/* Actions */}
-        <div className="flex items-center justify-between pt-2 border-t border-gray-100/80 dark:border-white/10">
+        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-white/10">
           {task ? (
             <button
               type="button"
-              onClick={handleDelete}
+              onClick={handleDeleteClick}
               disabled={deleteTask.isPending}
               className="px-3 py-1.5 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
             >
               Удалить
             </button>
-          ) : (
-            <span />
-          )}
-          <div className="flex gap-2">
+          ) : <div />}
+          <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 hover:bg-gray-100/80 dark:hover:bg-white/10 rounded-xl transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
-              disabled={createTask.isPending || updateTask.isPending}
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-colors disabled:opacity-40 shadow-sm"
+              disabled={createTask.isPending || updateTask.isPending || !title.trim()}
+              className="px-4 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors flex items-center gap-1.5"
             >
+              {(createTask.isPending || updateTask.isPending) && (
+                <svg className="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" strokeDasharray="40" strokeLinecap="round"/></svg>
+              )}
               {task ? 'Сохранить' : 'Создать'}
             </button>
           </div>
         </div>
       </form>
+
+      <ConfirmModal
+        isOpen={confirmDeleteOpen}
+        onClose={() => setConfirmDeleteOpen(false)}
+        title="Удалить задачу с подзадачами?"
+        message={`У этой задачи ${subtaskCount} подзадач(и). Все они будут удалены вместе с родительской.`}
+        confirmLabel="Удалить"
+        cancelLabel="Отмена"
+        variant="danger"
+        isLoading={deleteTask.isPending}
+        onConfirm={doDelete}
+      />
     </Modal>
   )
 }

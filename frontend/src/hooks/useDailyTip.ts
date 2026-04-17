@@ -27,6 +27,7 @@ export function useDailyTip() {
     reportsApi
       .getDailyTip()
       .then((data) => {
+        if (data.disabled || !data.tip) return
         setTip(data.tip)
         localStorage.setItem(cacheKey, data.tip)
       })

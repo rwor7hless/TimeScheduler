@@ -3,11 +3,21 @@ from sqlalchemy import select, func
 
 from app.dependencies import get_admin_user, get_db
 from app.models.user import User
-from app.schemas.admin import UserCreate, UserResponse
+from app.schemas.admin import UserCreate, UserResponse, UserUpdate
 from app.services.auth import hash_password
 from sqlalchemy.ext.asyncio import AsyncSession
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(get_admin_user)])
+
+
+def _serialize(user: User) -> UserResponse:
+    return UserResponse(
+        id=user.id,
+        username=user.username,
+        is_admin=user.is_admin,
+        can_request_summary=user.can_request_summary,
+        created_at=user.created_at.isoformat(),
+    )
 
 
 @router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -23,22 +33,33 @@ async def register_user(data: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(user)
     await db.commit()
     await db.refresh(user)
-    return UserResponse(
-        id=user.id,
-        username=user.username,
-        is_admin=user.is_admin,
-        created_at=user.created_at.isoformat(),
-    )
+    return _serialize(user)
 
 
 @router.get("/users", response_model=list[UserResponse])
 async def list_users(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).order_by(User.created_at))
     users = result.scalars().all()
-    return [
-        UserResponse(id=u.id, username=u.username, is_admin=u.is_admin, created_at=u.created_at.isoformat())
-        for u in users
-    ]
+    return [_serialize(u) for u in users]
+
+
+@router.patch("/users/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    data: UserUpdate,
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if data.can_request_summary is not None:
+        user.can_request_summary = data.can_request_summary
+
+    await db.commit()
+    await db.refresh(user)
+    return _serialize(user)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

@@ -1,4 +1,4 @@
-export type ReportStatus = 'pending' | 'done' | 'error'
+export type ReportStatus = 'pending' | 'in_progress' | 'done' | 'error'
 
 export interface WeeklyReport {
   id: number

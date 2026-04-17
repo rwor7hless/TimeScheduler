@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { adminApi, type UserResponse } from '@/api/admin'
+import { adminApi, type UserResponse, type UserUpdate } from '@/api/admin'
 import { useAuth } from '@/context/AuthContext'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -13,6 +13,7 @@ export default function AdminPage() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<UserResponse | null>(null)
+  const [togglingId, setTogglingId] = useState<number | null>(null)
   const qc = useQueryClient()
   const { data: users, isLoading } = useQuery({
     queryKey: ['admin', 'users'],
@@ -30,6 +31,20 @@ export default function AdminPage() {
     onError: (err: { response?: { data?: { detail?: string } } }) => {
       toast.error(err.response?.data?.detail ?? 'Failed to register')
     },
+  })
+
+  const updateUser = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: UserUpdate }) =>
+      adminApi.updateUser(id, data),
+    onMutate: ({ id }) => setTogglingId(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'users'] })
+      toast.success('Обновлено')
+    },
+    onError: (err: { response?: { data?: { detail?: string } } }) => {
+      toast.error(err.response?.data?.detail ?? 'Не удалось обновить')
+    },
+    onSettled: () => setTogglingId(null),
   })
 
   const deleteUser = useMutation({
@@ -85,47 +100,73 @@ export default function AdminPage() {
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Users</h3>
         <div className="overflow-x-auto -mx-4 sm:mx-0">
-          <table className="w-full text-sm min-w-[320px]">
+          <table className="w-full text-sm min-w-[360px]">
             <thead>
               <tr className="border-b border-gray-200 dark:border-gray-600 text-left text-gray-500 dark:text-gray-400">
                 <th className="py-2 pr-2 sm:pr-4">ID</th>
                 <th className="py-2 pr-2 sm:pr-4">Username</th>
                 <th className="py-2 pr-2 sm:pr-4">Role</th>
+                <th className="py-2 pr-2 sm:pr-4">Саммари</th>
                 <th className="py-2 pr-2 sm:pr-4 hidden sm:table-cell">Created</th>
                 <th className="py-2 w-20 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {users?.map((u: UserResponse) => (
-                <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
-                  <td className="py-2 pr-2 sm:pr-4 text-gray-600 dark:text-gray-400">{u.id}</td>
-                  <td className="py-2 pr-2 sm:pr-4 font-medium text-gray-900 dark:text-gray-100">{u.username}</td>
-                  <td className="py-2 pr-2 sm:pr-4">
-                    {u.is_admin ? (
-                      <span className="text-amber-600 dark:text-amber-400 font-medium">Admin</span>
-                    ) : (
-                      <span className="text-gray-500 dark:text-gray-400">User</span>
-                    )}
-                  </td>
-                  <td className="py-2 pr-2 sm:pr-4 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
-                    {new Date(u.created_at).toLocaleDateString('ru-RU')}
-                  </td>
-                  <td className="py-2 text-right">
-                    {u.id !== user?.user_id && (
-                      <Button
-                        type="button"
-                        variant="danger"
-                        size="sm"
-                        onClick={() => setDeleteTarget(u)}
-                        disabled={deleteUser.isPending}
-                        className="min-h-[36px] touch-manipulation"
-                      >
-                        Delete
-                      </Button>
-                    )}
-                  </td>
-                </tr>
-              ))}
+              {users?.map((u: UserResponse) => {
+                const isSelfAdmin = u.is_admin
+                const checked = isSelfAdmin || u.can_request_summary
+                const disabled = isSelfAdmin || togglingId === u.id
+                return (
+                  <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
+                    <td className="py-2 pr-2 sm:pr-4 text-gray-600 dark:text-gray-400">{u.id}</td>
+                    <td className="py-2 pr-2 sm:pr-4 font-medium text-gray-900 dark:text-gray-100">{u.username}</td>
+                    <td className="py-2 pr-2 sm:pr-4">
+                      {u.is_admin ? (
+                        <span className="text-amber-600 dark:text-amber-400 font-medium">Admin</span>
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">User</span>
+                      )}
+                    </td>
+                    <td className="py-2 pr-2 sm:pr-4">
+                      <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={disabled}
+                          onChange={() =>
+                            updateUser.mutate({
+                              id: u.id,
+                              data: { can_request_summary: !u.can_request_summary },
+                            })
+                          }
+                          className="h-4 w-4 accent-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                          aria-label="Может запрашивать недельное саммари"
+                        />
+                        {isSelfAdmin && (
+                          <span className="text-[11px] text-gray-400 dark:text-gray-500">всегда</span>
+                        )}
+                      </label>
+                    </td>
+                    <td className="py-2 pr-2 sm:pr-4 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                      {new Date(u.created_at).toLocaleDateString('ru-RU')}
+                    </td>
+                    <td className="py-2 text-right">
+                      {u.id !== user?.user_id && (
+                        <Button
+                          type="button"
+                          variant="danger"
+                          size="sm"
+                          onClick={() => setDeleteTarget(u)}
+                          disabled={deleteUser.isPending}
+                          className="min-h-[36px] touch-manipulation"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

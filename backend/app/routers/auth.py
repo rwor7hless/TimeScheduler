@@ -30,4 +30,9 @@ async def login(
 
 @router.get("/me", response_model=UserInfo)
 async def me(user: User = Depends(get_current_user)):
-    return UserInfo(username=user.username, user_id=user.id, is_admin=user.is_admin)
+    return UserInfo(
+        username=user.username,
+        user_id=user.id,
+        is_admin=user.is_admin,
+        can_request_summary=user.can_request_summary,
+    )

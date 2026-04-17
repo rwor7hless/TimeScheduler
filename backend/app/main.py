@@ -53,10 +53,17 @@ async def lifespan(app: FastAPI):
 
     async with async_session() as session:
         if settings.clean_db_on_startup:
+            logging.warning(
+                "⚠️  CLEAN_DB_ON_STARTUP=True: ВСЕ ДАННЫЕ БУДУТ УДАЛЕНЫ через 3 сек. "
+                "Ctrl+C если это не то, что вы хотели."
+            )
+            await asyncio.sleep(3)
+            table_names = ", ".join(t.name for t in Base.metadata.sorted_tables)
             await session.execute(
-                text("TRUNCATE tasks, habits, tags, users RESTART IDENTITY CASCADE")
+                text(f"TRUNCATE {table_names} RESTART IDENTITY CASCADE")
             )
             await session.commit()
+            logging.warning("CLEAN_DB_ON_STARTUP: все таблицы очищены, sequence сброшены")
 
         result = await session.execute(select(User).where(User.username == settings.user_login))
         admin = result.scalar_one_or_none()
@@ -83,13 +90,16 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
     )
 
-    # Telegram: poll updates from bot every 5 seconds
+    # Telegram: long-poll каждые 30 сек (long-poll внутри ждёт до 25с,
+    # не запускаем чаще чем раз в 30с чтобы запросы не наслаивались)
     scheduler.add_job(
         poll_telegram_updates,
         "interval",
-        seconds=5,
+        seconds=30,
         id="tg_polling",
         replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
 
     # Telegram: send pending reminders every minute
@@ -101,17 +111,23 @@ async def lifespan(app: FastAPI):
         replace_existing=True,
     )
 
-    # Weekly AI report: every Sunday at 21:00 Moscow time
-    scheduler.add_job(
-        run_weekly_reports,
-        "cron",
-        day_of_week="sun",
-        hour=21,
-        minute=0,
-        timezone="Europe/Moscow",
-        id="weekly_reports",
-        replace_existing=True,
-    )
+    # Weekly AI report: every Sunday at 21:00 user_timezone (только если LLM сконфигурирован)
+    if settings.gigachat_api_key:
+        scheduler.add_job(
+            run_weekly_reports,
+            "cron",
+            day_of_week="sun",
+            hour=21,
+            minute=0,
+            timezone=settings.user_timezone,
+            id="weekly_reports",
+            replace_existing=True,
+        )
+    else:
+        logging.warning(
+            "Weekly reports cron disabled: GIGACHAT_API_KEY is empty. "
+            "Set it in .env to enable automatic AI summaries."
+        )
 
     scheduler.start()
 

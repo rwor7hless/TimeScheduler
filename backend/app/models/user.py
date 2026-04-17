@@ -18,3 +18,6 @@ class User(Base):
     )
     telegram_chat_id: Mapped[str | None] = mapped_column(String(50), nullable=True)
     telegram_key: Mapped[str | None] = mapped_column(String(64), unique=True, nullable=True)
+    can_request_summary: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default="false", nullable=False
+    )

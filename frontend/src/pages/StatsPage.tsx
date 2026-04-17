@@ -4,6 +4,7 @@ import { useTheme } from '@/context/ThemeContext'
 import Spinner from '@/components/ui/Spinner'
 import clsx from 'clsx'
 import type { BreakdownItem } from '@/types/stats'
+import { CHART_COLORS as DEFAULT_COLORS } from '@/lib/colors'
 import {
   AreaChart,
   Area,
@@ -62,7 +63,7 @@ function StatCard({
           accent === 'green' && 'text-green-600 dark:text-green-400',
           accent === 'red' && 'text-red-500 dark:text-red-400',
           accent === 'amber' && 'text-amber-600 dark:text-amber-400',
-          !accent && 'text-gray-900'
+          !accent && 'text-gray-900 dark:text-gray-100'
         )}
       >
         {value}
@@ -70,8 +71,6 @@ function StatCard({
     </div>
   )
 }
-
-const DEFAULT_COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4']
 
 function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] }) {
   if (items.length === 0) return null
@@ -104,7 +103,7 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
 export default function StatsPage() {
   const [period, setPeriod] = useState<Period>('month')
   const { theme } = useTheme()
-  const { data: stats, isLoading } = useStats(period)
+  const { data: stats, isLoading, isError, refetch } = useStats(period)
 
   const chartData = useMemo(
     () => stats ? fillDailyGaps(stats.daily_completions, PERIOD_DAYS[period]) : [],
@@ -122,20 +121,45 @@ export default function StatsPage() {
   }, [chartData, period])
 
   if (isLoading) return <Spinner className="mt-20" />
-  if (!stats) return null
+  if (isError) {
+    return (
+      <div className="mt-16 flex flex-col items-center gap-3 text-center">
+        <div className="text-sm text-gray-500 dark:text-gray-400">
+          Не удалось загрузить статистику.
+        </div>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:bg-accent-dark transition-colors"
+        >
+          Повторить
+        </button>
+      </div>
+    )
+  }
+  if (!stats) {
+    return (
+      <div className="mt-16 text-center text-sm text-gray-500 dark:text-gray-400">
+        Пока нет данных для статистики. Создайте задачу или привычку, чтобы начать.
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900">Статистика</h2>
-        <div className="flex bg-gray-100 rounded-lg p-0.5">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Статистика</h2>
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
           {([['week', 'Неделя'], ['month', 'Месяц'], ['year', 'Год']] as [Period, string][]).map(([p, label]) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                period === p ? 'bg-white shadow-sm font-medium' : 'text-gray-600'
-              }`}
+              className={clsx(
+                'px-3 py-1.5 text-sm rounded-md transition-colors',
+                period === p
+                  ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-gray-900 dark:text-gray-100'
+                  : 'text-gray-600 dark:text-gray-300'
+              )}
             >
               {label}
             </button>

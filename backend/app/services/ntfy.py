@@ -51,6 +51,6 @@ async def send(
             resp.raise_for_status()
             logger.info(f"ntfy: sent '{title}' → {url}")
             return True
-    except Exception as e:
-        logger.warning(f"ntfy: failed to send '{title}': {e}")
+    except Exception:
+        logger.exception("ntfy: failed to send '%s'", title)
         return False

@@ -91,18 +91,20 @@ export default function CalendarPage() {
           <Button variant="secondary" size="sm" onClick={navigatePrev}>&larr;</Button>
           <Button variant="secondary" size="sm" onClick={goToToday}>Сегодня</Button>
           <Button variant="secondary" size="sm" onClick={navigateNext}>&rarr;</Button>
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 ml-1 capitalize truncate">{headerText}</h2>
+          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 ml-1 capitalize truncate">{headerText}</h2>
         </div>
 
         {/* Mode switcher + add */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex bg-gray-100 rounded-lg p-0.5">
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
             {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
                 className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${
-                  viewMode === mode ? 'bg-white shadow-sm font-medium' : 'text-gray-600'
+                  viewMode === mode
+                    ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-gray-900 dark:text-gray-100'
+                    : 'text-gray-600 dark:text-gray-300'
                 }`}
               >
                 {mode === 'day' ? 'День' : mode === 'week' ? 'Неделя' : 'Месяц'}

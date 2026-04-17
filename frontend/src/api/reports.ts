@@ -12,8 +12,11 @@ export const reportsApi = {
       })
       .then((r) => r.data),
 
-  getDailyTip: (): Promise<{ tip: string; date: string }> =>
+  getDailyTip: (): Promise<{ tip: string | null; date: string; disabled?: boolean }> =>
     client.get('/reports/daily-tip').then((r) => r.data),
+
+  requestSummary: (): Promise<WeeklyReport> =>
+    client.post('/reports/request-summary').then((r) => r.data),
 
   /**
    * Стримит генерацию отчёта через SSE (fetch + ReadableStream).

@@ -215,6 +215,13 @@ async def update_task(
     if data.color is not None:
         task.color = data.color
     task.priority = data.priority
+    # Сбрасываем tg_reminded при любом изменении триггеров напоминания,
+    # чтобы повторное назначение даты/времени снова приводило к пушу.
+    schedule_changed = (
+        task.scheduled_start != data.scheduled_start
+        or task.deadline != data.deadline
+        or task.tg_remind_at != data.tg_remind_at
+    )
     task.scheduled_start = data.scheduled_start
     task.scheduled_end = data.scheduled_end
     task.deadline = data.deadline
@@ -222,9 +229,8 @@ async def update_task(
     task.board_id = data.board_id
     task.parent_id = data.parent_id
     task.tg_remind = data.tg_remind
-    old_tg_remind_at = task.tg_remind_at
     task.tg_remind_at = data.tg_remind_at
-    if data.tg_remind and data.tg_remind_at != old_tg_remind_at:
+    if schedule_changed:
         task.tg_reminded = False
 
     if data.status == KanbanStatus.DONE and task.status != KanbanStatus.DONE:

@@ -8,17 +8,27 @@ import toast from 'react-hot-toast'
 import { useQueryClient } from '@tanstack/react-query'
 import { reportsApi } from '@/api/reports'
 import { useReports, markReportsSeen } from '@/hooks/useReports'
+import { useAuth } from '@/context/AuthContext'
 import Spinner from '@/components/ui/Spinner'
+import Button from '@/components/ui/Button'
 import type { WeeklyReport } from '@/types/report'
 
 // ─── Status badge ─────────────────────────────────────────────────────────────
 
 function StatusBadge({ status, isStreaming }: { status: string; isStreaming: boolean }) {
-  if (isStreaming || status === 'pending') {
+  if (isStreaming || status === 'in_progress') {
+    return (
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
+        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+        Пишет…
+      </span>
+    )
+  }
+  if (status === 'pending') {
     return (
       <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
         <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
-        {isStreaming ? 'Пишет…' : 'Генерируется…'}
+        Генерируется…
       </span>
     )
   }
@@ -83,6 +93,14 @@ function ReportCard({ report, streamingContent, isStreaming }: ReportCardProps) 
           </div>
         )}
 
+        {/* In progress but not from this tab */}
+        {report.status === 'in_progress' && !isStreaming && !content && (
+          <div className="flex items-center gap-3 text-sm text-gray-400 dark:text-gray-500">
+            <Spinner className="!w-5 !h-5" />
+            <span>Отчёт пишется в другой вкладке…</span>
+          </div>
+        )}
+
         {report.status === 'error' && !content && (
           <div className="text-sm text-red-500 dark:text-red-400">
             <p className="font-medium mb-1">Не удалось сгенерировать отчёт</p>
@@ -127,23 +145,16 @@ function ReportCard({ report, streamingContent, isStreaming }: ReportCardProps) 
 export default function NotificationsPage() {
   const qc = useQueryClient()
   const { data: reports, isLoading } = useReports()
+  const { canRequestSummary } = useAuth()
 
   // Сбрасываем счётчик непрочитанных при открытии страницы
   useEffect(() => { markReportsSeen() }, [])
-
-  // Автостарт стриминга если на странице уже есть pending-отчёт (напр. от крона)
-  useEffect(() => {
-    if (!reports) return
-    const pending = reports.find(
-      (r) => r.status === 'pending' && !streamingIds.has(r.id),
-    )
-    if (pending) startStream(pending.id)
-  }, [reports]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // reportId → accumulated text
   const [streamMap, setStreamMap] = useState<Record<number, string>>({})
   // set of currently-streaming report IDs
   const [streamingIds, setStreamingIds] = useState<Set<number>>(new Set())
+  const [requestingSummary, setRequestingSummary] = useState(false)
 
   const startStream = useCallback(
     (reportId: number) => {
@@ -174,14 +185,55 @@ export default function NotificationsPage() {
     [qc],
   )
 
+  // Автостарт стриминга если на странице уже есть pending-отчёт (напр. от крона)
+  useEffect(() => {
+    if (!reports) return
+    const pending = reports.find(
+      (r) => r.status === 'pending' && !streamingIds.has(r.id),
+    )
+    if (pending) startStream(pending.id)
+  }, [reports, streamingIds, startStream])
+
+  const handleRequestSummary = useCallback(async () => {
+    setRequestingSummary(true)
+    try {
+      const report = await reportsApi.requestSummary()
+      qc.invalidateQueries({ queryKey: ['reports'] })
+      if (report.status === 'in_progress') {
+        toast('Отчёт уже пишется в другой сессии')
+      } else {
+        startStream(report.id)
+      }
+    } catch (err) {
+      const e = err as { response?: { status?: number; data?: { detail?: string } } }
+      const detail = e.response?.data?.detail ?? 'Не удалось запросить отчёт'
+      toast.error(detail)
+    } finally {
+      setRequestingSummary(false)
+    }
+  }, [qc, startStream])
+
   return (
     <div className="max-w-2xl mx-auto space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Уведомления</h1>
-        <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-          AI-отчёт генерируется автоматически каждое воскресенье в 21:00
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Уведомления</h1>
+          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+            AI-отчёт генерируется автоматически каждое воскресенье в 21:00
+            {canRequestSummary && ' · или по запросу'}
+          </p>
+        </div>
+        {canRequestSummary && (
+          <Button
+            type="button"
+            onClick={handleRequestSummary}
+            disabled={requestingSummary || streamingIds.size > 0}
+            className="whitespace-nowrap"
+          >
+            {requestingSummary ? 'Запрос…' : 'Сгенерировать сейчас'}
+          </Button>
+        )}
       </div>
 
       {/* Content */}

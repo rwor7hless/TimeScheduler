@@ -50,6 +50,10 @@ async def global_search(
             "priority": t.priority.value,
             "color": t.color,
             "board_id": t.board_id,
+            "tags": [
+                {"id": tag.id, "name": tag.name, "color": tag.color}
+                for tag in t.tags
+            ],
             "type": "task",
         }
         for t in task_result.scalars().unique().all()

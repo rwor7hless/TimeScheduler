@@ -1,7 +1,7 @@
 import clsx from 'clsx'
 import type { Task, Priority } from '@/types/task'
 import { WEEKDAY_LABELS } from '@/types/task'
-import TagBadge from './TagBadge'
+import TagBadgeGroup from './TagBadgeGroup'
 
 interface TaskCardProps {
   task: Task
@@ -101,10 +101,13 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
             <p className="text-xs text-gray-700 mt-1 line-clamp-2">{task.description}</p>
           )}
           {!compact && task.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {task.tags.map((tag) => (
-                <TagBadge key={tag.id} tag={tag} />
-              ))}
+            <div className="mt-2">
+              <TagBadgeGroup tags={task.tags} max={3} size="md" />
+            </div>
+          )}
+          {compact && task.tags.length > 0 && !isCancelled && (
+            <div className="mt-0.5">
+              <TagBadgeGroup tags={task.tags} max={2} size="sm" />
             </div>
           )}
           {/* Deadline indicator */}
