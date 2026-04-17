@@ -3,6 +3,7 @@ GigaChat client через OpenAI-совместимый API (cloud.ru).
 """
 import logging
 
+import httpx
 from openai import (
     APIConnectionError,
     APIError,
@@ -17,16 +18,21 @@ logger = logging.getLogger(__name__)
 
 BASE_URL = "https://foundation-models.api.cloud.ru/v1"
 MODEL = "ai-sage/GigaChat3-10B-A1.8B"
-DEFAULT_TIMEOUT = 30.0
+
+# Нестримовый клиент: жёсткий таймаут на весь запрос (короткие ответы типа daily-tip).
+SHORT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=10.0)
+# Стримовый клиент: read=None, иначе httpx порубит середину генерации.
+# connect/write остаются жёсткими — если сеть мертва, это видно сразу.
+STREAM_TIMEOUT = httpx.Timeout(connect=10.0, read=None, write=30.0, pool=10.0)
 
 
-def _client() -> AsyncOpenAI:
+def _client(*, stream: bool = False) -> AsyncOpenAI:
     if not settings.gigachat_api_key:
         raise RuntimeError("GIGACHAT_API_KEY не задан в .env")
     return AsyncOpenAI(
         api_key=settings.gigachat_api_key,
         base_url=BASE_URL,
-        timeout=DEFAULT_TIMEOUT,
+        timeout=STREAM_TIMEOUT if stream else SHORT_TIMEOUT,
     )
 
 
@@ -73,7 +79,7 @@ async def chat_completion(messages: list[dict], max_tokens: int = 2500) -> str:
 
 async def chat_completion_stream(messages: list[dict], max_tokens: int = 4096):
     """Стриминговый вариант — async-генератор текстовых чанков."""
-    client = _client()
+    client = _client(stream=True)
     try:
         stream = await client.chat.completions.create(
             messages=messages,

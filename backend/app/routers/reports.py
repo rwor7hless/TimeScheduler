@@ -1,3 +1,4 @@
+import asyncio
 import json
 from datetime import date, datetime, timedelta, timezone
 
@@ -292,65 +293,104 @@ async def stream_report(
         )
 
     # Атомарно переводим в IN_PROGRESS, чтобы параллельный запрос получил 409
-    report.status = ReportStatus.IN_PROGRESS
+    report.status = ReportStatus.IN_PROGRESS.value
     report.error_msg = None
     await db.commit()
     await db.refresh(report)
 
-    # Собираем данные в основной сессии (до открытия стрима)
-    data = await build_weekly_data(db, current_user.id, report.week_start)
-    prompt = build_prompt(data)
+    week_start = report.week_start
+    user_id = current_user.id
+
+    async def _finalize(status: ReportStatus, content: str | None, err: str | None) -> None:
+        """Гарантированно пишет финальное состояние отчёта в БД.
+        Вызывается из finally — не должен сам кидать наружу."""
+        try:
+            async with async_session() as sess:
+                r = await sess.get(WeeklyReport, report_id)
+                if not r:
+                    return
+                r.status = status.value
+                if content is not None:
+                    r.content = content
+                r.error_msg = err
+                await sess.commit()
+        except Exception:
+            logger = __import__("logging").getLogger(__name__)
+            logger.exception("Failed to finalize report %s", report_id)
 
     async def event_stream():
         full_chunks: list[str] = []
-        # Буфер для детектирования заголовка «Вступление» в начале ответа
         header_buf = ""
         header_checked = False
+        final_status: ReportStatus = ReportStatus.ERROR
+        final_error: str | None = "Прервано"
+
+        # Первый байт сразу — чтобы nginx не закрыл idle-соединение,
+        # а клиент увидел, что стрим пошёл.
+        yield ": open\n\n"
 
         try:
-            async for chunk in chat_completion_stream([{"role": "user", "content": prompt}]):
+            # Собираем данные внутри стрима — не блокируем TTFB.
+            async with async_session() as data_sess:
+                data = await build_weekly_data(data_sess, user_id, week_start)
+            prompt = build_prompt(data)
+
+            # Heartbeat: пока LLM ещё не прислал первый токен, шлём комменты
+            # каждые 10 сек, чтобы прокси не закрыл соединение.
+            stream_gen = chat_completion_stream([{"role": "user", "content": prompt}])
+            got_first = False
+
+            while True:
+                try:
+                    chunk = await asyncio.wait_for(stream_gen.__anext__(), timeout=10.0)
+                except asyncio.TimeoutError:
+                    yield ": ping\n\n"
+                    continue
+                except StopAsyncIteration:
+                    break
+
+                got_first = True
                 if not header_checked:
                     header_buf += chunk
-                    # Ждём первый перенос строки или накопим 200 символов
                     if '\n' in header_buf or len(header_buf) >= 200:
                         header_checked = True
                         cleaned = _strip_intro_heading(header_buf)
                         if cleaned:
                             full_chunks.append(cleaned)
                             yield f"data: {json.dumps({'t': cleaned}, ensure_ascii=False)}\n\n"
-                    # Пока буферизируем — не отправляем клиенту
                 else:
                     full_chunks.append(chunk)
                     yield f"data: {json.dumps({'t': chunk}, ensure_ascii=False)}\n\n"
 
-            # Если поток закончился, а заголовок так и не был проверен (очень короткий ответ)
             if not header_checked and header_buf:
                 cleaned = _strip_intro_heading(header_buf)
                 if cleaned:
                     full_chunks.append(cleaned)
                     yield f"data: {json.dumps({'t': cleaned}, ensure_ascii=False)}\n\n"
 
+            if not got_first and not full_chunks:
+                raise RuntimeError("LLM вернул пустой ответ.")
+
+            final_status = ReportStatus.DONE
+            final_error = None
+            yield f"data: {json.dumps({'done': True})}\n\n"
+
+        except asyncio.CancelledError:
+            # Клиент отвалился. Помечаем ERROR, но исключение пробрасываем.
+            final_status = ReportStatus.ERROR
+            final_error = "Клиент отключился во время генерации"
+            raise
         except Exception as exc:
-            err_msg = str(exc)[:500]
-            yield f"data: {json.dumps({'error': err_msg}, ensure_ascii=False)}\n\n"
-            async with async_session() as sess:
-                r = await sess.get(WeeklyReport, report_id)
-                if r:
-                    r.status = ReportStatus.ERROR
-                    r.error_msg = err_msg
-                    await sess.commit()
-            return
-
-        full_text = "".join(full_chunks)
-        async with async_session() as sess:
-            r = await sess.get(WeeklyReport, report_id)
-            if r:
-                r.status = ReportStatus.DONE
-                r.content = full_text
-                r.error_msg = None
-                await sess.commit()
-
-        yield f"data: {json.dumps({'done': True})}\n\n"
+            err_msg = str(exc)[:500] or "Неизвестная ошибка"
+            final_status = ReportStatus.ERROR
+            final_error = err_msg
+            try:
+                yield f"data: {json.dumps({'error': err_msg}, ensure_ascii=False)}\n\n"
+            except Exception:
+                pass
+        finally:
+            content = "".join(full_chunks) if final_status == ReportStatus.DONE else None
+            await _finalize(final_status, content, final_error)
 
     return StreamingResponse(
         event_stream(),
@@ -358,5 +398,6 @@ async def stream_report(
         headers={
             "Cache-Control": "no-cache",
             "X-Accel-Buffering": "no",  # отключает буферизацию в nginx
+            "Connection": "keep-alive",
         },
     )
