@@ -1,6 +1,10 @@
 import asyncio
 import json
+import logging
+import time
 from datetime import date, datetime, timedelta, timezone
+
+logger = logging.getLogger(__name__)
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
@@ -315,7 +319,6 @@ async def stream_report(
                 r.error_msg = err
                 await sess.commit()
         except Exception:
-            logger = __import__("logging").getLogger(__name__)
             logger.exception("Failed to finalize report %s", report_id)
 
     async def event_stream():
@@ -328,15 +331,22 @@ async def stream_report(
         # Первый байт сразу — чтобы nginx не закрыл idle-соединение,
         # а клиент увидел, что стрим пошёл.
         yield ": open\n\n"
+        t0 = time.monotonic()
 
         try:
             # Собираем данные внутри стрима — не блокируем TTFB.
             async with async_session() as data_sess:
                 data = await build_weekly_data(data_sess, user_id, week_start)
+            t_data = time.monotonic()
             prompt = build_prompt(data)
+            logger.info(
+                "report %s: build_weekly_data=%.2fs prompt_chars=%d",
+                report_id, t_data - t0, len(prompt),
+            )
 
             # Heartbeat: пока LLM ещё не прислал первый токен, шлём комменты
             # каждые 10 сек, чтобы прокси не закрыл соединение.
+            t_llm_open = time.monotonic()
             stream_gen = chat_completion_stream([{"role": "user", "content": prompt}])
             got_first = False
 
@@ -349,6 +359,11 @@ async def stream_report(
                 except StopAsyncIteration:
                     break
 
+                if not got_first:
+                    logger.info(
+                        "report %s: ttft=%.2fs (llm first token)",
+                        report_id, time.monotonic() - t_llm_open,
+                    )
                 got_first = True
                 if not header_checked:
                     header_buf += chunk
@@ -371,6 +386,11 @@ async def stream_report(
             if not got_first and not full_chunks:
                 raise RuntimeError("LLM вернул пустой ответ.")
 
+            logger.info(
+                "report %s: total=%.2fs chunks=%d chars=%d",
+                report_id, time.monotonic() - t0,
+                len(full_chunks), sum(len(c) for c in full_chunks),
+            )
             final_status = ReportStatus.DONE
             final_error = None
             yield f"data: {json.dumps({'done': True})}\n\n"
