@@ -17,7 +17,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 BASE_URL = "https://foundation-models.api.cloud.ru/v1"
-MODEL = "ai-sage/GigaChat3-10B-A1.8B"
+MODEL = "zai-org/GLM-4.7"
 
 # Нестримовый клиент: жёсткий таймаут на весь запрос (короткие ответы типа daily-tip).
 SHORT_TIMEOUT = httpx.Timeout(connect=10.0, read=60.0, write=30.0, pool=10.0)
