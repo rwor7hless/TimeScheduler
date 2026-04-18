@@ -2,6 +2,15 @@ import asyncio
 import logging
 from contextlib import asynccontextmanager
 
+# INFO-уровень на root-логгере — иначе logger.info() из наших модулей
+# (app.services.gigachat, app.routers.reports, ...) режется дефолтным WARNING.
+# force=True перезаписывает хендлеры, которые мог поставить uvicorn / библиотеки.
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    force=True,
+)
+
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -20,6 +29,7 @@ if settings.secret_key == "change-me-in-production":
 from app.database import Base, engine
 from app.routers import admin, auth, backup, boards, budget, export, habits, reports, search, stats, tags, tasks, telegram
 from app.services.backup import run_backup
+from app.services.gigachat import llm_available, llm_info, llm_unavailable_reason
 from app.services.telegram_bot import poll_telegram_updates, send_telegram_reminders
 from app.services.weekly_report import run_weekly_reports
 
@@ -123,7 +133,11 @@ async def lifespan(app: FastAPI):
     )
 
     # Weekly AI report: every Sunday at 21:00 user_timezone (только если LLM сконфигурирован)
-    if settings.gigachat_api_key:
+    if llm_available():
+        info = llm_info()
+        logging.info(
+            "LLM enabled: provider=%s model=%s", info["provider"], info["model"]
+        )
         scheduler.add_job(
             run_weekly_reports,
             "cron",
@@ -136,8 +150,7 @@ async def lifespan(app: FastAPI):
         )
     else:
         logging.warning(
-            "Weekly reports cron disabled: GIGACHAT_API_KEY is empty. "
-            "Set it in .env to enable automatic AI summaries."
+            "Weekly reports cron disabled: %s", llm_unavailable_reason()
         )
 
     scheduler.start()

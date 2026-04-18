@@ -19,7 +19,12 @@ from app.models.report import ReportStatus, WeeklyReport
 from app.models.task import KanbanStatus, Task
 from app.models.user import User
 from app.schemas.report import WeeklyReportResponse
-from app.services.gigachat import chat_completion, chat_completion_stream
+from app.services.gigachat import (
+    chat_completion,
+    chat_completion_stream,
+    llm_available,
+    llm_unavailable_reason,
+)
 from app.services.ntfy import send as ntfy_send
 from app.services.weekly_report import _strip_intro_heading, build_weekly_data
 from prompts.pet_tip import build_pet_prompt
@@ -128,11 +133,9 @@ async def request_summary(
             detail="Нет права запрашивать саммари. Обратитесь к администратору.",
         )
 
-    if not settings.gigachat_api_key:
-        raise HTTPException(
-            status_code=503,
-            detail="LLM отключён в конфигурации (GIGACHAT_API_KEY не задан).",
-        )
+    reason = llm_unavailable_reason()
+    if reason:
+        raise HTTPException(status_code=503, detail=reason)
 
     ws = _monday_of(date.today())
 
@@ -189,7 +192,7 @@ async def get_daily_tip(
     Генерирует короткое напутствие на день от лица питомца.
     Кешировать на стороне клиента — вызывать раз в день.
     """
-    if not settings.gigachat_api_key:
+    if not llm_available():
         return {"tip": None, "date": str(date.today()), "disabled": True}
 
     today = date.today()
@@ -323,32 +326,31 @@ async def stream_report(
             logger.exception("Failed to finalize report %s", report_id)
 
     async def event_stream():
+        """
+        Стриминговая генерация через SSE.
+        Пока LLM не прислал первый токен — фронт показывает ASCII-анимацию
+        и смешные сообщения. Как только чанки пошли — рендерятся в реальном
+        времени. nginx настроен с proxy_buffering off, heartbeat не нужен,
+        прямой async-for без wait_for (иначе httpx ломается).
+        """
         full_chunks: list[str] = []
         header_buf = ""
         header_checked = False
         final_status: ReportStatus = ReportStatus.ERROR
         final_error: str | None = "Прервано"
 
-        # Первый байт сразу — чтобы nginx не закрыл idle-соединение,
-        # а клиент увидел, что стрим пошёл.
         yield ": open\n\n"
         t0 = time.monotonic()
 
         try:
-            # Собираем данные внутри стрима — не блокируем TTFB.
             async with async_session() as data_sess:
                 data = await build_weekly_data(data_sess, user_id, week_start)
-            t_data = time.monotonic()
             prompt = build_prompt(data)
             logger.info(
                 "report %s: build_weekly_data=%.2fs prompt_chars=%d",
-                report_id, t_data - t0, len(prompt),
+                report_id, time.monotonic() - t0, len(prompt),
             )
 
-            # Прямой async-for по стриму. НЕ оборачивать в asyncio.wait_for —
-            # отмена __anext__ ломает внутренний httpx-итератор OpenAI SDK
-            # и роняет скорость до 2-3 токенов/сек. nginx буферизацию мы
-            # выключили в конфиге, heartbeat не нужен.
             t_llm_open = time.monotonic()
             got_first = False
 

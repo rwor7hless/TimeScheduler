@@ -21,7 +21,19 @@ class Settings(BaseSettings):
     cors_origins: list[str] = ["http://localhost:5173", "http://localhost:3000"]
     telegram_bot_token: str = ""
     user_timezone: str = "Europe/Moscow"
+
+    # ── LLM: переключатель провайдера ──────────────────────────────────────
+    # LLM_PROVIDER=gigachat → cloud.ru (foundation-models) с GigaChat3
+    # LLM_PROVIDER=nvidia   → NVIDIA NIM (integrate.api.nvidia.com)
+    llm_provider: str = "gigachat"
+
+    # GigaChat (cloud.ru)
     gigachat_api_key: str = ""  # API ключ из cloud.ru (foundation-models)
+    gigachat_model: str = "ai-sage/GigaChat3-10B-A1.8B"
+
+    # NVIDIA NIM (build.nvidia.com)
+    nvidia_api_key: str = ""
+    nvidia_model: str = "meta/llama-3.3-70b-instruct"
 
     # ntfy.sh push-уведомления
     # Тема: произвольная строка, например "timescheduler-roman-7x3k"
@@ -42,6 +54,16 @@ class Settings(BaseSettings):
                 return json.loads(v)
             return [x.strip() for x in v.split(",") if x.strip()]
         return v
+
+    @field_validator("llm_provider", mode="before")
+    @classmethod
+    def _normalize_llm_provider(cls, v):
+        s = str(v or "gigachat").strip().lower()
+        if s not in {"gigachat", "nvidia"}:
+            raise ValueError(
+                f"LLM_PROVIDER должен быть 'gigachat' или 'nvidia', получено: {v!r}"
+            )
+        return s
 
     model_config = {"env_file": "../.env", "env_file_encoding": "utf-8"}
 
