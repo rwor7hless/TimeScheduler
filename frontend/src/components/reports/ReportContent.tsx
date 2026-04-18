@@ -94,11 +94,11 @@ function AdviceCard({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-amber-200/70 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/15 px-3 py-2.5 transition-colors">
-      <div className="flex-shrink-0 w-9 h-9 rounded-xl bg-gradient-to-br from-amber-400 to-amber-500 text-white font-semibold text-[13px] flex items-center justify-center shadow-sm tabular-nums">
+    <div className="group flex items-start gap-2.5 rounded-xl border border-amber-200/70 dark:border-amber-800/40 bg-amber-50/50 dark:bg-amber-900/15 px-2.5 py-2 transition-all duration-200 hover:bg-amber-50 dark:hover:bg-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700/60 hover:shadow-[0_6px_18px_-6px_rgba(245,158,11,0.35)]">
+      <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-gradient-to-br from-amber-400 to-amber-500 text-white font-semibold text-[12px] flex items-center justify-center shadow-sm tabular-nums transition-transform duration-200 group-hover:scale-110 group-hover:rotate-[-4deg]">
         {String(index).padStart(2, '0')}
       </div>
-      <div className="flex-1 pt-1 text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 [&_p]:!m-0">
+      <div className="flex-1 pt-0.5 text-[13px] leading-snug text-gray-700 dark:text-gray-300 [&_p]:!m-0">
         {children}
       </div>
     </div>
@@ -114,7 +114,7 @@ function buildComponents(theme: SectionTheme): Components {
 
   return {
     p: ({ children }) => (
-      <p className="text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 my-2 tracking-[-0.003em]">
+      <p className="text-[13px] leading-snug text-gray-700 dark:text-gray-300 my-1.5 tracking-[-0.003em]">
         {children}
       </p>
     ),
@@ -123,7 +123,7 @@ function buildComponents(theme: SectionTheme): Components {
     ),
     em: ({ children }) => <em className="italic">{children}</em>,
     ul: ({ children }) => (
-      <ul className="space-y-1.5 my-3 list-none pl-0">{children}</ul>
+      <ul className="space-y-1 my-2 list-none pl-0">{children}</ul>
     ),
     ol: ({ children }) => {
       if (isAdvice) {
@@ -132,7 +132,7 @@ function buildComponents(theme: SectionTheme): Components {
           (c): c is React.ReactElement => React.isValidElement(c),
         )
         return (
-          <div className="space-y-2.5 my-3">
+          <div className="space-y-2 my-2">
             {items.map((item, idx) => (
               <AdviceCard key={idx} index={idx + 1}>
                 {item.props.children}
@@ -142,7 +142,7 @@ function buildComponents(theme: SectionTheme): Components {
         )
       }
       return (
-        <ol className="list-decimal list-inside space-y-1.5 my-3 text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 marker:text-gray-400 marker:font-semibold">
+        <ol className="list-decimal list-inside space-y-1 my-2 text-[13px] leading-snug text-gray-700 dark:text-gray-300 marker:text-gray-400 marker:font-semibold">
           {children}
         </ol>
       )
@@ -155,10 +155,10 @@ function buildComponents(theme: SectionTheme): Components {
       if (isDone) {
         return (
           <li className="flex items-start gap-2">
-            <span className="mt-[3px] flex-shrink-0 text-emerald-500 dark:text-emerald-400">
+            <span className="mt-[2px] flex-shrink-0 text-emerald-500 dark:text-emerald-400">
               <CheckIcon />
             </span>
-            <span className="flex-1 text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 [&_p]:!m-0">
+            <span className="flex-1 text-[13px] leading-snug text-gray-700 dark:text-gray-300 [&_p]:!m-0">
               {children}
             </span>
           </li>
@@ -167,10 +167,10 @@ function buildComponents(theme: SectionTheme): Components {
       if (isFails) {
         return (
           <li className={'flex items-start gap-2 ' + theme.listRowBgClass}>
-            <span className="mt-[3px] flex-shrink-0 text-rose-500 dark:text-rose-400">
+            <span className="mt-[2px] flex-shrink-0 text-rose-500 dark:text-rose-400">
               <AlertIcon />
             </span>
-            <span className="flex-1 text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 [&_p]:!m-0">
+            <span className="flex-1 text-[13px] leading-snug text-gray-700 dark:text-gray-300 [&_p]:!m-0">
               {children}
             </span>
           </li>
@@ -179,9 +179,9 @@ function buildComponents(theme: SectionTheme): Components {
       return (
         <li className="flex items-start gap-2">
           <span
-            className={`mt-[9px] flex-shrink-0 w-1.5 h-1.5 rounded-full ${theme.bulletClass}`}
+            className={`mt-[7px] flex-shrink-0 w-1.5 h-1.5 rounded-full ${theme.bulletClass}`}
           />
-          <span className="flex-1 text-[14px] leading-relaxed text-gray-700 dark:text-gray-300 [&_p]:!m-0">
+          <span className="flex-1 text-[13px] leading-snug text-gray-700 dark:text-gray-300 [&_p]:!m-0">
             {children}
           </span>
         </li>
@@ -271,30 +271,42 @@ function SectionCard({
   isTail: boolean
   isStreaming: boolean
 }) {
-  const theme = THEMES[classifySection(heading)]
+  const sectionKey = classifySection(heading)
+  const theme = THEMES[sectionKey]
   const components = React.useMemo(() => buildComponents(theme), [theme])
+
+  // «Разбор по проектам» — full-width секция, в которой AI пишет один ### на
+  // каждый проект. Без multi-column'а весь текст жмётся слева и справа остаётся
+  // огромная дыра. `md:columns-2` раскидывает проекты по 2 колонкам, а
+  // `break-inside-avoid-column` на дочерних блоках (в ReactMarkdown через CSS)
+  // не даёт рвать проект между колонками.
+  const isProjects = sectionKey === 'projects'
+  const bodyClass = isProjects
+    ? 'relative flex-1 md:columns-2 md:gap-5 [&>*]:break-inside-avoid-column [&_h3]:break-after-avoid'
+    : 'relative flex-1'
 
   return (
     <motion.section
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -2 }}
       transition={{ duration: 0.25, ease: 'easeOut' }}
-      className={`${theme.cardClass} px-4 sm:px-5 pt-3.5 pb-4 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none`}
+      className={`${theme.cardClass} px-3.5 sm:px-4 pt-2.5 pb-3 shadow-[0_1px_2px_rgba(0,0,0,0.02)] dark:shadow-none flex flex-col h-full transition-shadow duration-200 hover:shadow-[0_12px_28px_-12px_rgba(0,0,0,0.15)] dark:hover:shadow-[0_12px_28px_-12px_rgba(0,0,0,0.5)]`}
     >
-      <header className="flex items-center gap-2.5 mb-1">
+      <header className="flex items-center gap-2 mb-0.5">
         <span
-          className={`flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center ${theme.iconChipClass}`}
+          className={`flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center ${theme.iconChipClass}`}
         >
           <SectionIcon name={theme.iconName} />
         </span>
         <h2
-          className={`text-[15px] sm:text-base font-semibold tracking-tight ${theme.titleClass}`}
+          className={`text-[13px] sm:text-[14px] font-semibold tracking-tight ${theme.titleClass}`}
         >
           {heading}
         </h2>
       </header>
-      <div className={`h-px w-full ${theme.underlineClass} mb-2.5`} />
-      <div className="relative">
+      <div className={`h-px w-full ${theme.underlineClass} mb-2`} />
+      <div className={bodyClass}>
         <ReactMarkdown
           remarkPlugins={[remarkGfm, remarkBreaks]}
           components={components}
@@ -331,7 +343,7 @@ export function ReportContent({ md, isStreaming }: Props) {
   if (!preamble && sections.length === 0) return null
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 auto-rows-auto items-start">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5 auto-rows-auto items-stretch">
       {preamble && (
         <div className="relative px-1 md:col-span-2">
           <ReactMarkdown
@@ -347,7 +359,7 @@ export function ReportContent({ md, isStreaming }: Props) {
         const sectionKey = classifySection(s.heading)
         const spanClass = HALF_WIDTH_KEYS.has(sectionKey) ? '' : 'md:col-span-2'
         return (
-          <div key={`${i}-${s.heading}`} className={spanClass}>
+          <div key={`${i}-${s.heading}`} className={`${spanClass} h-full`}>
             <SectionCard
               heading={s.heading}
               body={s.body}

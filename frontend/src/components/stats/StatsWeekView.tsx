@@ -1,0 +1,218 @@
+import { Link } from 'react-router-dom'
+import { motion, useReducedMotion } from 'framer-motion'
+import Spinner from '@/components/ui/Spinner'
+import { useWeekStats } from '@/hooks/useWeekStats'
+import { useReports } from '@/hooks/useReports'
+import type { BreakdownItem } from '@/types/stats'
+import { CHART_COLORS as DEFAULT_COLORS } from '@/lib/colors'
+import { WeekNavigator } from './WeekNavigator'
+import { WeekHeroBand } from './WeekHeroBand'
+import { WeekReportBody } from './WeekReportBody'
+import { KpiCard } from './KpiCard'
+import { DailyBarsMicro } from './DailyBarsMicro'
+import { WeeklySpotlight } from './WeeklySpotlight'
+import { HabitsWeekGrid } from './HabitsWeekGrid'
+import { PeakHoursStrip } from './PeakHoursStrip'
+import { ShareWeekButton } from './ShareWeekButton'
+
+interface Props {
+  weekStart: string
+  onWeekChange: (ws: string) => void
+}
+
+/**
+ * Donut value with a graceful fallback.
+ *
+ * Backend productivity = completed_in_week / created_in_week.
+ * If the user didn't CREATE any task this week but closed old ones, the
+ * backend returns null → donut shows "—". That's confusing for users who
+ * clearly did productive work. Fall back to completion share vs closable
+ * work (done + overdue), which is always meaningful when there's activity.
+ */
+function donutValue(stats: import('@/types/stats').Stats): number | null {
+  if (stats.productivity_percent != null) return stats.productivity_percent
+  const denom = stats.completed_last_month + stats.overdue_count
+  if (denom === 0) return null
+  return Math.round((stats.completed_last_month / denom) * 100)
+}
+
+function donutLabel(stats: import('@/types/stats').Stats): string {
+  return stats.productivity_percent != null ? 'Продуктивность' : 'Закрыто'
+}
+
+function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] }) {
+  if (items.length === 0) return null
+  const total = items.reduce((s, i) => s + i.count, 0)
+  if (total === 0) return null
+  return (
+    <div className="space-y-2">
+      <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">{title}</h4>
+      <div className="space-y-1">
+        {items.map((item, idx) => {
+          const pct = Math.round((item.count / total) * 100)
+          const color = item.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+          return (
+            <div
+              key={item.label}
+              className="group flex items-center gap-2 -mx-1 px-1 py-1 rounded-md cursor-default transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
+            >
+              <div
+                className="w-2 h-2 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-150"
+                style={{ backgroundColor: color }}
+              />
+              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
+                {item.label}
+              </span>
+              <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-200 group-hover:brightness-110"
+                  style={{ width: `${pct}%`, backgroundColor: color }}
+                />
+              </div>
+              <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right tabular-nums">
+                {item.count}
+              </span>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
+  const shouldReduceMotion = useReducedMotion()
+  const { data: stats, isLoading, isError, refetch } = useWeekStats(weekStart)
+  const { data: reports } = useReports()
+  const earliestReport = reports?.[reports.length - 1]?.week_start
+  const weekReport = reports?.find((r) => r.week_start === weekStart)
+  const reportMarkdown = weekReport?.status === 'done' ? weekReport.content : null
+
+  const blockVariants = {
+    hidden: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.3, ease: [0.2, 0.6, 0.2, 1] } },
+  }
+
+  return (
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={{
+        hidden: {},
+        show: {
+          transition: {
+            delayChildren: shouldReduceMotion ? 0 : 0.05,
+            staggerChildren: shouldReduceMotion ? 0 : 0.08,
+          },
+        },
+      }}
+      className="space-y-6"
+    >
+      <motion.div variants={blockVariants}>
+        <WeekNavigator weekStart={weekStart} onChange={onWeekChange} minDate={earliestReport} />
+      </motion.div>
+
+      {isLoading && <Spinner className="mt-10" />}
+
+      {isError && (
+        <div className="mt-10 flex flex-col items-center gap-3 text-center">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            Не удалось загрузить неделю.
+          </div>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:bg-accent-dark transition-colors"
+          >
+            Повторить
+          </button>
+        </div>
+      )}
+
+      {stats && (
+        <>
+          <motion.div variants={blockVariants}>
+            <WeekHeroBand stats={stats} />
+          </motion.div>
+
+          <motion.div variants={blockVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <KpiCard label="Активные" value={stats.active_tasks} />
+            <KpiCard label="Просрочено" value={stats.overdue_count} accent="red" />
+            <KpiCard
+              label="Ср. закрытие"
+              value={stats.avg_completion_hours != null ? stats.avg_completion_hours : '—'}
+              sub={stats.avg_completion_hours != null ? 'ч' : undefined}
+              accent="violet"
+            />
+            <KpiCard
+              label="Привычки"
+              value={
+                stats.habit_progress.length > 0
+                  ? Math.round(
+                      (stats.habit_progress.reduce((s, h) => s + h.completion_rate, 0) /
+                        stats.habit_progress.length) *
+                        100,
+                    )
+                  : '—'
+              }
+              sub={stats.habit_progress.length > 0 ? '%' : undefined}
+              accent="sky"
+            />
+          </motion.div>
+
+          <motion.div variants={blockVariants} className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-stretch">
+            <DailyBarsMicro weekStart={weekStart} dailyCompletions={stats.daily_completions} />
+            <WeeklySpotlight
+              stats={stats}
+              donutValue={donutValue(stats)}
+              donutLabel={donutLabel(stats)}
+            />
+          </motion.div>
+
+          <motion.div variants={blockVariants}>
+            <WeekReportBody weekStart={weekStart} />
+          </motion.div>
+
+          <motion.div variants={blockVariants}>
+            <HabitsWeekGrid habits={stats.habit_progress} />
+          </motion.div>
+
+          <motion.div variants={blockVariants}>
+            <PeakHoursStrip hours={stats.most_active_hours} />
+          </motion.div>
+
+          {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
+            <motion.div variants={blockVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <BreakdownBar title="По приоритету" items={stats.by_priority} />
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <BreakdownBar title="По доскам" items={stats.by_board} />
+              </div>
+              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                <BreakdownBar title="По тегам" items={stats.by_tag} />
+              </div>
+            </motion.div>
+          )}
+
+          <motion.div
+            variants={blockVariants}
+            className="flex flex-wrap items-center justify-between gap-3 pt-2"
+          >
+            <ShareWeekButton
+              weekStart={weekStart}
+              stats={stats}
+              reportMarkdown={reportMarkdown}
+            />
+            <Link
+              to="/notifications"
+              className="text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              История отчётов →
+            </Link>
+          </motion.div>
+        </>
+      )}
+    </motion.div>
+  )
+}

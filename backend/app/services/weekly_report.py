@@ -237,8 +237,8 @@ async def generate_report_for_user(user_id: int, week_start: date) -> None:
 
         try:
             data = await build_weekly_data(db, user_id, week_start)
-            prompt = build_prompt(data)
-            content = await chat_completion([{"role": "user", "content": prompt}])
+            messages = build_prompt(data)
+            content = await chat_completion(messages)
             report.status = ReportStatus.DONE
             report.content = _strip_intro_heading(content)
             report.error_msg = None

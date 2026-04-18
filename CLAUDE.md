@@ -29,7 +29,7 @@ TimeScheduler is a personal task/habit scheduling app with a FastAPI backend and
 
 **Router structure:** `auth`, `admin`, `tasks`, `boards`, `tags`, `habits`, `stats`, `export`, `backup`, `telegram`, `budget`, `search`, `reports`
 
-**LLM integration:** `backend/app/services/gigachat.py` wraps the OpenAI-compatible cloud.ru endpoint (GigaChat). Uses `GIGACHAT_API_KEY`. All errors are mapped to `RuntimeError` with human-readable messages — call sites translate them to HTTP 503.
+**LLM integration:** `backend/app/services/gigachat.py` (legacy name) is a provider-agnostic OpenAI-compatible client. `LLM_PROVIDER` selects between `gigachat` (cloud.ru foundation-models, `GIGACHAT_API_KEY`) and `nvidia` (NVIDIA NIM `integrate.api.nvidia.com`, `NVIDIA_API_KEY`). Both expose `/v1/chat/completions`, so only `base_url`/`api_key`/model name differ. All errors are mapped to `RuntimeError` with human-readable messages — call sites translate them to HTTP 503.
 
 ### Frontend (`frontend/`)
 - **React 18** + **TypeScript** + **Vite**
@@ -82,7 +82,9 @@ Environment variables (`.env` at repo root, read by `backend/app/config.py`):
 | `BACKUP_INTERVAL_HOURS` | `24` | DB backup frequency |
 | `BACKUP_DIR` | `./backups` | Backup storage path |
 | `USER_TIMEZONE` | `Europe/Moscow` | Timezone for weekly-report cron and Telegram reminder display |
-| `GIGACHAT_API_KEY` | `` | API key for cloud.ru GigaChat (daily tip + weekly report). Empty disables LLM features. |
+| `LLM_PROVIDER` | `gigachat` | `gigachat` or `nvidia` — picks which OpenAI-compatible backend is used. |
+| `GIGACHAT_API_KEY` | `` | API key for cloud.ru GigaChat (used when `LLM_PROVIDER=gigachat`). Empty disables LLM features. |
+| `NVIDIA_API_KEY` | `` | API key for NVIDIA NIM (used when `LLM_PROVIDER=nvidia`). |
 | `NTFY_TOPIC` | `` | ntfy.sh topic for mobile push notifications (empty disables) |
 | `NTFY_SERVER` | `https://ntfy.sh` | ntfy server URL |
 

@@ -9,7 +9,7 @@ export function useReports() {
   const { user } = useAuth()
   const query = useQuery<WeeklyReport[]>({
     queryKey: ['reports', user?.user_id],
-    queryFn: reportsApi.list,
+    queryFn: () => reportsApi.list(),
     enabled: !!user?.user_id,
   })
   return query

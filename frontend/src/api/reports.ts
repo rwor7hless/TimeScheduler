@@ -2,8 +2,8 @@ import client from './client'
 import type { WeeklyReport } from '@/types/report'
 
 export const reportsApi = {
-  list: (): Promise<WeeklyReport[]> =>
-    client.get('/reports').then((r) => r.data),
+  list: (limit = 26): Promise<WeeklyReport[]> =>
+    client.get('/reports', { params: { limit } }).then((r) => r.data),
 
   generate: (weekStart?: string): Promise<WeeklyReport> =>
     client

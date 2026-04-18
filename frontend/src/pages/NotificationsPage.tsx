@@ -98,10 +98,14 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">Уведомления</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50">История отчётов</h1>
           <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
-            AI-отчёт генерируется автоматически каждое воскресенье в 21:00
-            {canRequestSummary && ' · или по запросу'}
+            Архив прошлых недель. Актуальный разбор и аналитика — на{' '}
+            <a href="/stats?tab=week" className="text-amber-600 dark:text-amber-400 hover:underline">
+              вкладке Статистика
+            </a>
+            . AI-отчёт генерируется автоматически каждое воскресенье в 21:00
+            {canRequestSummary && ' · или по запросу'}.
           </p>
         </div>
         {canRequestSummary && (

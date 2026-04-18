@@ -3,6 +3,9 @@ export interface HabitProgress {
   name: string
   completion_rate: number
   current_streak: number
+  /** Chronological per-day completion flags for the requested window.
+   *  Length 7 for week_start mode (Mon..Sun), period_days otherwise. */
+  days: boolean[]
 }
 
 export interface DailyCompletion {
@@ -14,6 +17,13 @@ export interface BreakdownItem {
   label: string
   count: number
   color: string | null
+}
+
+export interface PreviousPeriodMetrics {
+  completed_count: number
+  productivity_percent: number | null
+  active_days: number
+  habits_done_pct: number | null
 }
 
 export interface Stats {
@@ -28,4 +38,7 @@ export interface Stats {
   by_priority: BreakdownItem[]
   by_board: BreakdownItem[]
   by_tag: BreakdownItem[]
+  /** Echoed from the server so the client trusts the server's Monday. */
+  week_start: string | null
+  previous_period_metrics: PreviousPeriodMetrics | null
 }

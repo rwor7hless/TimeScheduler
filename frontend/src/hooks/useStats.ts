@@ -1,12 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
-import { statsApi } from '@/api/stats'
+import { statsApi, type StatsPeriod } from '@/api/stats'
 import { useAuth } from '@/context/AuthContext'
 
-export function useStats(period: 'week' | 'month' | 'year' = 'month') {
+export function useStats(period: StatsPeriod = 'month') {
   const { user } = useAuth()
   return useQuery({
-    queryKey: ['stats', user?.user_id, period],
-    queryFn: () => statsApi.get(period),
+    queryKey: ['stats', user?.user_id, 'period', period],
+    queryFn: () => statsApi.get({ period }),
     enabled: !!user?.user_id,
   })
 }

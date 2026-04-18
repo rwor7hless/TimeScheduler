@@ -8,6 +8,10 @@ class HabitProgress(BaseModel):
     name: str
     completion_rate: float
     current_streak: int
+    # Per-day completion flags for the requested window.
+    # Length = 7 when week_start is set, period_days otherwise.
+    # Order: chronological (oldest → newest). For week_start, Mon..Sun.
+    days: list[bool] = []
 
 
 class DailyCompletion(BaseModel):
@@ -19,6 +23,15 @@ class BreakdownItem(BaseModel):
     label: str
     count: int
     color: str | None = None
+
+
+class PreviousPeriodMetrics(BaseModel):
+    """Sparse metrics for the previous period of the same length.
+    Populated only when the caller explicitly requests a specific week."""
+    completed_count: int
+    productivity_percent: float | None
+    active_days: int
+    habits_done_pct: float | None
 
 
 class StatsResponse(BaseModel):
@@ -33,3 +46,6 @@ class StatsResponse(BaseModel):
     by_priority: list[BreakdownItem]
     by_board: list[BreakdownItem]
     by_tag: list[BreakdownItem]
+    # Echoed back so the frontend trusts the server-computed Monday, not its local tz.
+    week_start: date | None = None
+    previous_period_metrics: PreviousPeriodMetrics | None = None

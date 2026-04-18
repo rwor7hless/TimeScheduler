@@ -65,7 +65,7 @@ const navItems = (isAdmin: boolean) => [
   { to: '/habits', label: 'Привычки', Icon: HabitsIcon },
   { to: '/budget', label: 'Бюджет', Icon: BudgetIcon },
   { to: '/stats', label: 'Статистика', Icon: StatsIcon },
-  { to: '/notifications', label: 'Уведомления', Icon: BellIcon },
+  { to: '/notifications', label: 'История', Icon: BellIcon },
 
   ...(isAdmin ? [{ to: '/admin', label: 'Админ', Icon: AdminIcon }] : []),
 ]

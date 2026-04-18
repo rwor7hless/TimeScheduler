@@ -22,7 +22,10 @@
       "Bash(./.venv/Scripts/python.exe backend/llm_probe.py)",
       "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe.py)",
       "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe2.py)",
-      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe3.py)"
+      "Bash(PYTHONIOENCODING=utf-8 ./.venv/Scripts/python.exe backend/llm_probe3.py)",
+      "Bash(xargs grep *)",
+      "Read(//c/Users/wor7hless/.claude/plans/**)",
+      "Bash(mkdir -p \"/c/Users/wor7hless/.claude/plans/\")"
     ]
   }
 }

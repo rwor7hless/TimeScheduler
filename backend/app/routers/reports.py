@@ -254,14 +254,14 @@ async def get_daily_tip(
 
     all_tasks = list(my_day_rows) + [t for t in sched_rows if t not in my_day_rows]
 
-    prompt = build_pet_prompt(
+    messages = build_pet_prompt(
         all_tasks,
         list(habit_names),
         list(deadline_today_rows),
         list(overdue_rows),
     )
     try:
-        tip = await chat_completion([{"role": "user", "content": prompt}], max_tokens=200)
+        tip = await chat_completion(messages, max_tokens=200)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
@@ -345,16 +345,17 @@ async def stream_report(
         try:
             async with async_session() as data_sess:
                 data = await build_weekly_data(data_sess, user_id, week_start)
-            prompt = build_prompt(data)
+            messages = build_prompt(data)
+            prompt_chars = sum(len(m["content"]) for m in messages)
             logger.info(
                 "report %s: build_weekly_data=%.2fs prompt_chars=%d",
-                report_id, time.monotonic() - t0, len(prompt),
+                report_id, time.monotonic() - t0, prompt_chars,
             )
 
             t_llm_open = time.monotonic()
             got_first = False
 
-            async for chunk in chat_completion_stream([{"role": "user", "content": prompt}]):
+            async for chunk in chat_completion_stream(messages):
                 if not got_first:
                     logger.info(
                         "report %s: ttft=%.2fs (llm first token)",
