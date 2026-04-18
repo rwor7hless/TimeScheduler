@@ -16,6 +16,14 @@ import toast from 'react-hot-toast'
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
+/** Жёсткое ограничение длины заголовка задачи в списках, чтобы длинный
+ *  заголовок не растягивал строку и страницу. CSS `truncate` помимо этого
+ *  обрежет текст многоточием на узких экранах. */
+const TITLE_MAX_CHARS = 50
+function truncateTitle(s: string, max: number = TITLE_MAX_CHARS): string {
+  return s.length > max ? s.slice(0, max).trimEnd() + '…' : s
+}
+
 function getGreeting() {
   const h = new Date().getHours()
   if (h < 5) return 'Доброй ночи'
@@ -131,14 +139,15 @@ function TodayTaskRow({
       <button
         type="button"
         onClick={onClick}
+        title={task.title}
         className={clsx(
-          'flex-1 text-sm font-medium text-left truncate transition-colors',
+          'flex-1 min-w-0 text-sm font-medium text-left truncate transition-colors',
           done
             ? 'line-through text-gray-400 dark:text-gray-500'
             : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
         )}
       >
-        {task.title}
+        {truncateTitle(task.title)}
       </button>
 
       {/* Tags */}
@@ -231,9 +240,10 @@ function BacklogTaskRow({
       <button
         type="button"
         onClick={onClick}
-        className="flex-1 text-sm font-medium text-left text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400 transition-colors truncate"
+        title={task.title}
+        className="flex-1 min-w-0 text-sm font-medium text-left text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400 transition-colors truncate"
       >
-        {task.title}
+        {truncateTitle(task.title)}
       </button>
       {task.tags && task.tags.length > 0 && (
         <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
@@ -767,7 +777,7 @@ export default function TodayPage() {
                             className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                           >
                             <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
-                            <span className="flex-1 text-sm text-gray-800 dark:text-gray-200 truncate">{task.title}</span>
+                            <span title={task.title} className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 truncate">{truncateTitle(task.title)}</span>
                             {boardName && (
                               <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 truncate max-w-[60px]">
                                 {boardName}
