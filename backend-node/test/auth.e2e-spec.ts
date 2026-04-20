@@ -21,6 +21,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import * as express from 'express';
 import request from 'supertest';
 import { AppModule } from '../src/app.module';
+import { AllExceptionsFilter } from '../src/common/filters/http-exception.filter';
 
 const hasDb = Boolean(process.env.DATABASE_URL_PRISMA || process.env.DATABASE_URL);
 const hasCreds = Boolean(process.env.USER_LOGIN && process.env.USER_PASSWORD);
@@ -48,6 +49,9 @@ maybeDescribe('auth e2e (real DB)', () => {
         forbidNonWhitelisted: false,
       }),
     );
+    // Mirror the production filter wiring so error-shape assertions below
+    // exercise the actual {detail} normalizer.
+    app.useGlobalFilters(new AllExceptionsFilter());
     await app.init();
   });
 
@@ -95,17 +99,24 @@ maybeDescribe('auth e2e (real DB)', () => {
     expect(typeof res.body.can_request_summary).toBe('boolean');
   });
 
-  it('POST /api/auth/token with wrong password → 401', async () => {
+  it('POST /api/auth/token with wrong password → 401 {detail}', async () => {
     const res = await request(app.getHttpServer())
       .post('/api/auth/token')
       .type('form')
       .send({ username: login, password: `${password}-not-the-real-one` });
 
     expect(res.status).toBe(401);
+    // Phase 3 shape: exactly {detail: <string>} — no statusCode/message/error
+    // keys from Nest's default response body.
+    expect(Object.keys(res.body)).toEqual(['detail']);
+    expect(res.body.detail).toBe('Incorrect username or password');
   });
 
-  it('GET /api/auth/me with no Authorization header → 401', async () => {
+  it('GET /api/auth/me with no Authorization header → 401 {detail}', async () => {
     const res = await request(app.getHttpServer()).get('/api/auth/me');
     expect(res.status).toBe(401);
+    expect(Object.keys(res.body)).toEqual(['detail']);
+    expect(typeof res.body.detail).toBe('string');
+    expect(res.body.detail.length).toBeGreaterThan(0);
   });
 });

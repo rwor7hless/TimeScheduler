@@ -3,6 +3,7 @@ import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/comm
 import { NestFactory, Reflector } from '@nestjs/core';
 import * as express from 'express';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
@@ -25,6 +26,12 @@ async function bootstrap(): Promise<void> {
   );
 
   app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  // Rewrites every 4xx/5xx body into {detail: <string>} to match FastAPI's
+  // HTTPException contract (see `backend/app/routers/*.py`). The React
+  // frontend reads `response.data.detail` directly, so this is the
+  // response-shape parity the whole Phase 3 work exists for.
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const corsOrigins =
