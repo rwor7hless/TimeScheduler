@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
+import * as express from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
@@ -8,6 +9,12 @@ async function bootstrap(): Promise<void> {
   const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix('api');
+
+  // `/api/auth/token` speaks OAuth2's password flow, which posts
+  // `application/x-www-form-urlencoded`. Nest/Express parses JSON by default
+  // but not URL-encoded bodies, so we mount the parser globally. This doesn't
+  // affect JSON routes — the body parser selects by Content-Type.
+  app.use(express.urlencoded({ extended: true }));
 
   app.useGlobalPipes(
     new ValidationPipe({

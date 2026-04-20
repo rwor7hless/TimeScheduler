@@ -4,7 +4,10 @@ module.exports = {
     ecmaVersion: 2022,
     sourceType: 'module',
     tsconfigRootDir: __dirname,
-    project: './tsconfig.json',
+    // Separate tsconfig that includes test/ and jest.setup.ts so eslint's
+    // type-aware rules can read them. The runtime build (nest build) still
+    // uses the narrower tsconfig.json + tsconfig.build.json.
+    project: './tsconfig.eslint.json',
   },
   plugins: ['@typescript-eslint'],
   extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
