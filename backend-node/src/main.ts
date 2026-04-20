@@ -5,6 +5,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
+  const logger = new Logger('Bootstrap');
 
   app.setGlobalPrefix('api');
 
@@ -21,8 +22,17 @@ async function bootstrap(): Promise<void> {
   const corsOriginsEnv = process.env.CORS_ORIGINS;
   const corsOrigins =
     corsOriginsEnv && corsOriginsEnv.trim().length > 0
-      ? corsOriginsEnv.split(',').map((o) => o.trim()).filter((o) => o.length > 0)
+      ? corsOriginsEnv
+          .split(',')
+          .map((o) => o.trim())
+          .filter((o) => o.length > 0)
       : ['*'];
+
+  if (corsOrigins.length === 1 && corsOrigins[0] === '*' && process.env.NODE_ENV === 'production') {
+    logger.warn(
+      'CORS_ORIGINS is "*" in production — credentialed requests are reflected from any origin. Set CORS_ORIGINS to an explicit allow-list.',
+    );
+  }
 
   app.enableCors({
     origin: corsOrigins.length === 1 && corsOrigins[0] === '*' ? true : corsOrigins,
@@ -32,7 +42,6 @@ async function bootstrap(): Promise<void> {
   const port = Number(process.env.PORT ?? 4000);
   await app.listen(port);
 
-  const logger = new Logger('Bootstrap');
   logger.log(`Listening on ${port}, /api prefix active`);
 }
 
