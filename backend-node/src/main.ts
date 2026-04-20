@@ -1,0 +1,43 @@
+import 'reflect-metadata';
+import { ClassSerializerInterceptor, Logger, ValidationPipe } from '@nestjs/common';
+import { NestFactory, Reflector } from '@nestjs/core';
+import { AppModule } from './app.module';
+
+async function bootstrap(): Promise<void> {
+  const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: false,
+    }),
+  );
+
+  app.useGlobalInterceptors(new ClassSerializerInterceptor(app.get(Reflector)));
+
+  const corsOriginsEnv = process.env.CORS_ORIGINS;
+  const corsOrigins =
+    corsOriginsEnv && corsOriginsEnv.trim().length > 0
+      ? corsOriginsEnv.split(',').map((o) => o.trim()).filter((o) => o.length > 0)
+      : ['*'];
+
+  app.enableCors({
+    origin: corsOrigins.length === 1 && corsOrigins[0] === '*' ? true : corsOrigins,
+    credentials: true,
+  });
+
+  const port = Number(process.env.PORT ?? 4000);
+  await app.listen(port);
+
+  const logger = new Logger('Bootstrap');
+  logger.log(`Listening on ${port}, /api prefix active`);
+}
+
+bootstrap().catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error('Failed to bootstrap application', err);
+  process.exit(1);
+});
