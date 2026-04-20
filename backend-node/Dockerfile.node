@@ -16,7 +16,7 @@ RUN npm ci
 COPY . .
 
 # Generate Prisma client (no-op safe if no schema yet)
-RUN npm run prisma:generate || true
+RUN npm run prisma:generate
 
 # Build the Nest app (produces dist/main.js)
 RUN npm run build
