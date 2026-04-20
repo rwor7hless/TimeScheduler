@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
+import { BudgetModule } from '../budget/budget.module';
 import { LlmModule } from '../llm/llm.module';
 import { NtfyModule } from '../ntfy/ntfy.module';
 import { ReportStreamController } from './report-stream.controller';
@@ -19,7 +20,7 @@ import { WeeklyDataService } from './weekly-data.service';
  *  - ReportsSchedulerService — Sunday 21:00 Europe/Moscow cron
  */
 @Module({
-  imports: [AuthModule, LlmModule, NtfyModule],
+  imports: [AuthModule, LlmModule, NtfyModule, BudgetModule],
   controllers: [ReportsController, ReportStreamController],
   providers: [ReportsService, WeeklyDataService, ReportsSchedulerService],
   exports: [ReportsService],

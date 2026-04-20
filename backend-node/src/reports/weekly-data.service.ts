@@ -1,4 +1,5 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Optional } from '@nestjs/common';
+import { BudgetWeeklyService } from '../budget/weekly/budget-weekly.service';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   DEFAULT_BUCKET,
@@ -40,7 +41,10 @@ type TaskRow = {
 
 @Injectable()
 export class WeeklyDataService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() private readonly budgetWeekly?: BudgetWeeklyService,
+  ) {}
 
   private mondayOf(d: Date): Date {
     // In UTC: JS getUTCDay — Sunday=0, Monday=1, ..., Saturday=6.
@@ -88,7 +92,9 @@ export class WeeklyDataService {
 
     const projects = await this.collectProjectStats(userId, ws, we);
     const habits = await this.collectHabitStats(userId, ws, we);
-    const budget = this.stubWeeklyBudget();
+    const budget = this.budgetWeekly
+      ? await this.budgetWeekly.buildWeeklyBlock(userId, weekEnd)
+      : this.stubWeeklyBudget();
 
     return {
       week_start: this.fmtDate(weekStart),

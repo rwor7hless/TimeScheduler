@@ -7,6 +7,7 @@ import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { BoardsModule } from './boards/boards.module';
 import { BootstrapModule } from './bootstrap/bootstrap.module';
+import { BudgetModule } from './budget/budget.module';
 import { HabitsModule } from './habits/habits.module';
 import { HealthController } from './health.controller';
 import { LlmModule } from './llm/llm.module';
@@ -34,6 +35,7 @@ import { TasksModule } from './tasks/tasks.module';
     LlmModule,
     NtfyModule,
     ReportsModule,
+    BudgetModule,
     BootstrapModule,
   ],
   controllers: [HealthController],
