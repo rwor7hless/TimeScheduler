@@ -234,6 +234,16 @@ pg_restore -h localhost -U ts_user -d timescheduler ./backups/timescheduler_2026
 
 ---
 
+## Backend switchover (Python → Node)
+
+A NestJS + Prisma port of the FastAPI backend lives in [`backend-node/`](./backend-node/). It speaks the same `/api` contract and reads the same PostgreSQL schema, so the two backends can run side-by-side during cutover.
+
+During the A/B period, `docker compose up -d` starts both: Python on `:8000` and Node on `:4000`, both pointing at the shared `db` service. The database now publishes `5433:5432` on the host for local Prisma development (the Phase 1 `ts-pg-proxy` socat workaround is no longer needed).
+
+See [`backend-node/CUTOVER.md`](./backend-node/CUTOVER.md) for the step-by-step cutover plan, the one-command rollback, and the week-1 invariants (shared JWT secret, portable argon2 hashes, no destructive Prisma migrations) that keep the fallback safe.
+
+---
+
 ## Known notes
 
 - **Route ordering:** `/api/tasks/reorder` must be declared **before** `/api/tasks/{task_id}` in FastAPI to avoid `"reorder"` being parsed as an integer.
