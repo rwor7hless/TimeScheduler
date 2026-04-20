@@ -5,6 +5,11 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
+# openssl + libc6-compat let Prisma's engine detect OpenSSL 3.x on Alpine.
+# Without them, prisma generate / runtime loader falls back to the
+# OpenSSL 1.1 engine and crashes with "libssl.so.1.1: not found".
+RUN apk add --no-cache openssl libc6-compat
+
 # Copy manifests first (leverage layer cache)
 COPY package*.json ./
 # Copy prisma schema if present (safe no-op if directory does not exist yet)
@@ -26,8 +31,9 @@ FROM node:20-alpine AS runner
 
 WORKDIR /app
 
-# postgresql-client provides pg_dump for future backup logic
-RUN apk add --no-cache postgresql-client
+# openssl + libc6-compat so Prisma can dlopen libssl.so.3 at runtime;
+# postgresql-client provides pg_dump for the backup endpoint.
+RUN apk add --no-cache openssl libc6-compat postgresql-client
 
 ENV NODE_ENV=production
 
