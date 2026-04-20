@@ -16,6 +16,7 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ReportsModule } from './reports/reports.module';
 import { TagsModule } from './tags/tags.module';
 import { TasksModule } from './tasks/tasks.module';
+import { TelegramModule } from './telegram/telegram.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { TasksModule } from './tasks/tasks.module';
     NtfyModule,
     ReportsModule,
     BudgetModule,
+    TelegramModule,
     BootstrapModule,
   ],
   controllers: [HealthController],
