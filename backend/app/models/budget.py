@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, Column, DateTime, Float, ForeignKey, Integer, String, Table, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -18,6 +19,14 @@ transaction_tags_table = Table(
 )
 
 
+planned_tags_table = Table(
+    "planned_tags",
+    Base.metadata,
+    Column("planned_purchase_id", Integer, ForeignKey("planned_purchases.id", ondelete="CASCADE"), primary_key=True),
+    Column("tag_id", Integer, ForeignKey("budget_tags.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
 class BudgetTag(Base):
     __tablename__ = "budget_tags"
 
@@ -25,6 +34,21 @@ class BudgetTag(Base):
     user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
     name: Mapped[str] = mapped_column(String(50))
     color: Mapped[str] = mapped_column(String(7), default="#6B7280")
+
+
+class BudgetCategory(Base):
+    __tablename__ = "budget_categories"
+    __table_args__ = (UniqueConstraint("user_id", "key", name="uq_budget_category_user_key"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    key: Mapped[str] = mapped_column(String(50))
+    label: Mapped[str] = mapped_column(String(50))
+    icon: Mapped[str] = mapped_column(String(16), default="📦")
+    color: Mapped[str] = mapped_column(String(7), default="#9CA3AF")
+    sort_order: Mapped[int] = mapped_column(Integer, default=0)
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
 
 
 class Transaction(Base):
@@ -38,6 +62,7 @@ class Transaction(Base):
     description: Mapped[str] = mapped_column(String(500), default="")
     date: Mapped[str] = mapped_column(String(10))  # yyyy-MM-dd
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+    source_planned_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     tags: Mapped[list["BudgetTag"]] = relationship(secondary=transaction_tags_table, lazy="selectin")
 
@@ -54,6 +79,9 @@ class PlannedPurchase(Base):
     description: Mapped[str] = mapped_column(String(500), default="")
     done: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+    source_recurring_id: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    tags: Mapped[list["BudgetTag"]] = relationship(secondary=planned_tags_table, lazy="selectin")
 
 
 class BudgetAllocation(Base):
@@ -67,3 +95,34 @@ class BudgetAllocation(Base):
     category: Mapped[str] = mapped_column(String(50))
     limit_amount: Mapped[float] = mapped_column(Float)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
+class RecurringTransaction(Base):
+    __tablename__ = "recurring_transactions"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    type: Mapped[str] = mapped_column(String(10))  # 'expense' | 'income'
+    amount: Mapped[float] = mapped_column(Float)
+    category: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    description: Mapped[str] = mapped_column(String(500), default="")
+    tag_ids: Mapped[list[int]] = mapped_column(ARRAY(Integer), default=list)
+    day_of_month: Mapped[int] = mapped_column(Integer)  # 1..31 (clamped to month length)
+    start_date: Mapped[str] = mapped_column(String(10))  # yyyy-MM-dd
+    end_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    last_generated_date: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    is_paused: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")
+
+
+class BudgetAlertLog(Base):
+    __tablename__ = "budget_alert_log"
+    __table_args__ = (UniqueConstraint("user_id", "year", "month", "category", "threshold", name="uq_alert_once"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    year: Mapped[int] = mapped_column(Integer)
+    month: Mapped[int] = mapped_column(Integer)
+    category: Mapped[str] = mapped_column(String(50))
+    threshold: Mapped[int] = mapped_column(Integer)  # 80 | 100 | 120
+    sent_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default="now()")

@@ -29,6 +29,8 @@ if settings.secret_key == "change-me-in-production":
 from app.database import Base, engine
 from app.routers import admin, auth, backup, boards, budget, export, habits, reports, search, stats, tags, tasks, telegram
 from app.services.backup import run_backup
+from app.services.budget_alerts import check_budget_alerts
+from app.services.budget_recurring import generate_recurring_transactions
 from app.services.gigachat import llm_available, llm_info, llm_unavailable_reason
 from app.services.telegram_bot import poll_telegram_updates, send_telegram_reminders
 from app.services.weekly_report import run_weekly_reports
@@ -130,6 +132,32 @@ async def lifespan(app: FastAPI):
         minutes=1,
         id="tg_reminders",
         replace_existing=True,
+    )
+
+    # Budget: generate recurring transactions daily at 00:15 in user_timezone
+    scheduler.add_job(
+        generate_recurring_transactions,
+        "cron",
+        hour=0,
+        minute=15,
+        timezone=settings.user_timezone,
+        id="budget_recurring",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    # Budget alerts — twice a day (10:00 and 20:00 local). Dedupes via budget_alert_log.
+    scheduler.add_job(
+        check_budget_alerts,
+        "cron",
+        hour="10,20",
+        minute=0,
+        timezone=settings.user_timezone,
+        id="budget_alerts",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
     )
 
     # Weekly AI report: every Sunday at 21:00 user_timezone (только если LLM сконфигурирован)

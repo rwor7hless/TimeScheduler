@@ -30,8 +30,19 @@ import {
   useAllocations,
   useUpsertAllocation,
   useDeleteAllocation,
+  useBudgetSummary,
+  useBudgetHistory,
 } from '@/hooks/useBudget'
-import type { TransactionResponse, PlannedPurchaseResponse, BudgetTagResponse, AllocationResponse } from '@/api/budget'
+import { budgetApi } from '@/api/budget'
+import type { TransactionResponse, PlannedPurchaseResponse, BudgetTagResponse, AllocationResponse, SummaryResponse, HistoryQuery } from '@/api/budget'
+import PulseStrip from '@/components/budget/PulseStrip'
+import DailySpendChart from '@/components/budget/DailySpendChart'
+import TopCategories from '@/components/budget/TopCategories'
+import CategorySparkline from '@/components/budget/CategorySparkline'
+import QuickAddBar from '@/components/budget/QuickAddBar'
+import RecurringManager from '@/components/budget/RecurringManager'
+import ConvertPlannedModal from '@/components/budget/ConvertPlannedModal'
+import TagManager from '@/components/budget/TagManager'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -463,6 +474,15 @@ function AllocationCard({
               </span>
             </div>
           </div>
+          <div className="hidden sm:block flex-shrink-0" title="Траты по дням за последние 14 дней">
+            <CategorySparkline
+              transactions={categoryTransactions}
+              color={cat.color}
+              limit={alloc.limit_amount}
+              width={72}
+              height={22}
+            />
+          </div>
         </div>
 
         <div className="h-2 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden mb-1">
@@ -595,7 +615,7 @@ function AllocationCard({
 // ─── Month tab ────────────────────────────────────────────────────────────────
 
 function MonthTab({
-  transactions, plannedPurchases, allocations,
+  transactions, plannedPurchases, allocations, summary,
   onAddAlloc, onEditAlloc, onDeleteAlloc,
   onAddExpenseForCat, onAddPlannedForCat,
   onDeleteTx, onCheckPlanned, onEditPlanned, onDeletePlanned,
@@ -604,6 +624,7 @@ function MonthTab({
   transactions: TransactionResponse[]
   plannedPurchases: PlannedPurchaseResponse[]
   allocations: AllocationResponse[]
+  summary: SummaryResponse | undefined
   onAddAlloc: () => void
   onEditAlloc: (a: AllocationResponse) => void
   onDeleteAlloc: (id: number) => void
@@ -615,10 +636,8 @@ function MonthTab({
   onDeletePlanned: (id: number) => void
   onAddFreeExpense: () => void
 }) {
-  const totalIncome  = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
-  const totalExpense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
-  const balance      = totalIncome - totalExpense
-  const pendingPlanned = plannedPurchases.filter(p => !p.done).reduce((s, p) => s + p.amount, 0)
+  const totalIncome  = summary?.totals.income ?? transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  const totalExpense = summary?.totals.expense ?? transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0)
 
   const allocatedCats = useMemo(() => new Set(allocations.map(a => a.category)), [allocations])
 
@@ -649,57 +668,31 @@ function MonthTab({
     return plannedPurchases.filter(p => !p.category || !allocatedCats.has(p.category))
   }, [plannedPurchases, allocatedCats])
 
-  // Budget progress for allocated categories
-  const totalBudgeted = allocations.reduce((s, a) => s + a.limit_amount, 0)
-  const totalAllocSpent = allocations.reduce((s, a) => s + (txByCategory.get(a.category) ?? []).reduce((ss, t) => ss + t.amount, 0), 0)
-  const totalPending = allocations.reduce((s, a) => {
-    return s + (plannedByCategory.get(a.category) ?? []).filter(p => !p.done).reduce((ss, p) => ss + p.amount, 0)
-  }, 0)
-
   return (
     <div className="space-y-4">
-      {/* KPI row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4">
-          <div className="text-xs text-emerald-700 dark:text-emerald-400 font-medium mb-1">Доходы</div>
-          <div className="text-xl font-bold text-emerald-700 dark:text-emerald-400 tabular-nums">{fmt(totalIncome)} ₽</div>
+      {/* Pulse strip — days / rate / projection / trend */}
+      {summary && <PulseStrip summary={summary} />}
+
+      {/* Income + expense compact row */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-emerald-600 dark:text-emerald-400 font-medium">Доход</div>
+          <div className="mt-0.5 text-lg font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums">+{fmt(totalIncome)} ₽</div>
         </div>
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
-          <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Расходы</div>
-          <div className="text-xl font-bold text-red-600 dark:text-red-400 tabular-nums">{fmt(totalExpense)} ₽</div>
-        </div>
-        <div className={clsx('rounded-xl p-4', balance >= 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-orange-50 dark:bg-orange-900/20')}>
-          <div className={clsx('text-xs font-medium mb-1', balance >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400')}>Баланс</div>
-          <div className={clsx('text-xl font-bold tabular-nums', balance >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-orange-600 dark:text-orange-400')}>
-            {balance >= 0 ? '+' : ''}{fmt(balance)} ₽
-          </div>
-        </div>
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
-          <div className="text-xs text-yellow-700 dark:text-yellow-400 font-medium mb-1">Планируемые</div>
-          <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400 tabular-nums">~{fmt(pendingPlanned)} ₽</div>
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
+          <div className="text-[10px] uppercase tracking-wide text-red-500 dark:text-red-400 font-medium">Расход</div>
+          <div className="mt-0.5 text-lg font-semibold text-red-500 dark:text-red-400 tabular-nums">−{fmt(totalExpense)} ₽</div>
         </div>
       </div>
 
-      {/* Total budget progress */}
-      {allocations.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <div className="flex justify-between text-sm mb-2">
-            <span className="text-gray-600 dark:text-gray-400 font-medium">Бюджет по лимитам</span>
-            <span className="font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
-              {fmt(totalAllocSpent)} / {fmt(totalBudgeted)} ₽
-            </span>
+      {/* Daily spend chart + top categories (side by side on desktop) */}
+      {summary && (totalExpense > 0 || allocations.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3">
+          <div className="lg:col-span-3">
+            <DailySpendChart summary={summary} />
           </div>
-          <div className="h-2.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden relative">
-            <div className="absolute inset-0 rounded-full" style={{ width: `${totalBudgeted > 0 ? Math.min(((totalAllocSpent + totalPending) / totalBudgeted) * 100, 100) : 0}%`, backgroundColor: '#FEF08A' }} />
-            <div className="absolute inset-0 rounded-full transition-all duration-500" style={{
-              width: `${totalBudgeted > 0 ? Math.min((totalAllocSpent / totalBudgeted) * 100, 100) : 0}%`,
-              backgroundColor: totalBudgeted > 0 && totalAllocSpent / totalBudgeted >= 0.9 ? '#EF4444' : totalBudgeted > 0 && totalAllocSpent / totalBudgeted >= 0.7 ? '#F59E0B' : '#10B981',
-            }} />
-          </div>
-          <div className="flex justify-between mt-1.5 text-xs text-gray-400">
-            <span>{totalBudgeted > 0 ? Math.round((totalAllocSpent / totalBudgeted) * 100) : 0}% потрачено</span>
-            {totalPending > 0 && <span className="text-yellow-600 dark:text-yellow-400">+ {fmt(totalPending)} ₽ в плане</span>}
-            <span>осталось {fmt(totalBudgeted - totalAllocSpent)} ₽</span>
+          <div className="lg:col-span-2">
+            <TopCategories summary={summary} />
           </div>
         </div>
       )}
@@ -799,52 +792,113 @@ function MonthTab({
 
 // ─── History tab ──────────────────────────────────────────────────────────────
 
+const DATE_PRESETS: { key: string; label: string; compute: () => { from: string; to: string } }[] = [
+  { key: 'm', label: 'Месяц', compute: () => {
+    const n = new Date()
+    return {
+      from: format(new Date(n.getFullYear(), n.getMonth(), 1), 'yyyy-MM-dd'),
+      to: format(new Date(n.getFullYear(), n.getMonth() + 1, 0), 'yyyy-MM-dd'),
+    }
+  }},
+  { key: '30d', label: '30 дней', compute: () => {
+    const to = new Date()
+    const from = new Date()
+    from.setDate(to.getDate() - 29)
+    return { from: format(from, 'yyyy-MM-dd'), to: format(to, 'yyyy-MM-dd') }
+  }},
+  { key: 'y', label: 'Год', compute: () => {
+    const n = new Date()
+    return {
+      from: `${n.getFullYear()}-01-01`,
+      to: `${n.getFullYear()}-12-31`,
+    }
+  }},
+]
+
 function HistoryTab({
-  transactions, plannedPurchases, allTags,
-  onEditTx, onDeleteTx, onCheckPlanned, onDeletePlanned,
+  allTags, onEditTx, onDeleteTx,
 }: {
-  transactions: TransactionResponse[]
-  plannedPurchases: PlannedPurchaseResponse[]
   allTags: BudgetTagResponse[]
   onEditTx: (tx: TransactionResponse) => void
   onDeleteTx: (id: number) => void
-  onCheckPlanned: (item: PlannedPurchaseResponse) => void
-  onDeletePlanned: (id: number) => void
 }) {
-  const [typeFilter, setTypeFilter] = useState<'all' | 'expense' | 'income' | 'planned'>('all')
-  const [tagFilter, setTagFilter] = useState<number | null>(null)
+  const [typeFilter, setTypeFilter] = useState<'' | 'expense' | 'income'>('')
+  const [tagIds, setTagIds] = useState<number[]>([])
+  const [q, setQ] = useState('')
+  const [qDebounced, setQDebounced] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [amountMin, setAmountMin] = useState('')
+  const [amountMax, setAmountMax] = useState('')
+  const [sort, setSort] = useState<'date' | 'amount'>('date')
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+  const [limit] = useState(50)
+  const [offset, setOffset] = useState(0)
 
-  const items = useMemo(() => {
-    type Item = (TransactionResponse & { _kind: 'tx'; _dim?: false }) | (PlannedPurchaseResponse & { _kind: 'planned' })
-    let result: Item[] = []
+  useEffect(() => {
+    const h = setTimeout(() => setQDebounced(q.trim()), 300)
+    return () => clearTimeout(h)
+  }, [q])
 
-    if (typeFilter !== 'planned') {
-      const txs = transactions
-        .filter(t => typeFilter === 'all' || t.type === typeFilter)
-        .filter(t => tagFilter === null || t.tags.some(tag => tag.id === tagFilter))
-      result = [...result, ...txs.map(t => ({ ...t, _kind: 'tx' as const, _dim: false as const }))]
+  useEffect(() => {
+    setOffset(0)
+  }, [typeFilter, tagIds.length, qDebounced, from, to, amountMin, amountMax, sort, order])
+
+  const queryArgs = useMemo<HistoryQuery>(() => {
+    const obj: HistoryQuery = { limit, offset, sort, order }
+    if (typeFilter) obj.type = typeFilter
+    if (tagIds.length) obj.tag_ids = tagIds
+    if (qDebounced) obj.q = qDebounced
+    if (from) obj.from = from
+    if (to) obj.to = to
+    const aMin = parseFloat(amountMin.replace(',', '.'))
+    const aMax = parseFloat(amountMax.replace(',', '.'))
+    if (!isNaN(aMin)) obj.amount_min = aMin
+    if (!isNaN(aMax)) obj.amount_max = aMax
+    return obj
+  }, [typeFilter, tagIds, qDebounced, from, to, amountMin, amountMax, sort, order, limit, offset])
+
+  const { data, isFetching } = useBudgetHistory(queryArgs)
+  const items = data?.items ?? []
+  const total = data?.total ?? 0
+
+  const resetFilters = () => {
+    setTypeFilter(''); setTagIds([]); setQ(''); setFrom(''); setTo('')
+    setAmountMin(''); setAmountMax(''); setSort('date'); setOrder('desc')
+  }
+
+  const applyPreset = (key: string) => {
+    const p = DATE_PRESETS.find((x) => x.key === key)
+    if (!p) return
+    const r = p.compute()
+    setFrom(r.from)
+    setTo(r.to)
+  }
+
+  const handleDownload = async () => {
+    try {
+      const params: { from?: string; to?: string; type?: 'expense' | 'income' } = {}
+      if (from) params.from = from
+      if (to) params.to = to
+      if (typeFilter) params.type = typeFilter
+      await budgetApi.downloadCsv(params)
+      toast.success('CSV скачан')
+    } catch {
+      toast.error('Не удалось скачать CSV')
     }
-    if (typeFilter === 'all' || typeFilter === 'planned') {
-      const plans = plannedPurchases
-        .filter(() => tagFilter === null)
-      result = [...result, ...plans.map(p => ({ ...p, _kind: 'planned' as const }))]
-    }
+  }
 
-    return result.sort((a, b) => {
-      const da = '_kind' in a && a._kind === 'tx' ? a.created_at : (a as PlannedPurchaseResponse).created_at
-      const db = '_kind' in b && b._kind === 'tx' ? b.created_at : (b as PlannedPurchaseResponse).created_at
-      return new Date(db).getTime() - new Date(da).getTime()
-    })
-  }, [transactions, plannedPurchases, typeFilter, tagFilter])
+  const toggleTag = (id: number) =>
+    setTagIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
 
   return (
     <div className="space-y-3">
-      {/* Filters */}
+      {/* Primary filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-          {([['all', 'Все'], ['expense', 'Расходы'], ['income', 'Доходы'], ['planned', 'Планы']] as [typeof typeFilter, string][]).map(([v, label]) => (
+          {([['', 'Все'], ['expense', 'Расходы'], ['income', 'Доходы']] as [typeof typeFilter, string][]).map(([v, label]) => (
             <button
-              key={v}
+              key={v || 'all'}
               type="button"
               onClick={() => setTypeFilter(v)}
               className={clsx('px-3 py-1.5 text-xs rounded-md font-medium transition-colors', typeFilter === v ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}
@@ -853,90 +907,145 @@ function HistoryTab({
             </button>
           ))}
         </div>
-        {allTags.length > 0 && (
-          <div className="flex flex-wrap gap-1.5">
-            {allTags.map(tag => (
+        <input
+          type="search"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder="Поиск по описанию…"
+          className="flex-1 min-w-[160px] px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none focus:border-blue-400"
+        />
+        <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          <button
+            type="button"
+            onClick={() => { setSort('date'); setOrder(sort === 'date' && order === 'desc' ? 'asc' : 'desc') }}
+            className={clsx('px-2 py-1.5 text-xs rounded-md font-medium', sort === 'date' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}
+            title="Сортировка по дате"
+          >
+            Дата {sort === 'date' ? (order === 'desc' ? '↓' : '↑') : ''}
+          </button>
+          <button
+            type="button"
+            onClick={() => { setSort('amount'); setOrder(sort === 'amount' && order === 'desc' ? 'asc' : 'desc') }}
+            className={clsx('px-2 py-1.5 text-xs rounded-md font-medium', sort === 'amount' ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400')}
+            title="Сортировка по сумме"
+          >
+            ₽ {sort === 'amount' ? (order === 'desc' ? '↓' : '↑') : ''}
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={handleDownload}
+          className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Скачать CSV"
+        >
+          ⬇ CSV
+        </button>
+      </div>
+
+      {/* Secondary: dates + amount range + presets */}
+      <div className="flex flex-wrap items-center gap-2 text-xs">
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400">От</span>
+          <input type="date" value={from} onChange={(e) => setFrom(e.target.value)} className="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none" />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400">До</span>
+          <input type="date" value={to} onChange={(e) => setTo(e.target.value)} className="px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 outline-none" />
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="text-gray-400">₽</span>
+          <input type="text" inputMode="decimal" value={amountMin} onChange={(e) => setAmountMin(e.target.value)} placeholder="мин" className="w-16 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 outline-none" />
+          <span className="text-gray-400">—</span>
+          <input type="text" inputMode="decimal" value={amountMax} onChange={(e) => setAmountMax(e.target.value)} placeholder="макс" className="w-16 px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 outline-none" />
+        </div>
+        <div className="flex gap-1">
+          {DATE_PRESETS.map((p) => (
+            <button
+              key={p.key}
+              type="button"
+              onClick={() => applyPreset(p.key)}
+              className="px-2 py-1 rounded text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={resetFilters}
+          className="ml-auto text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+        >
+          сбросить
+        </button>
+      </div>
+
+      {/* Tag chips */}
+      {allTags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {allTags.map(tag => {
+            const active = tagIds.includes(tag.id)
+            return (
               <button
                 key={tag.id}
                 type="button"
-                onClick={() => setTagFilter(tagFilter === tag.id ? null : tag.id)}
-                className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border transition-all', tagFilter === tag.id ? 'text-white border-transparent' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:opacity-80')}
-                style={tagFilter === tag.id ? { backgroundColor: tag.color, borderColor: tag.color } : { borderColor: tag.color + '66' }}
+                onClick={() => toggleTag(tag.id)}
+                className={clsx('px-2.5 py-1 rounded-full text-xs font-medium border transition-all', active ? 'text-white border-transparent' : 'text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600 hover:opacity-80')}
+                style={active ? { backgroundColor: tag.color, borderColor: tag.color } : { borderColor: tag.color + '66' }}
               >
                 {tag.name}
               </button>
-            ))}
-          </div>
-        )}
+            )
+          })}
+        </div>
+      )}
+
+      {/* Status line */}
+      <div className="text-xs text-gray-400">
+        {isFetching ? 'Загрузка…' : `Найдено ${total}`}
       </div>
 
-      {items.length === 0 ? (
-        <p className="text-center py-16 text-sm text-gray-400">Ничего нет.</p>
+      {items.length === 0 && !isFetching ? (
+        <p className="text-center py-16 text-sm text-gray-400">Ничего не найдено.</p>
       ) : (
         <div className="space-y-2">
-          {items.map(item => {
-            if (item._kind === 'tx') {
-              const tx = item as TransactionResponse
-              return (
-                <div key={`tx-${tx.id}`} className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{ backgroundColor: getCat(tx.category).color + '22' }}>
-                    {getCat(tx.category).icon}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description || '—'}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                      {tx.type === 'expense' && <CategoryPill id={tx.category} />}
-                      <span className="text-xs text-gray-400">{format(parseISO(tx.date), 'd MMM yyyy', { locale: ru })}</span>
-                      {tx.tags.map(tag => (
-                        <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: tag.color }}>{tag.name}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <span className={clsx('font-semibold tabular-nums flex-shrink-0 text-sm', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400')}>
-                    {tx.type === 'income' ? '+' : '−'}{fmt(tx.amount)} ₽
-                  </span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                    <button type="button" onClick={() => onEditTx(tx)} className="w-6 h-6 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-amber-500 transition-colors">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                    </button>
-                    <button type="button" onClick={() => onDeleteTx(tx.id)} className="w-6 h-6 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                    </button>
-                  </div>
+          {items.map(tx => (
+            <div key={`tx-${tx.id}`} className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{ backgroundColor: getCat(tx.category).color + '22' }}>
+                {getCat(tx.category).icon}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description || '—'}</div>
+                <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                  {tx.type === 'expense' && <CategoryPill id={tx.category} />}
+                  <span className="text-xs text-gray-400">{format(parseISO(tx.date), 'd MMM yyyy', { locale: ru })}</span>
+                  {tx.tags.map(tag => (
+                    <span key={tag.id} className="px-1.5 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: tag.color }}>{tag.name}</span>
+                  ))}
                 </div>
-              )
-            } else {
-              const plan = item as PlannedPurchaseResponse
-              return (
-                <div key={`plan-${plan.id}`} className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-yellow-200 dark:border-yellow-800/40 bg-yellow-50/60 dark:bg-yellow-900/10">
-                  <button
-                    type="button"
-                    onClick={() => onCheckPlanned(plan)}
-                    title={plan.done ? 'Вернуть в план' : 'Перенести в расходы'}
-                    className={clsx('w-9 h-9 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all text-lg', plan.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-violet-400 hover:border-violet-500 bg-violet-100 dark:bg-violet-900/30')}
-                  >
-                    {plan.done
-                      ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
-                      : getCat(plan.category).icon
-                    }
-                  </button>
-                  <div className={clsx('flex-1 min-w-0', plan.done && 'opacity-50')}>
-                    <div className={clsx('text-sm font-medium text-gray-900 dark:text-gray-100 truncate', plan.done && 'line-through')}>{plan.description || '—'}</div>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-xs text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-full">{plan.done ? 'выполнено' : 'в плане'}</span>
-                      {plan.category && <CategoryPill id={plan.category as ExpenseCategoryId} />}
-                    </div>
-                  </div>
-                  <span className={clsx('font-semibold tabular-nums flex-shrink-0 text-sm', plan.done ? 'text-gray-400 line-through' : 'text-yellow-600 dark:text-yellow-400')}>
-                    ~{fmt(plan.amount)} ₽
-                  </span>
-                  <button type="button" onClick={() => onDeletePlanned(plan.id)} className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 transition-all flex-shrink-0">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                  </button>
-                </div>
-              )
-            }
-          })}
+              </div>
+              <span className={clsx('font-semibold tabular-nums flex-shrink-0 text-sm', tx.type === 'income' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500 dark:text-red-400')}>
+                {tx.type === 'income' ? '+' : '−'}{fmt(tx.amount)} ₽
+              </span>
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                <button type="button" onClick={() => onEditTx(tx)} className="w-6 h-6 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-amber-500 transition-colors">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                </button>
+                <button type="button" onClick={() => onDeleteTx(tx.id)} className="w-6 h-6 flex items-center justify-center text-gray-300 dark:text-gray-600 hover:text-red-400 transition-colors">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+              </div>
+            </div>
+          ))}
+          {items.length < total && (
+            <button
+              type="button"
+              onClick={() => setOffset((x) => x + limit)}
+              disabled={isFetching}
+              className="w-full py-2.5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 text-sm text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            >
+              {isFetching ? 'Загрузка…' : `Показать ещё (${total - items.length})`}
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -1117,6 +1226,7 @@ export default function BudgetPage() {
   const { data: allTransactions = [] }                    = useTransactions()
   const { data: allTags = [] }                            = useBudgetTags()
   const { data: allocations = [] }                        = useAllocations(year, month)
+  const { data: summary }                                 = useBudgetSummary(year, month)
 
   const createTx    = useCreateTransaction()
   const updateTx    = useUpdateTransaction()
@@ -1138,6 +1248,46 @@ export default function BudgetPage() {
   const [allocOpen, setAllocOpen]             = useState(false)
   const [editAlloc, setEditAlloc]             = useState<AllocationResponse | null>(null)
   const [deleteTarget, setDeleteTarget]       = useState<{ kind: 'tx' | 'planned' | 'alloc'; id: number } | null>(null)
+  const [recurringOpen, setRecurringOpen]     = useState(false)
+  const [tagManagerOpen, setTagManagerOpen]   = useState(false)
+  const [convertPlan, setConvertPlan]         = useState<PlannedPurchaseResponse | null>(null)
+
+  // Keyboard shortcuts: N — new, ←/→ — prev/next period, 1/2/3 — tabs
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null
+      if (target && ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName)) return
+      if (target && target.isContentEditable) return
+      if (e.metaKey || e.ctrlKey || e.altKey) return
+
+      if (e.key === 'n' || e.key === 'N' || e.key === 'т' || e.key === 'Т') {
+        e.preventDefault()
+        setEditTx(null); setEditPlanned(null)
+        setEntryDefaultTab('expense')
+        setEntryDefaultCat(undefined)
+        setEntryLockCat(false)
+        setEntryOpen(true)
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault()
+        setViewDate((d) => tab === 'year'
+          ? new Date(d.getFullYear() - 1, d.getMonth(), 1)
+          : new Date(d.getFullYear(), d.getMonth() - 1, 1))
+      } else if (e.key === 'ArrowRight') {
+        e.preventDefault()
+        setViewDate((d) => tab === 'year'
+          ? new Date(d.getFullYear() + 1, d.getMonth(), 1)
+          : new Date(d.getFullYear(), d.getMonth() + 1, 1))
+      } else if (e.key === '1') {
+        setTab('month')
+      } else if (e.key === '2') {
+        setTab('history')
+      } else if (e.key === '3') {
+        setTab('year')
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [tab])
 
   const descriptionSuggestions = useMemo(() => {
     const seen = new Set<string>()
@@ -1196,20 +1346,11 @@ export default function BudgetPage() {
   }
 
   const handleCheckPlanned = (item: PlannedPurchaseResponse) => {
-    createTx.mutate({
-      type: 'expense',
-      amount: item.amount,
-      category: item.category,
-      description: item.description,
-      date: format(new Date(), 'yyyy-MM-dd'),
-      tag_ids: [],
-    }, {
-      onSuccess: () => {
-        deletePlan.mutate(item.id)
-        toast.success('Перенесено в расходы')
-      },
-      onError: () => toast.error('Ошибка'),
-    })
+    if (item.done) {
+      toast('Уже в расходах', { icon: 'ℹ️' })
+      return
+    }
+    setConvertPlan(item)
   }
 
   const handleDeletePlanned = (id: number) => {
@@ -1269,19 +1410,42 @@ export default function BudgetPage() {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
-        {TABS.map(t => (
-          <button
-            key={t.id}
-            type="button"
-            onClick={() => setTab(t.id)}
-            className={clsx('flex-1 px-3 py-1.5 text-sm rounded-md transition-colors font-medium', tab === t.id ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300')}
-          >
-            {t.label}
-          </button>
-        ))}
+      {/* Tabs + Recurring button */}
+      <div className="flex gap-2 items-center">
+        <div className="flex flex-1 gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          {TABS.map(t => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={clsx('flex-1 px-3 py-1.5 text-sm rounded-md transition-colors font-medium', tab === t.id ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300')}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+        <button
+          type="button"
+          onClick={() => setRecurringOpen(true)}
+          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Регулярные платежи"
+        >
+          🔄 <span className="hidden sm:inline">Регулярные</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setTagManagerOpen(true)}
+          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Теги"
+        >
+          🏷️ <span className="hidden sm:inline">Теги</span>
+        </button>
       </div>
+
+      {/* Quick add bar — visible on Month & History */}
+      {(tab === 'month' || tab === 'history') && (
+        <QuickAddBar onSubmit={handleAddTx} />
+      )}
 
       {txLoading ? (
         <div className="flex items-center justify-center py-16">
@@ -1294,6 +1458,7 @@ export default function BudgetPage() {
               transactions={transactions}
               plannedPurchases={plannedPurchases}
               allocations={allocations}
+              summary={summary}
               onAddAlloc={() => { setEditAlloc(null); setAllocOpen(true) }}
               onEditAlloc={a => { setEditAlloc(a); setAllocOpen(true) }}
               onDeleteAlloc={id => setDeleteTarget({ kind: 'alloc', id })}
@@ -1308,13 +1473,9 @@ export default function BudgetPage() {
           )}
           {tab === 'history' && (
             <HistoryTab
-              transactions={transactions}
-              plannedPurchases={plannedPurchases}
               allTags={allTags}
               onEditTx={openEditTx}
               onDeleteTx={id => setDeleteTarget({ kind: 'tx', id })}
-              onCheckPlanned={handleCheckPlanned}
-              onDeletePlanned={id => setDeleteTarget({ kind: 'planned', id })}
             />
           )}
           {tab === 'year' && <YearTab allTransactions={allTransactions} viewYear={year} isDark={isDark} />}
@@ -1362,6 +1523,25 @@ export default function BudgetPage() {
           else if (deleteTarget.kind === 'alloc') handleDeleteAlloc(deleteTarget.id)
           setDeleteTarget(null)
         }}
+      />
+
+      {/* Recurring templates manager */}
+      <RecurringManager
+        isOpen={recurringOpen}
+        onClose={() => setRecurringOpen(false)}
+      />
+
+      {/* Tag manager */}
+      <TagManager
+        isOpen={tagManagerOpen}
+        onClose={() => setTagManagerOpen(false)}
+      />
+
+      {/* Plan → Transaction convert */}
+      <ConvertPlannedModal
+        isOpen={convertPlan !== null}
+        plan={convertPlan}
+        onClose={() => setConvertPlan(null)}
       />
 
       {/* FAB */}

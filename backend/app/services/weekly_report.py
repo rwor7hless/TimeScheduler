@@ -17,12 +17,14 @@ from app.models.habit_log import HabitLog
 from app.models.report import ReportStatus, WeeklyReport
 from app.models.task import KanbanStatus, Priority, Task
 from app.models.user import User
+from app.services.budget_summary import build_weekly_budget_block
 from app.services.gigachat import chat_completion
 from app.services.ntfy import send as ntfy_send
 from app.services.weekly_report_prompt import (
     HabitStats,
     ProjectStats,
     TaskEntry,
+    WeeklyBudget,
     WeeklyData,
 )
 from prompts.weekly_report import build_prompt
@@ -196,6 +198,20 @@ async def _collect_habit_stats(
     return result
 
 
+async def _collect_budget(db: AsyncSession, user_id: int, week_end: date) -> WeeklyBudget:
+    raw = await build_weekly_budget_block(db, user_id, week_end)
+    return WeeklyBudget(
+        total_expense=raw["total_expense"],
+        total_income=raw["total_income"],
+        top_categories=list(raw["top_categories"]),
+        avg_per_week=raw["avg_per_week"],
+        delta_pct=raw["delta_pct"],
+        planned_done=raw["planned_done"],
+        planned_total=raw["planned_total"],
+        overspent=list(raw["overspent"]),
+    )
+
+
 async def build_weekly_data(
     db: AsyncSession,
     user_id: int,
@@ -207,12 +223,14 @@ async def build_weekly_data(
 
     projects = await _collect_project_stats(db, user_id, ws, we)
     habits = await _collect_habit_stats(db, user_id, week_start, week_end)
+    budget = await _collect_budget(db, user_id, week_end)
 
     return WeeklyData(
         week_start=week_start.strftime("%d.%m.%Y"),
         week_end=week_end.strftime("%d.%m.%Y"),
         projects=projects,
         habits=habits,
+        budget=budget,
     )
 
 

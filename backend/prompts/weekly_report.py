@@ -187,6 +187,41 @@ def _format_data_block(data: WeeklyData) -> str:
     else:
         lines += ["", "▸ ПРИВЫЧКИ: данных нет"]
 
+    # ── Бюджет недели (если собран) ───────────────────────────────────────────
+    b = data.budget
+    if b is not None and (b.total_expense > 0 or b.total_income > 0 or b.planned_total > 0):
+        lines += ["", "▸ БЮДЖЕТ ЗА 7 ДНЕЙ:"]
+        lines.append(
+            f"  Потрачено: {int(b.total_expense)} ₽ | "
+            f"Доходы: {int(b.total_income)} ₽ | "
+            f"Баланс: {int(b.total_income - b.total_expense):+d} ₽"
+        )
+        if b.avg_per_week > 0 and b.delta_pct is not None:
+            sign = "+" if b.delta_pct >= 0 else ""
+            lines.append(
+                f"  Среднее за 4 недели: {int(b.avg_per_week)} ₽ "
+                f"(эта неделя: {sign}{int(b.delta_pct)}%)"
+            )
+        if b.top_categories:
+            top_str = ", ".join(
+                f"«{cat or 'без категории'}» {int(amt)} ₽"
+                for cat, amt in b.top_categories
+            )
+            lines.append(f"  Топ категорий: {top_str}")
+        if b.planned_total > 0:
+            lines.append(f"  Планы месяца: выполнено {b.planned_done} из {b.planned_total}")
+        if b.overspent:
+            over_str = ", ".join(
+                f"«{cat}» {int(spent)} из {int(lim)} ₽"
+                for cat, spent, lim in b.overspent
+            )
+            lines.append(f"  Перерасход лимитов: {over_str}")
+        lines.append(
+            "  Используй эти цифры в «Оценке недели» и «Итоге» — "
+            "упомяни топ-категорию и (если есть) перерасход; "
+            "если есть заметное изменение vs. среднего — прокомментируй его в угле подачи."
+        )
+
     return "\n".join(lines)
 
 

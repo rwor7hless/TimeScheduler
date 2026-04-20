@@ -76,11 +76,24 @@ class HabitStats:
 
 
 @dataclass
+class WeeklyBudget:
+    total_expense: float
+    total_income: float
+    top_categories: list[tuple[str | None, float]] = field(default_factory=list)  # [(category_id, amount), ...]
+    avg_per_week: float = 0.0
+    delta_pct: float | None = None  # vs. avg per week; None когда базы нет
+    planned_done: int = 0
+    planned_total: int = 0
+    overspent: list[tuple[str, float, float]] = field(default_factory=list)  # [(category, spent, limit), ...]
+
+
+@dataclass
 class WeeklyData:
     week_start: str   # "07.04.2026"
     week_end: str     # "13.04.2026"
     projects: list[ProjectStats] = field(default_factory=list)
     habits: list[HabitStats] = field(default_factory=list)
+    budget: WeeklyBudget | None = None
 
     @property
     def total_done(self) -> int:
