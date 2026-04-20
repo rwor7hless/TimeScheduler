@@ -1,5 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { UserCreateDto } from './dto/user-create.dto';
@@ -45,14 +45,25 @@ export class AdminService {
       throw new BadRequestException('Username already exists');
     }
     const password_hash = await this.authService.hashPassword(data.password);
-    const user = await this.prisma.user.create({
-      data: {
-        username: data.username,
-        password_hash,
-        is_admin: false,
-      },
-    });
-    return this.serialize(user);
+    try {
+      // Belt-and-suspenders: the findUnique above gives a fast 400 for the
+      // common case, but two concurrent POSTs can both pass that check and
+      // race on create. Catch Prisma's unique-constraint violation (P2002)
+      // and surface the same 400 instead of leaking a 500.
+      const user = await this.prisma.user.create({
+        data: {
+          username: data.username,
+          password_hash,
+          is_admin: false,
+        },
+      });
+      return this.serialize(user);
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        throw new BadRequestException('Username already exists');
+      }
+      throw err;
+    }
   }
 
   async update(userId: number, data: UserUpdateDto): Promise<UserResponseDto> {
@@ -60,9 +71,14 @@ export class AdminService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
-    const updates: { can_request_summary?: boolean } = {};
+    const updates: Prisma.UserUpdateInput = {};
     if (typeof data.can_request_summary === 'boolean') {
       updates.can_request_summary = data.can_request_summary;
+    }
+    // If no allowed fields were supplied, skip the no-op SQL UPDATE and
+    // return the user as already loaded.
+    if (Object.keys(updates).length === 0) {
+      return this.serialize(user);
     }
     const updated = await this.prisma.user.update({
       where: { id: userId },

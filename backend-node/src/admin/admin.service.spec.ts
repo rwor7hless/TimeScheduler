@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { AdminService } from './admin.service';
@@ -93,6 +93,27 @@ describe('AdminService', () => {
       });
       expect(result.username).toBe('bob');
     });
+
+    it('maps Prisma P2002 on create to 400 "Username already exists"', async () => {
+      // Simulate the TOCTOU race: findUnique sees no existing user (so we
+      // get past the pre-check), but Prisma.user.create trips the unique
+      // index because a concurrent request landed first. The service must
+      // translate P2002 into the same 400 the pre-check surfaces.
+      prisma.user.findUnique.mockResolvedValue(null);
+      authService.hashPassword.mockResolvedValue('hashed!');
+      const p2002 = new Prisma.PrismaClientKnownRequestError(
+        'Unique constraint failed on the fields: (`username`)',
+        { code: 'P2002', clientVersion: 'x' },
+      );
+      prisma.user.create.mockRejectedValue(p2002);
+
+      await expect(service.create({ username: 'bob', password: 'secret' })).rejects.toMatchObject({
+        message: 'Username already exists',
+      });
+      await expect(service.create({ username: 'bob', password: 'secret' })).rejects.toBeInstanceOf(
+        BadRequestException,
+      );
+    });
   });
 
   describe('update', () => {
@@ -116,16 +137,16 @@ describe('AdminService', () => {
       expect(result.can_request_summary).toBe(true);
     });
 
-    it('no-ops when body is empty', async () => {
-      prisma.user.findUnique.mockResolvedValue(makeUser());
-      prisma.user.update.mockResolvedValue(makeUser());
+    it('no-ops when body is empty without issuing a SQL UPDATE', async () => {
+      // Empty/unchanged body should short-circuit to the already-loaded
+      // user — we don't want to spend a pointless round-trip to Postgres.
+      const loaded = makeUser();
+      prisma.user.findUnique.mockResolvedValue(loaded);
 
-      await service.update(1, {});
+      const result = await service.update(1, {});
 
-      expect(prisma.user.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: {},
-      });
+      expect(prisma.user.update).not.toHaveBeenCalled();
+      expect(result).toEqual(expect.objectContaining({ id: loaded.id, username: loaded.username }));
     });
   });
 

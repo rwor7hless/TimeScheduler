@@ -89,6 +89,54 @@ describe('AuthService', () => {
       expect(payload.exp).toBeGreaterThanOrEqual(before + 3600);
       expect(payload.exp).toBeLessThanOrEqual(before + 3601);
     });
+
+    it('exp is ~30 days out (±10s) when JWT_EXPIRE_MINUTES is unset', async () => {
+      // Regression for the NaN bug: `Number(undefined) ?? 43200` evaluated
+      // to NaN, which silently landed in the signed payload. The guard in
+      // createAccessToken must now fall back to 43200 minutes = 2592000 s.
+      configService.get.mockReturnValue(undefined);
+      jwtService.signAsync.mockResolvedValue('t');
+
+      const now = Math.floor(Date.now() / 1000);
+      await service.createAccessToken(1, 'u');
+      const payload = jwtService.signAsync.mock.calls[0][0];
+
+      expect(Number.isFinite(payload.exp)).toBe(true);
+      expect(payload.exp).toBeGreaterThanOrEqual(now + 2592000 - 10);
+      expect(payload.exp).toBeLessThanOrEqual(now + 2592000 + 10);
+    });
+
+    it('falls back to 43200 when JWT_EXPIRE_MINUTES is garbage', async () => {
+      // Number('garbage') === NaN → must fall through to the default,
+      // not propagate NaN into the token payload.
+      configService.get.mockImplementation((k: string) =>
+        k === 'JWT_EXPIRE_MINUTES' ? 'garbage' : undefined,
+      );
+      jwtService.signAsync.mockResolvedValue('t');
+
+      const now = Math.floor(Date.now() / 1000);
+      await service.createAccessToken(1, 'u');
+      const payload = jwtService.signAsync.mock.calls[0][0];
+
+      expect(Number.isFinite(payload.exp)).toBe(true);
+      expect(payload.exp).toBeGreaterThanOrEqual(now + 2592000 - 10);
+      expect(payload.exp).toBeLessThanOrEqual(now + 2592000 + 10);
+    });
+
+    it('honors a 24h expiry when JWT_EXPIRE_MINUTES="1440"', async () => {
+      configService.get.mockImplementation((k: string) =>
+        k === 'JWT_EXPIRE_MINUTES' ? '1440' : undefined,
+      );
+      jwtService.signAsync.mockResolvedValue('t');
+
+      const now = Math.floor(Date.now() / 1000);
+      await service.createAccessToken(1, 'u');
+      const payload = jwtService.signAsync.mock.calls[0][0];
+
+      // 1440 min = 86400 s (24h). Allow ±2s for test timing jitter.
+      expect(payload.exp).toBeGreaterThanOrEqual(now + 86400 - 2);
+      expect(payload.exp).toBeLessThanOrEqual(now + 86400 + 2);
+    });
   });
 
   describe('validateUser', () => {

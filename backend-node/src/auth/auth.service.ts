@@ -46,7 +46,12 @@ export class AuthService {
   }
 
   async createAccessToken(userId: number, username: string): Promise<string> {
-    const minutes = Number(this.configService.get<string>('JWT_EXPIRE_MINUTES') ?? 43200);
+    // `Number(undefined) === NaN` and `NaN ?? 43200 === NaN`, so the old
+    // `Number(...) ?? default` pattern silently minted exp=NaN tokens when
+    // the env var was missing or malformed. Guard with Number.isFinite and
+    // a positivity check before falling back to the 30-day default.
+    const rawMinutes = Number(this.configService.get<string>('JWT_EXPIRE_MINUTES'));
+    const minutes = Number.isFinite(rawMinutes) && rawMinutes > 0 ? rawMinutes : 43200;
     const exp = Math.floor(Date.now() / 1000) + minutes * 60;
     // jwtService.signAsync will honor `exp` in the payload and skip adding its own.
     return this.jwtService.signAsync({ sub: username, user_id: userId, exp });
