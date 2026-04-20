@@ -1,0 +1,377 @@
+// TimeScheduler Prisma schema — baseline from live PostgreSQL (Phase 1 port from FastAPI).
+//
+// The `alembic_version` table is declared below with `@@ignore` so Prisma knows about it
+// (keeping `prisma migrate diff` drift-free) but never exposes it on the client. Alembic
+// continues to own that table until we tear out the Python backend in Phase 11.
+//
+// The server-side default timestamps (`dbgenerated("'2026-...'::timestamp...")`) are frozen
+// literal values captured when Alembic originally ran each `server_default="now()"` column
+// — SQLAlchemy's `server_default` renders as a literal at migration generation time. These
+// are preserved verbatim so `prisma migrate diff` against the live DB yields zero drift.
+// Application-level inserts from SQLAlchemy and (soon) Prisma bypass them anyway.
+//
+// Enum member names are UPPERCASE because SQLAlchemy stores Python Enum member *names*
+// (not their `str` values) when using `Enum(Priority)` without `values_callable`. The
+// `@@map` on the enum maps Prisma's PascalCase name back to the lowercase DB type name.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Python's DATABASE_URL uses the postgresql+asyncpg:// dialect, which Prisma can't parse.
+  // DATABASE_URL_PRISMA holds the same credentials with a plain postgresql:// prefix.
+  provider = "postgresql"
+  url      = env("DATABASE_URL_PRISMA")
+}
+
+// ── Legacy migration marker (owned by Python Alembic) ────────────────────────
+
+/// @deprecated — managed by the legacy FastAPI/Alembic stack. Declared here with
+/// `@@ignore` so Prisma is drift-aware without generating a client model for it.
+model alembic_version {
+  version_num String @id(map: "alembic_version_pkc") @db.VarChar(32)
+
+  @@ignore
+}
+
+// ── Users ─────────────────────────────────────────────────────────────────────
+
+model User {
+  id                     Int                    @id @default(autoincrement())
+  username               String                 @unique(map: "ix_users_username") @db.VarChar(50)
+  password_hash          String                 @db.VarChar(255)
+  is_admin               Boolean
+  created_at             DateTime               @default(dbgenerated("'2026-02-23 11:36:45.220039+00'::timestamp with time zone")) @db.Timestamptz(6)
+  telegram_chat_id       String?                @db.VarChar(50)
+  telegram_key           String?                @unique(map: "uq_users_telegram_key") @db.VarChar(64)
+  can_request_summary    Boolean                @default(false)
+  boards                 Board[]
+  budget_alert_log       BudgetAlertLog[]
+  budget_allocations     BudgetAllocation[]
+  budget_categories      BudgetCategory[]
+  budget_tags            BudgetTag[]
+  habits                 Habit[]
+  planned_purchases      PlannedPurchase[]
+  recurring_transactions RecurringTransaction[]
+  tags                   Tag[]
+  tasks                  Task[]
+  transactions           Transaction[]
+  weekly_reports         WeeklyReport[]
+
+  @@map("users")
+}
+
+// ── Tasks / Boards / Tags ─────────────────────────────────────────────────────
+
+model Board {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  name       String   @db.VarChar(100)
+  created_at DateTime @default(dbgenerated("'2026-02-23 12:34:05.725675+00'::timestamp with time zone")) @db.Timestamptz(6)
+  updated_at DateTime @default(dbgenerated("'2026-02-23 12:34:05.725675+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks      Task[]
+
+  @@index([user_id], map: "ix_boards_user_id")
+  @@map("boards")
+}
+
+model Task {
+  id              Int          @id @default(autoincrement())
+  title           String       @db.VarChar(255)
+  description     String?
+  priority        Priority
+  status          KanbanStatus
+  kanban_order    Int
+  scheduled_start DateTime?    @db.Timestamptz(6)
+  scheduled_end   DateTime?    @db.Timestamptz(6)
+  completed_at    DateTime?    @db.Timestamptz(6)
+  created_at      DateTime     @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  updated_at      DateTime     @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  color           String?      @default("#6B7280") @db.VarChar(7)
+  user_id         Int
+  // NB: Prisma scalar lists can't be nullable — they treat NULL and [] as equivalent.
+  // The underlying Postgres column `repeat_days integer[]` allows NULL; reads map to [].
+  repeat_days     Int[]
+  board_id        Int?
+  tg_remind       Boolean      @default(false)
+  tg_remind_at    DateTime?    @db.Timestamptz(6)
+  tg_reminded     Boolean      @default(false)
+  is_archived     Boolean      @default(false)
+  deadline        DateTime?    @db.Timestamptz(6)
+  parent_id       Int?
+  deleted_at      DateTime?    @db.Timestamptz(6)
+  my_day          Boolean      @default(false)
+  task_tags       TaskTag[]
+  parent          Task?        @relation("TaskSubtasks", fields: [parent_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tasks_parent_id")
+  subtasks        Task[]       @relation("TaskSubtasks")
+  users           User         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tasks_user_id")
+  boards          Board?       @relation(fields: [board_id], references: [id], onUpdate: NoAction)
+
+  @@index([board_id], map: "ix_tasks_board_id")
+  @@index([deleted_at], map: "ix_tasks_deleted_at")
+  @@index([parent_id], map: "ix_tasks_parent_id")
+  @@index([user_id, board_id, status], map: "ix_tasks_user_board_status")
+  @@index([user_id], map: "ix_tasks_user_id")
+  @@map("tasks")
+}
+
+model Tag {
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(50)
+  color     String    @db.VarChar(7)
+  user_id   Int
+  users     User      @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_tags_user_id")
+  task_tags TaskTag[]
+
+  @@unique([user_id, name], map: "uq_tag_user_name")
+  @@index([user_id], map: "ix_tags_user_id")
+  @@map("tags")
+}
+
+/// Explicit many-to-many join for Task ↔ Tag. Keeps the ON DELETE CASCADE constraints
+/// from the legacy schema and exposes the row shape to Prisma queries.
+model TaskTag {
+  task_id Int
+  tag_id  Int
+  tags    Tag  @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  tasks   Task @relation(fields: [task_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([task_id, tag_id])
+  @@map("task_tags")
+}
+
+// ── Habits ────────────────────────────────────────────────────────────────────
+
+model Habit {
+  id          Int        @id @default(autoincrement())
+  name        String     @db.VarChar(255)
+  description String?    @db.VarChar(500)
+  color       String     @db.VarChar(7)
+  is_active   Boolean
+  created_at  DateTime   @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  user_id     Int
+  habit_logs  HabitLog[]
+  users       User       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_habits_user_id")
+
+  @@index([user_id], map: "ix_habits_user_id")
+  @@map("habits")
+}
+
+model HabitLog {
+  id           Int      @id @default(autoincrement())
+  habit_id     Int
+  date         DateTime @db.Date
+  completed_at DateTime @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  habits       Habit    @relation(fields: [habit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([habit_id, date], map: "uq_habit_date")
+  @@map("habit_logs")
+}
+
+// ── Telegram ──────────────────────────────────────────────────────────────────
+
+model TelegramKey {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique(map: "ix_telegram_keys_key") @db.VarChar(64)
+  chat_id    String   @db.VarChar(50)
+  created_at DateTime @default(dbgenerated("'2026-02-23 23:17:24.162234+00'::timestamp with time zone")) @db.Timestamptz(6)
+
+  @@map("telegram_keys")
+}
+
+/// @deprecated — we're moving to Telegram webhooks; this table is no longer updated but
+/// left for back-compat during the cutover. Holds a single row tracking the long-poll
+/// last_update_id cursor used by the legacy FastAPI poller.
+model TelegramState {
+  id             Int    @id
+  last_update_id BigInt
+
+  @@map("telegram_state")
+}
+
+// ── Budget ────────────────────────────────────────────────────────────────────
+
+model BudgetTag {
+  id               Int              @id @default(autoincrement())
+  user_id          Int
+  name             String           @db.VarChar(50)
+  color            String           @db.VarChar(7)
+  users            User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planned_tags     PlannedTag[]
+  transaction_tags TransactionTag[]
+
+  @@index([user_id], map: "ix_budget_tags_user_id")
+  @@map("budget_tags")
+}
+
+model BudgetCategory {
+  id          Int      @id @default(autoincrement())
+  user_id     Int
+  key         String   @db.VarChar(50)
+  label       String   @db.VarChar(50)
+  icon        String   @db.VarChar(16)
+  color       String   @db.VarChar(7)
+  sort_order  Int
+  is_archived Boolean
+  created_at  DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, key], map: "uq_budget_category_user_key")
+  @@index([user_id], map: "ix_budget_categories_user_id")
+  @@map("budget_categories")
+}
+
+model BudgetAllocation {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  year         Int
+  month        Int
+  category     String   @db.VarChar(50)
+  limit_amount Float
+  created_at   DateTime @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users        User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, year, month, category])
+  @@index([user_id], map: "ix_budget_allocations_user_id")
+  @@map("budget_allocations")
+}
+
+model BudgetAlertLog {
+  id        Int      @id @default(autoincrement())
+  user_id   Int
+  year      Int
+  month     Int
+  category  String   @db.VarChar(50)
+  threshold Int
+  sent_at   DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users     User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, year, month, category, threshold], map: "uq_alert_once")
+  @@index([user_id], map: "ix_budget_alert_log_user_id")
+  @@map("budget_alert_log")
+}
+
+model Transaction {
+  id                Int              @id @default(autoincrement())
+  user_id           Int
+  type              String           @db.VarChar(10)
+  amount            Float
+  category          String?          @db.VarChar(50)
+  description       String           @db.VarChar(500)
+  date              String           @db.VarChar(10)
+  created_at        DateTime         @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  source_planned_id Int?
+  transaction_tags  TransactionTag[]
+  users             User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_transactions_user_id")
+  @@map("transactions")
+}
+
+model PlannedPurchase {
+  id                  Int          @id @default(autoincrement())
+  user_id             Int
+  year                Int
+  month               Int
+  amount              Float
+  category            String?      @db.VarChar(50)
+  description         String       @db.VarChar(500)
+  done                Boolean
+  created_at          DateTime     @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  source_recurring_id Int?
+  users               User         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  planned_tags        PlannedTag[]
+
+  @@index([user_id], map: "ix_planned_purchases_user_id")
+  @@map("planned_purchases")
+}
+
+model RecurringTransaction {
+  id                  Int      @id @default(autoincrement())
+  user_id             Int
+  type                String   @db.VarChar(10)
+  amount              Float
+  category            String?  @db.VarChar(50)
+  description         String   @db.VarChar(500)
+  tag_ids             Int[]
+  day_of_month        Int
+  start_date          String   @db.VarChar(10)
+  end_date            String?  @db.VarChar(10)
+  last_generated_date String?  @db.VarChar(10)
+  is_paused           Boolean
+  created_at          DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users               User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([user_id], map: "ix_recurring_transactions_user_id")
+  @@map("recurring_transactions")
+}
+
+/// Explicit join for Transaction ↔ BudgetTag with ON DELETE CASCADE.
+model TransactionTag {
+  transaction_id Int
+  tag_id         Int
+  budget_tags    BudgetTag   @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  transactions   Transaction @relation(fields: [transaction_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([transaction_id, tag_id])
+  @@map("transaction_tags")
+}
+
+/// Explicit join for PlannedPurchase ↔ BudgetTag with ON DELETE CASCADE.
+model PlannedTag {
+  planned_purchase_id Int
+  tag_id              Int
+  planned_purchases   PlannedPurchase @relation(fields: [planned_purchase_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  budget_tags         BudgetTag       @relation(fields: [tag_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@id([planned_purchase_id, tag_id])
+  @@map("planned_tags")
+}
+
+// ── Reports ───────────────────────────────────────────────────────────────────
+
+/// NB: `status` is a VarChar(20) in the DB — the Python model mirrors the Python-side
+/// `ReportStatus` enum (pending|in_progress|done|error) but persists as free-form text.
+/// We keep it as `String` here to preserve zero drift; guards at the service layer.
+model WeeklyReport {
+  id         Int      @id @default(autoincrement())
+  user_id    Int
+  week_start DateTime @db.Date
+  status     String   @db.VarChar(20)
+  content    String?
+  error_msg  String?  @db.VarChar(500)
+  created_at DateTime @default(dbgenerated("'2026-04-12 14:16:40.225559+00'::timestamp with time zone")) @db.Timestamptz(6)
+  updated_at DateTime @default(dbgenerated("'2026-04-12 14:16:40.225559+00'::timestamp with time zone")) @db.Timestamptz(6)
+  users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([user_id, week_start], map: "uq_report_user_week")
+  @@index([user_id], map: "ix_weekly_reports_user_id")
+  @@map("weekly_reports")
+}
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+//
+// The Postgres enum TYPE names are lowercase (`priority`, `kanbanstatus`) because
+// SQLAlchemy derived them from the Python class names via the default naming policy.
+// Variant names are UPPERCASE because SQLAlchemy's `Enum(PyEnum)` stores the Python
+// *member name* by default, not the member `str` value. Keep both exactly as the DB
+// has them or `prisma migrate diff` will want to drop-and-recreate the type.
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+
+  @@map("priority")
+}
+
+enum KanbanStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+
+  @@map("kanbanstatus")
+}
