@@ -9,7 +9,10 @@ import { BoardsModule } from './boards/boards.module';
 import { BootstrapModule } from './bootstrap/bootstrap.module';
 import { HabitsModule } from './habits/habits.module';
 import { HealthController } from './health.controller';
+import { LlmModule } from './llm/llm.module';
+import { NtfyModule } from './ntfy/ntfy.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { ReportsModule } from './reports/reports.module';
 import { TagsModule } from './tags/tags.module';
 import { TasksModule } from './tasks/tasks.module';
 
@@ -28,6 +31,9 @@ import { TasksModule } from './tasks/tasks.module';
     TagsModule,
     TasksModule,
     HabitsModule,
+    LlmModule,
+    NtfyModule,
+    ReportsModule,
     BootstrapModule,
   ],
   controllers: [HealthController],
