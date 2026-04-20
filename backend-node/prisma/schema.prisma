@@ -15,7 +15,11 @@
 // `@@map` on the enum maps Prisma's PascalCase name back to the lowercase DB type name.
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  // Alpine (node:20-alpine) ships OpenSSL 3.x, not the 1.1 that the default
+  // linux-musl engine expects. Include both so local native builds work AND
+  // the Docker image can load the right .so.node at runtime.
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 datasource db {
