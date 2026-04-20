@@ -117,12 +117,12 @@ describe('AllExceptionsFilter', () => {
     expect(wwwCalls.length).toBe(0);
   });
 
-  it('maps ThrottlerException to 429 with the Russian text mandated by spec', () => {
+  it('maps ThrottlerException to 429 with the Python rate_limit_handler text', () => {
     filter.catch(new ThrottlerException(), host);
 
     expect(statusMock).toHaveBeenCalledWith(HttpStatus.TOO_MANY_REQUESTS);
     expect(jsonMock).toHaveBeenCalledWith({
-      detail: 'Слишком много запросов. Пожалуйста, попробуйте позже.',
+      detail: 'Too many requests. Please try again later.',
     });
   });
 

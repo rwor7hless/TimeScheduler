@@ -21,12 +21,9 @@ import type { Request, Response } from 'express';
  *   - `HttpException` with an object response that already has `detail` → passes through unchanged.
  *   - `HttpException` with an object response that has `message` (Nest default
  *     or ValidationPipe array) → flatten `message` to a single string.
- *   - `ThrottlerException` (rate-limited) → 429 with the Russian text
- *     "Слишком много запросов. Пожалуйста, попробуйте позже." as mandated
- *     by the Phase 3 spec. (The current Python `rate_limit_handler` emits an
- *     English string; the spec treats the Russian version as the
- *     intended user-facing text and a Python-side sync is tracked
- *     separately.)
+ *   - `ThrottlerException` (rate-limited) → 429 with the English text
+ *     "Too many requests. Please try again later." matching
+ *     `backend/app/main.py`'s `rate_limit_handler`.
  *   - Any other thrown (non-HttpException) → 500 with a generic redacted
  *     body; the original error is logged at error level so stack traces
  *     never ship to clients.
@@ -60,12 +57,12 @@ export class AllExceptionsFilter implements ExceptionFilter {
   }
 
   private resolve(exception: unknown, request: Request): { status: number; detail: string } {
-    // ThrottlerException extends HttpException but we emit the Russian text
-    // mandated by the Phase 3 spec regardless of the underlying message.
+    // ThrottlerException extends HttpException but we emit the fixed text
+    // from Python's rate_limit_handler regardless of underlying message.
     if (exception instanceof ThrottlerException) {
       return {
         status: HttpStatus.TOO_MANY_REQUESTS,
-        detail: 'Слишком много запросов. Пожалуйста, попробуйте позже.',
+        detail: 'Too many requests. Please try again later.',
       };
     }
 
