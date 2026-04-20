@@ -64,3 +64,8 @@ services:
 
 volumes:
   pgdata:
+    # Reuse the `timescheduler_pgdata` volume the original Python backend
+    # wrote into, regardless of the compose project name (worktree dir name
+    # would otherwise create a fresh, empty volume per checkout).
+    name: timescheduler_pgdata
+    external: true
