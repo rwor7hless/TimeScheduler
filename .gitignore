@@ -212,6 +212,9 @@ __marimo__/
 node_modules/
 frontend/dist/
 
+# Git worktrees
+.worktrees/
+
 # Backups
 backups/*.sql
 
