@@ -11,6 +11,7 @@ import { HabitsModule } from './habits/habits.module';
 import { HealthController } from './health.controller';
 import { PrismaModule } from './prisma/prisma.module';
 import { TagsModule } from './tags/tags.module';
+import { TasksModule } from './tasks/tasks.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TagsModule } from './tags/tags.module';
     AdminModule,
     BoardsModule,
     TagsModule,
+    TasksModule,
     HabitsModule,
     BootstrapModule,
   ],
