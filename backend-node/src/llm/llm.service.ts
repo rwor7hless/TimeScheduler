@@ -37,6 +37,11 @@ const BASE_PARAMS = {
 
 // Non-stream: hard cap on whole request (short daily-tip style replies).
 const SHORT_TIMEOUT_MS = 60_000;
+// Stream: long cap to let the model generate. OpenAI SDK has a single
+// request-level timeout (no per-operation read/connect like Python httpx),
+// and `timeout: 0` in the SDK means "fail immediately", NOT "no timeout".
+// Use a large finite value instead.
+const STREAM_TIMEOUT_MS = 30 * 60_000; // 30 min
 
 @Injectable()
 export class LlmService {
@@ -91,9 +96,9 @@ export class LlmService {
     return new OpenAI({
       apiKey: cfg.apiKey,
       baseURL: cfg.baseUrl,
-      // For streams: disable per-request timeout so httpx-style reads don't kill mid-generation.
-      // For non-stream: match Python's 60s read cap.
-      timeout: opts.stream ? 0 : SHORT_TIMEOUT_MS,
+      // Streams use a 30-min cap; non-stream matches Python's 60s read cap.
+      // Do NOT pass 0 here — the SDK treats it as "fail immediately".
+      timeout: opts.stream ? STREAM_TIMEOUT_MS : SHORT_TIMEOUT_MS,
     });
   }
 
