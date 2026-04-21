@@ -8,7 +8,9 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import random
+import re
 from datetime import date
 from typing import TypedDict
 
@@ -116,3 +118,41 @@ def pick_persona(
     rng = random.Random(_seed(user_id, today))
     ids = list(weights.keys())
     return rng.choices(ids, weights=[weights[i] for i in ids], k=1)[0]
+
+
+_FENCE_RE = re.compile(r"^```(?:json)?\s*|\s*```$", re.MULTILINE)
+
+
+def _truncate(s: str, limit: int) -> str:
+    """Обрезает строку до limit, стараясь на границе слова. Добавляет `…`."""
+    if len(s) <= limit:
+        return s
+    cut = s[: limit - 1]
+    space = cut.rfind(" ")
+    if space > limit * 0.6:  # не отрезаем больше 40% хвоста ради слова
+        cut = cut[:space]
+    return cut.rstrip(" ,.;:—-") + "…"
+
+
+def parse_and_validate(raw: str) -> dict[str, str]:
+    """Парсит ответ LLM, возвращает `{short, long}`.
+
+    Снимает markdown-```, режет по длине (short ≤ 100, long ≤ 260),
+    требует непустой short. На ошибки — RuntimeError (роутер превратит в 503).
+    """
+    cleaned = _FENCE_RE.sub("", raw.strip()).strip()
+    try:
+        data = json.loads(cleaned)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(f"LLM вернул не JSON: {exc}") from exc
+
+    if not isinstance(data, dict) or "short" not in data or "long" not in data:
+        raise RuntimeError("LLM не вернул поля short/long")
+
+    short = _truncate(str(data["short"]).strip(), 100)
+    long_ = _truncate(str(data["long"]).strip(), 260)
+
+    if not short:
+        raise RuntimeError("LLM вернул пустой short")
+
+    return {"short": short, "long": long_}

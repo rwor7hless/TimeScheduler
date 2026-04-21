@@ -1,6 +1,8 @@
 from datetime import date
 
-from prompts.pet_personas import PERSONAS, pick_persona
+import pytest
+
+from prompts.pet_personas import PERSONAS, pick_persona, parse_and_validate
 
 
 def test_pick_persona_returns_known_id():
@@ -53,3 +55,41 @@ def test_morning_boosts_plyushka():
         )
         counts[pid] = counts.get(pid, 0) + 1
     assert counts.get("plyushka", 0) / 200 > 0.18
+
+
+def test_parse_clean_json():
+    raw = '{"short": "Короткая.", "long": "Короткая. Развитие."}'
+    out = parse_and_validate(raw)
+    assert out == {"short": "Короткая.", "long": "Короткая. Развитие."}
+
+
+def test_parse_markdown_fenced_json():
+    raw = '```json\n{"short": "A.", "long": "A. B."}\n```'
+    out = parse_and_validate(raw)
+    assert out["short"] == "A."
+
+
+def test_parse_truncates_long_fields():
+    long_short = "x" * 150
+    long_long = "y" * 400
+    raw = f'{{"short": "{long_short}", "long": "{long_long}"}}'
+    out = parse_and_validate(raw)
+    assert len(out["short"]) <= 100
+    assert len(out["long"]) <= 260
+    assert out["short"].endswith("…")
+    assert out["long"].endswith("…")
+
+
+def test_parse_rejects_missing_keys():
+    with pytest.raises(RuntimeError):
+        parse_and_validate('{"short": "only"}')
+
+
+def test_parse_rejects_empty_short():
+    with pytest.raises(RuntimeError):
+        parse_and_validate('{"short": "", "long": "x"}')
+
+
+def test_parse_rejects_non_json():
+    with pytest.raises(RuntimeError):
+        parse_and_validate("это просто текст от модели")
