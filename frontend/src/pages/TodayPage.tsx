@@ -9,11 +9,57 @@ import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import AsciiPet from '@/components/today/AsciiPet'
 import Spinner from '@/components/ui/Spinner'
 import { useDailyTip } from '@/hooks/useDailyTip'
+import { useAuth } from '@/context/AuthContext'
 import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
 import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
+
+// ── Админский селектор персоны (dev-override) ─────────────────────────
+const ADMIN_PERSONAS: Array<{ id: string; label: string }> = [
+  { id: 'suhar', label: 'Сухарь' },
+  { id: 'valeryan', label: 'Валерьян' },
+  { id: 'blin', label: 'Блин' },
+  { id: 'shprot', label: 'Шпрот' },
+  { id: 'plyushka', label: 'Плюшка' },
+]
+
+function PersonaAdminSwitcher({
+  activeId,
+  onPick,
+}: {
+  activeId: string | null
+  onPick: (id: string | null) => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-1 mt-2 justify-center">
+      {ADMIN_PERSONAS.map((p) => (
+        <button
+          key={p.id}
+          type="button"
+          onClick={() => onPick(p.id)}
+          className={clsx(
+            'text-[10px] uppercase tracking-[0.14em] px-1.5 py-0.5 rounded border transition-colors',
+            activeId === p.id
+              ? 'border-amber-500 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30'
+              : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300',
+          )}
+        >
+          {p.label}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={() => onPick(null)}
+        className="text-[10px] uppercase tracking-[0.14em] px-1.5 py-0.5 rounded border border-dashed border-gray-300 dark:border-gray-600 text-gray-400 hover:text-gray-600"
+        title="Сбросить на авто-выбор"
+      >
+        авто
+      </button>
+    </div>
+  )
+}
 
 // ── Варианты оркестрованного появления страницы ───────────────────────
 const enterParent = {
@@ -358,7 +404,8 @@ export default function TodayPage() {
   const createTask = useCreateTask()
   const toggleLog = useToggleHabitLog()
 
-  const { tip: dailyTip, isLoading: tipLoading } = useDailyTip()
+  const { tip: dailyTip, isLoading: tipLoading, forcePersona } = useDailyTip()
+  const { isAdmin } = useAuth()
 
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -684,6 +731,12 @@ export default function TodayPage() {
           celebrateKey={celebrateKey}
           layout="horizontal"
         />
+        {isAdmin && (
+          <PersonaAdminSwitcher
+            activeId={dailyTip?.persona?.id ?? null}
+            onPick={forcePersona}
+          />
+        )}
       </motion.div>
 
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
@@ -926,6 +979,12 @@ export default function TodayPage() {
               progress={petProgress}
               celebrateKey={celebrateKey}
             />
+            {isAdmin && (
+              <PersonaAdminSwitcher
+                activeId={dailyTip?.persona?.id ?? null}
+                onPick={forcePersona}
+              />
+            )}
           </div>
 
           <div>

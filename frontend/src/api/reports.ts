@@ -27,8 +27,12 @@ export const reportsApi = {
       })
       .then((r) => r.data),
 
-  getDailyTip: (): Promise<DailyTipResponse> =>
-    client.get('/reports/daily-tip').then((r) => r.data),
+  getDailyTip: (forcePersona?: string): Promise<DailyTipResponse> =>
+    client
+      .get('/reports/daily-tip', {
+        params: forcePersona ? { persona: forcePersona } : undefined,
+      })
+      .then((r) => r.data),
 
   requestSummary: (): Promise<WeeklyReport> =>
     client.post('/reports/request-summary').then((r) => r.data),

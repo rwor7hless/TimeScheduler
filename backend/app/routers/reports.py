@@ -188,12 +188,21 @@ async def test_push(current_user: User = Depends(get_current_user)):
 async def get_daily_tip(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
+    persona: str | None = Query(
+        default=None,
+        description="Admin-only override: принудительно выбрать персону (id из PERSONAS).",
+    ),
 ):
     """
     Ежедневное напутствие от одного из пяти котов-персон. Выбор персоны
     детерминирован по (user_id, today). Клиент кешит на сутки.
+
+    Query ?persona=<id> работает только для админа — игнорируется иначе.
     """
     today = date.today()
+    forced_persona: str | None = None
+    if persona and current_user.is_admin and persona in PERSONAS:
+        forced_persona = persona
     if not llm_available():
         return {
             "date": str(today),
@@ -268,7 +277,7 @@ async def get_daily_tip(
     except Exception:
         local_hour = datetime.utcnow().hour
 
-    persona_id = pick_persona(
+    persona_id = forced_persona or pick_persona(
         user_id=current_user.id,
         today=today,
         tasks_count=len(all_tasks),

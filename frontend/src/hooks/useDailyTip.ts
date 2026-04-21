@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { format } from 'date-fns'
 import { reportsApi, type DailyTipPersona } from '@/api/reports'
 
@@ -57,5 +57,33 @@ export function useDailyTip() {
       .finally(() => setIsLoading(false))
   }, [cacheKey, tip])
 
-  return { tip, isLoading }
+  // Админский override: форсит конкретную персону на бекенде и обновляет
+  // ответ в памяти + кеше. null — сбросить на детерминированный выбор.
+  const forcePersona = useCallback(
+    (id: string | null) => {
+      if (!id) {
+        localStorage.removeItem(cacheKey)
+        setTip(null)
+        return
+      }
+      setIsLoading(true)
+      reportsApi
+        .getDailyTip(id)
+        .then((data) => {
+          if (data.disabled || !data.persona || !data.short || !data.long) return
+          const next: DailyTip = {
+            persona: data.persona,
+            short: data.short,
+            long: data.long,
+          }
+          setTip(next)
+          localStorage.setItem(cacheKey, JSON.stringify(next))
+        })
+        .catch(() => {})
+        .finally(() => setIsLoading(false))
+    },
+    [cacheKey],
+  )
+
+  return { tip, isLoading, forcePersona }
 }
