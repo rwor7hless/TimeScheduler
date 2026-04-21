@@ -1,6 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
+import { motion } from 'framer-motion'
 import { useTasks, usePatchTask, useCreateTask, useBoards } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
@@ -13,6 +14,20 @@ import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
+
+// ── Варианты оркестрованного появления страницы ───────────────────────
+const enterParent = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.04 } },
+}
+const enterChild = {
+  hidden: { opacity: 0, y: 10 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.45, ease: [0.22, 1, 0.36, 1] as const },
+  },
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -343,7 +358,7 @@ export default function TodayPage() {
   const createTask = useCreateTask()
   const toggleLog = useToggleHabitLog()
 
-  const { tip, isLoading: tipLoading } = useDailyTip()
+  const { tip: dailyTip, isLoading: tipLoading } = useDailyTip()
 
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
@@ -351,6 +366,8 @@ export default function TodayPage() {
   const [showPicker, setShowPicker] = useState(false)
   const [pickerSearch, setPickerSearch] = useState('')
   const [backlogOpen, setBacklogOpen] = useState(false)
+  // Инкрементируется при каждом переходе в done — триггерит питомца
+  const [celebrateKey, setCelebrateKey] = useState(0)
   const pickerRef = useRef<HTMLDivElement>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
@@ -500,6 +517,7 @@ export default function TodayPage() {
     const newStatus = task.status === 'done' ? 'todo' : 'done'
     try {
       await patchTask.mutateAsync({ id: task.id, data: { status: newStatus } })
+      if (newStatus === 'done') setCelebrateKey((k) => k + 1)
     } catch {
       toast.error('Не удалось обновить задачу')
     }
@@ -508,6 +526,7 @@ export default function TodayPage() {
   const handleMarkDone = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { status: 'done' } })
+      setCelebrateKey((k) => k + 1)
     } catch {
       toast.error('Не удалось обновить задачу')
     }
@@ -570,7 +589,9 @@ export default function TodayPage() {
 
   const handleHabitToggle = async (habitId: number) => {
     try {
+      const wasDone = activeHabits.find((h) => h.id === habitId)?.logs.some((l) => l.date === todayStr) ?? false
       await toggleLog.mutateAsync({ id: habitId, date: todayStr })
+      if (!wasDone) setCelebrateKey((k) => k + 1)
     } catch {
       toast.error('Не удалось обновить привычку')
     }
@@ -583,52 +604,90 @@ export default function TodayPage() {
 
   if (tasksLoading || habitsLoading) return <Spinner className="mt-20" />
 
+  // Агрегированный прогресс для питомца: средневзвешенное по задачам и
+  // привычкам. Если чего-то нет — считаем только то, что есть.
+  const petProgress = (() => {
+    const taskWeight = todayUnified.length
+    const habitWeight = activeHabits.length
+    const total = taskWeight + habitWeight
+    if (total === 0) return 0
+    return (doneTodayCount + doneHabits) / total
+  })()
+
   return (
-    <div className="space-y-5 max-w-3xl mx-auto">
+    <motion.div
+      className="space-y-5 max-w-3xl mx-auto"
+      variants={enterParent}
+      initial="hidden"
+      animate="show"
+    >
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-end justify-between">
+      <motion.div variants={enterChild} className="flex items-end justify-between">
         <div>
-          <p className="text-xs text-gray-400 dark:text-gray-500">{getGreeting()}</p>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-50 capitalize">
-            {format(today, 'EEEE, d MMMM', { locale: ru })}
+          <p className="text-[11px] uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500">
+            {getGreeting()}
+          </p>
+          <h1
+            className="font-display text-[34px] leading-[1.05] text-gray-900 dark:text-gray-50 capitalize mt-1"
+            style={{ fontVariationSettings: '"SOFT" 60, "opsz" 96', fontWeight: 500, letterSpacing: '-0.02em' }}
+          >
+            {format(today, 'EEEE,', { locale: ru })}{' '}
+            <span className="text-amber-700 dark:text-amber-400">
+              {format(today, 'd MMMM', { locale: ru })}
+            </span>
           </h1>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Compact progress ────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-5">
+      <motion.div variants={enterChild} className="flex items-center gap-5">
         <div className="flex items-center gap-2 flex-1">
-          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-amber-400 rounded-full transition-all duration-500"
-              style={{ width: `${taskPct}%` }}
+          <div className="flex-1 h-1.5 bg-amber-100/70 dark:bg-amber-950/40 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-amber-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${taskPct}%` }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
             />
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+          <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap tabular-nums">
             {doneTodayCount}/{todayUnified.length} задач
           </span>
         </div>
         <div className="flex items-center gap-2 flex-1">
-          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
-              style={{ width: `${habitPct}%` }}
+          <div className="flex-1 h-1.5 bg-emerald-100/70 dark:bg-emerald-950/40 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-emerald-500 rounded-full"
+              initial={{ width: 0 }}
+              animate={{ width: `${habitPct}%` }}
+              transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
             />
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+          <span className="font-mono text-[11px] text-gray-500 dark:text-gray-400 whitespace-nowrap tabular-nums">
             {doneHabits}/{activeHabits.length} привычек
           </span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* ── Pet (mobile) ────────────────────────────────────────────────────── */}
-      <div className="lg:hidden">
-        <AsciiPet tip={tip} isLoading={tipLoading} />
-      </div>
+      {/* ── Pet (mobile) ─ горизонтальная раскладка: кот слева, бабл справа ── */}
+      <motion.div
+        variants={enterChild}
+        className="lg:hidden rounded-2xl border border-amber-100/60 dark:border-amber-900/30 bg-amber-50/30 dark:bg-amber-950/10 px-3 py-3"
+      >
+        <AsciiPet
+          short={dailyTip?.short ?? null}
+          long={dailyTip?.long ?? null}
+          persona={dailyTip?.persona ?? null}
+          isLoading={tipLoading}
+          progress={petProgress}
+          celebrateKey={celebrateKey}
+          layout="horizontal"
+        />
+      </motion.div>
 
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
+      <motion.div variants={enterChild} className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
 
         {/* Left — tasks + backlog */}
         <div className="space-y-4">
@@ -859,11 +918,18 @@ export default function TodayPage() {
         {/* Right — pet + habits */}
         <div className="space-y-5">
           <div className="hidden lg:block">
-            <AsciiPet tip={tip} isLoading={tipLoading} />
+            <AsciiPet
+              short={dailyTip?.short ?? null}
+              long={dailyTip?.long ?? null}
+              persona={dailyTip?.persona ?? null}
+              isLoading={tipLoading}
+              progress={petProgress}
+              celebrateKey={celebrateKey}
+            />
           </div>
 
           <div>
-            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400 mb-2">
               Привычки
             </h2>
             {activeHabits.length === 0 ? (
@@ -884,13 +950,13 @@ export default function TodayPage() {
             )}
           </div>
         </div>
-      </div>
+      </motion.div>
 
       <TaskModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         task={editingTask}
       />
-    </div>
+    </motion.div>
   )
 }
