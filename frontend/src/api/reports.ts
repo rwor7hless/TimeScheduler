@@ -1,6 +1,21 @@
 import client from './client'
 import type { WeeklyReport } from '@/types/report'
 
+export interface DailyTipPersona {
+  id: string
+  name: string
+  eyes_l: string
+  eyes_r: string
+}
+
+export interface DailyTipResponse {
+  date: string
+  disabled?: boolean
+  persona: DailyTipPersona | null
+  short: string | null
+  long: string | null
+}
+
 export const reportsApi = {
   list: (limit = 26): Promise<WeeklyReport[]> =>
     client.get('/reports', { params: { limit } }).then((r) => r.data),
@@ -12,7 +27,7 @@ export const reportsApi = {
       })
       .then((r) => r.data),
 
-  getDailyTip: (): Promise<{ tip: string | null; date: string; disabled?: boolean }> =>
+  getDailyTip: (): Promise<DailyTipResponse> =>
     client.get('/reports/daily-tip').then((r) => r.data),
 
   requestSummary: (): Promise<WeeklyReport> =>
