@@ -96,12 +96,39 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           <div className="px-5 py-5 border-b border-gray-100 dark:border-gray-700">
-            <NavLink to="/today" className="text-lg font-semibold tracking-tight text-gray-900 dark:text-gray-100 hover:opacity-75 transition-opacity">
-              Time<span className="text-amber-600">Scheduler</span>
+            <NavLink
+              to="/today"
+              className="group flex items-center gap-2.5 hover:opacity-85 transition-opacity"
+              aria-label="TimeScheduler"
+            >
+              {/* Монограмма TS — засечная лигатура в рамке */}
+              <span
+                className="relative flex items-center justify-center w-9 h-9 rounded-[10px] border border-amber-600/70 bg-amber-50/60 dark:bg-amber-900/15 dark:border-amber-500/50"
+                aria-hidden
+              >
+                <span
+                  className="font-display text-[17px] leading-none text-amber-700 dark:text-amber-400"
+                  style={{ fontVariationSettings: '"SOFT" 30, "opsz" 72', fontWeight: 500, letterSpacing: '-0.04em' }}
+                >
+                  Ts
+                </span>
+                <span className="absolute -bottom-[3px] left-1.5 right-1.5 h-px bg-amber-700/40 dark:bg-amber-400/40" />
+              </span>
+              <span className="flex flex-col leading-none">
+                <span
+                  className="font-display text-[15px] text-gray-900 dark:text-gray-100"
+                  style={{ fontVariationSettings: '"SOFT" 40, "opsz" 48', fontWeight: 500 }}
+                >
+                  Timescheduler
+                </span>
+                <span className="text-[9px] uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500 mt-1">
+                  journal · planner
+                </span>
+              </span>
             </NavLink>
             {user && (
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400">
+              <div className="flex items-center gap-2 mt-4">
+                <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400 font-display">
                   {user.username.charAt(0).toUpperCase()}
                 </div>
                 <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{user.username}</span>
