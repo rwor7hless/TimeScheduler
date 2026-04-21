@@ -27,6 +27,7 @@ from app.services.gigachat import (
 )
 from app.services.ntfy import send as ntfy_send
 from app.services.weekly_report import _strip_intro_heading, build_weekly_data
+from prompts.pet_personas import PERSONAS, parse_and_validate, pick_persona
 from prompts.pet_tip import build_pet_prompt
 from prompts.weekly_report import build_prompt
 
@@ -189,13 +190,19 @@ async def get_daily_tip(
     current_user: User = Depends(get_current_user),
 ):
     """
-    Генерирует короткое напутствие на день от лица питомца.
-    Кешировать на стороне клиента — вызывать раз в день.
+    Ежедневное напутствие от одного из пяти котов-персон. Выбор персоны
+    детерминирован по (user_id, today). Клиент кешит на сутки.
     """
-    if not llm_available():
-        return {"tip": None, "date": str(date.today()), "disabled": True}
-
     today = date.today()
+    if not llm_available():
+        return {
+            "date": str(today),
+            "disabled": True,
+            "persona": None,
+            "short": None,
+            "long": None,
+        }
+
     today_start = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
     today_end = today_start + timedelta(days=1)
 
@@ -254,18 +261,47 @@ async def get_daily_tip(
 
     all_tasks = list(my_day_rows) + [t for t in sched_rows if t not in my_day_rows]
 
+    # Время в локали пользователя — для утреннего буста Плюшки.
+    try:
+        from zoneinfo import ZoneInfo
+        local_hour = datetime.now(ZoneInfo(settings.user_timezone)).hour
+    except Exception:
+        local_hour = datetime.utcnow().hour
+
+    persona_id = pick_persona(
+        user_id=current_user.id,
+        today=today,
+        tasks_count=len(all_tasks),
+        overdue_count=len(overdue_rows),
+        deadline_today_count=len(deadline_today_rows),
+        hour=local_hour,
+    )
+
     messages = build_pet_prompt(
+        persona_id,
         all_tasks,
         list(habit_names),
         list(deadline_today_rows),
         list(overdue_rows),
     )
     try:
-        tip = await chat_completion(messages, max_tokens=200)
+        raw = await chat_completion(messages, max_tokens=260)
+        parsed = parse_and_validate(raw)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc))
 
-    return {"tip": tip.strip(), "date": str(today)}
+    persona = PERSONAS[persona_id]
+    return {
+        "date": str(today),
+        "persona": {
+            "id": persona_id,
+            "name": persona["name"],
+            "eyes_l": persona["eyes_l"],
+            "eyes_r": persona["eyes_r"],
+        },
+        "short": parsed["short"],
+        "long": parsed["long"],
+    }
 
 
 
