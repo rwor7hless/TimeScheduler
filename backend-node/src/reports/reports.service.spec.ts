@@ -1,10 +1,15 @@
 import { ForbiddenException, ServiceUnavailableException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { User, WeeklyReport } from '@prisma/client';
 import { LlmService } from '../llm/llm.service';
 import { NtfyService } from '../ntfy/ntfy.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { ReportsService } from './reports.service';
 import { WeeklyDataService } from './weekly-data.service';
+
+function makeConfig(): ConfigService {
+  return { get: (_k: string) => 'Europe/Moscow' } as unknown as ConfigService;
+}
 
 function makeUser(o: Partial<User> = {}): User {
   return {
@@ -103,7 +108,7 @@ describe('ReportsService', () => {
       (prisma.weeklyReport.create as jest.Mock).mockImplementation(
         ({ data }: { data: Partial<WeeklyReport> }) => Promise.resolve(makeReport(data)),
       );
-      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData(), makeConfig());
       const out = await svc.generate(1, '2026-04-13');
       expect(out.status).toBe('pending');
       expect(prisma.weeklyReport.create).toHaveBeenCalled();
@@ -117,7 +122,7 @@ describe('ReportsService', () => {
         ({ data }: { data: Partial<WeeklyReport> }) =>
           Promise.resolve(makeReport({ ...existing, ...data })),
       );
-      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData(), makeConfig());
       const out = await svc.generate(1);
       expect(out.status).toBe('pending');
       expect(out.content).toBeNull();
@@ -126,7 +131,7 @@ describe('ReportsService', () => {
 
   describe('requestSummary', () => {
     it('throws 403 when user has no permission', async () => {
-      const svc = new ReportsService(makePrisma(), makeLlm(true), makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(makePrisma(), makeLlm(true), makeNtfy(), makeWeeklyData(), makeConfig());
       await expect(
         svc.requestSummary(makeUser({ is_admin: false, can_request_summary: false })),
       ).rejects.toBeInstanceOf(ForbiddenException);
@@ -138,6 +143,7 @@ describe('ReportsService', () => {
         makeLlm(false, 'no key'),
         makeNtfy(),
         makeWeeklyData(),
+        makeConfig(),
       );
       await expect(svc.requestSummary(makeUser({ is_admin: true }))).rejects.toBeInstanceOf(
         ServiceUnavailableException,
@@ -148,7 +154,7 @@ describe('ReportsService', () => {
       const prisma = makePrisma();
       const existing = makeReport({ status: 'in_progress', updated_at: new Date() });
       (prisma.weeklyReport.findUnique as jest.Mock).mockResolvedValue(existing);
-      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData(), makeConfig());
       const out = await svc.requestSummary(makeUser({ can_request_summary: true }));
       expect(out).toBe(existing);
       expect(prisma.weeklyReport.update).not.toHaveBeenCalled();
@@ -165,7 +171,7 @@ describe('ReportsService', () => {
         ({ data }: { data: Partial<WeeklyReport> }) =>
           Promise.resolve(makeReport({ ...stale, ...data })),
       );
-      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(prisma, makeLlm(true), makeNtfy(), makeWeeklyData(), makeConfig());
       const out = await svc.requestSummary(makeUser({ can_request_summary: true }));
       expect(out.status).toBe('pending');
     });
@@ -174,7 +180,7 @@ describe('ReportsService', () => {
   describe('testPush', () => {
     it('delegates to NtfyService.send', async () => {
       const ntfy = makeNtfy();
-      const svc = new ReportsService(makePrisma(), makeLlm(true), ntfy, makeWeeklyData());
+      const svc = new ReportsService(makePrisma(), makeLlm(true), ntfy, makeWeeklyData(), makeConfig());
       await svc.testPush();
       expect(ntfy.send).toHaveBeenCalledWith(
         'TimeScheduler работает',
@@ -186,31 +192,77 @@ describe('ReportsService', () => {
 
   describe('dailyTip', () => {
     it('returns disabled=true when LLM is unavailable', async () => {
-      const svc = new ReportsService(makePrisma(), makeLlm(false), makeNtfy(), makeWeeklyData());
-      const out = await svc.dailyTip(1);
+      const svc = new ReportsService(makePrisma(), makeLlm(false), makeNtfy(), makeWeeklyData(), makeConfig());
+      const out = await svc.dailyTip(makeUser());
       expect(out.disabled).toBe(true);
-      expect(out.tip).toBeNull();
+      expect(out.short).toBeNull();
+      expect(out.long).toBeNull();
+      expect(out.persona).toBeNull();
     });
 
-    it('caches per-user per-day', async () => {
+    it('caches per-user per-day and returns persona + short/long', async () => {
       const prisma = makePrisma();
       const llm = makeLlm(true);
-      (llm.chatCompletion as jest.Mock).mockResolvedValue('  generated tip  ');
-      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData());
-      const first = await svc.dailyTip(1);
-      const second = await svc.dailyTip(1);
-      expect(first.tip).toBe('generated tip');
-      expect(second.tip).toBe('generated tip');
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "короткий", "long": "длинный ответ"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const first = await svc.dailyTip(makeUser());
+      const second = await svc.dailyTip(makeUser());
+      expect(first.short).toBe('короткий');
+      expect(first.long).toBe('длинный ответ');
+      expect(first.persona).not.toBeNull();
+      expect(second.short).toBe('короткий');
       expect(llm.chatCompletion).toHaveBeenCalledTimes(1);
+    });
+
+    it('admin persona override bypasses cache and picks requested persona', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "s", "long": "l"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const admin = makeUser({ is_admin: true });
+      const out = await svc.dailyTip(admin, 'blin');
+      expect(out.persona?.id).toBe('blin');
+      // Second call with different persona must re-invoke LLM (cache bypass).
+      await svc.dailyTip(admin, 'shprot');
+      expect(llm.chatCompletion).toHaveBeenCalledTimes(2);
+    });
+
+    it('non-admin cannot override persona', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "s", "long": "l"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const out = await svc.dailyTip(makeUser({ is_admin: false }), 'blin');
+      // override silently ignored — persona is deterministic from (id, date),
+      // so we just check that the response is valid (not necessarily blin).
+      expect(out.persona).not.toBeNull();
     });
 
     it('wraps chatCompletion errors as 503', async () => {
       const prisma = makePrisma();
       const llm = makeLlm(true);
       (llm.chatCompletion as jest.Mock).mockRejectedValue(new Error('LLM died'));
-      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData());
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
       svc.clearDailyTipCache(2);
-      await expect(svc.dailyTip(2)).rejects.toBeInstanceOf(ServiceUnavailableException);
+      await expect(svc.dailyTip(makeUser({ id: 2 }))).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
+    });
+
+    it('wraps parse errors as 503', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue('not json at all');
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      await expect(svc.dailyTip(makeUser({ id: 99 }))).rejects.toBeInstanceOf(
+        ServiceUnavailableException,
+      );
     });
   });
 
@@ -235,7 +287,7 @@ describe('ReportsService', () => {
       });
 
       const ntfy = makeNtfy();
-      const svc = new ReportsService(prisma, llm, ntfy, weekly);
+      const svc = new ReportsService(prisma, llm, ntfy, weekly, makeConfig());
       await svc.generateReportForUser(1, new Date('2026-04-13T00:00:00.000Z'));
 
       expect(updateMock).toHaveBeenCalledWith(
@@ -263,7 +315,7 @@ describe('ReportsService', () => {
         budget: null,
       });
 
-      const svc = new ReportsService(prisma, llm, makeNtfy(), weekly);
+      const svc = new ReportsService(prisma, llm, makeNtfy(), weekly, makeConfig());
       await svc.generateReportForUser(1, new Date('2026-04-13T00:00:00.000Z'));
       expect(updateMock).toHaveBeenCalledWith(
         expect.objectContaining({

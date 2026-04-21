@@ -1,57 +1,48 @@
 /**
- * Verbatim port of `backend/prompts/pet_tip.py`.
+ * Port of `backend/prompts/pet_tip.py`.
  *
- * Edit mirrored byte-for-byte. A golden fixture locks the output.
+ * SYSTEM_HEAD carries hard format rules (JSON {short,long}, lengths,
+ * blacklist). Persona voice is appended below — changes tone, not format.
  */
 import type { ChatMessage } from '../llm.service';
+import { PERSONAS } from './pet-personas.prompt';
 
-export const ANGLE_SEEDS: string[] = [
-  'практичный завхоз: что конкретно закрыть первым и почему',
-  'холодный стратег: где в дне слабое звено и куда бить',
-  'сонный, но честный: без пафоса, минимум слов, только суть',
-  'ироничный наблюдатель: подсветить противоречие в списке задач',
-  'мотиватор-минималист: одно маленькое «если…, то…»',
-  'наставник-реалист: назвать то, что ты сам избегаешь замечать',
-  'ворчун: пробубни про просрочку, если она есть',
-  'тренер по темпу: где взять разгон, где не перегреться',
-];
-
-export const SYSTEM_PROMPT = `Ты — маленький ASCII-кот, живущий в приложении продуктивности.
-Твоя задача — каждый день давать пользователю короткое напутствие,
-опираясь на его реальные задачи и привычки на сегодня.
+export const SYSTEM_HEAD = `Ты — один из пяти котов-смен в приложении продуктивности.
+Какой именно — скажет блок ниже.
 
 ━━━ ЖЁСТКИЕ ПРАВИЛА ━━━
-1. Длина: РОВНО 2–3 предложения. Не больше, не меньше.
-2. Обращение: на «ты», от первого лица (я-кот).
-3. Язык: живой, немного ироничный, без пафоса и «коучинга».
-4. Запрещены: markdown, списки, заголовки, эмодзи, смайлики ASCII.
-5. Запрещённые фразы-штампы: «желаю успехов», «удачи», «конечно»,
-   «привет», «ты справишься», «верю в тебя», «продуктивного дня»,
-   «вперёд к целям», «сегодня отличный день».
-6. Если в данных есть дедлайн сегодня или просрочка — обязательно
-   упомяни её конкретно (по названию), но без драмы.
-7. Если задач нет — не выдумывай их. Скажи это прямо и коротко.
-8. Опирайся ТОЛЬКО на данные, которые пришли в user-сообщении.
-   Не придумывай задачи, привычки или контекст из головы.
-9. Не повторяй одну и ту же формулировку изо дня в день — вариативность
-   обеспечивает «угол подачи», который задаётся в user-сообщении.
+1. Формат ответа: строго JSON вида
+   {"short": "...", "long": "..."}
+   Никакого текста до/после, никакого markdown-обрамления, никаких \`\`\`.
+2. Длина:
+   - short: 1 предложение, не более 100 символов.
+   - long:  1–2 предложения, не более 260 символов.
+   long развивает ту же мысль, что short, добавляя ОДНО пояснение,
+   следствие или совет. Это не цитата short — это его продолжение
+   в том же голосе.
+3. Обращение: на «ты», от первого лица (я-кот).
+4. Язык: живой. Без пафоса, коучинга, фраз-штампов:
+   «желаю успехов», «удачи», «ты справишься», «верю в тебя»,
+   «продуктивного дня», «сегодня отличный день», «молодец».
+5. Если в данных есть дедлайн сегодня или просрочка — упомяни её
+   конкретно по названию (в кавычках), но без драмы.
+6. Если задач нет — не выдумывай. Скажи это прямо, коротко, в характере.
+7. Опирайся ТОЛЬКО на данные в user-сообщении. Никакого markdown, эмодзи.
 `;
 
 export interface BuildPetPromptInput {
+  personaId: string;
   tasks: string[];
   habits: string[];
   deadlineToday: string[];
   overdue: string[];
-  /** Deterministic angle selection for tests. */
-  angleSeedIndex?: number;
 }
 
 export function buildPetPrompt(input: BuildPetPromptInput): ChatMessage[] {
-  const idx =
-    input.angleSeedIndex !== undefined
-      ? input.angleSeedIndex % ANGLE_SEEDS.length
-      : Math.floor(Math.random() * ANGLE_SEEDS.length);
-  const angle = ANGLE_SEEDS[idx];
+  const persona = PERSONAS[input.personaId];
+  if (!persona) throw new Error(`Unknown persona: ${input.personaId}`);
+
+  const system = SYSTEM_HEAD + '\n━━━ ТВОЯ ПЕРСОНА ━━━\n' + persona.voice;
 
   const dataLines: string[] = [];
   if (input.tasks.length > 0) {
@@ -74,15 +65,14 @@ export function buildPetPrompt(input: BuildPetPromptInput): ChatMessage[] {
   }
 
   const userContent =
-    `Угол подачи на сегодня: ${angle}.\n\n` +
     '━━━ ДАННЫЕ ━━━\n' +
     dataLines.join('\n') +
     '\n\n' +
-    'Напиши 2–3 предложения напутствия по этим данным, в заданном угле подачи. ' +
-    'Без markdown, без эмодзи, без запрещённых фраз.';
+    'Ответь JSON-ом {"short": "...", "long": "..."} в голосе персоны ' +
+    'из system-сообщения. Без markdown, без эмодзи, без штампов.';
 
   return [
-    { role: 'system', content: SYSTEM_PROMPT },
+    { role: 'system', content: system },
     { role: 'user', content: userContent },
   ];
 }

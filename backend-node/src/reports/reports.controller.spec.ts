@@ -13,7 +13,9 @@ describe('ReportsController', () => {
       generate: jest.fn().mockResolvedValue({ id: 1 }),
       requestSummary: jest.fn().mockResolvedValue({ id: 2 }),
       testPush: jest.fn().mockResolvedValue({ ok: true }),
-      dailyTip: jest.fn().mockResolvedValue({ tip: 't', date: '2026-04-20' }),
+      dailyTip: jest
+        .fn()
+        .mockResolvedValue({ date: '2026-04-20', persona: null, short: 's', long: 'l' }),
     } as unknown as jest.Mocked<ReportsService>;
     return { ctrl: new ReportsController(svc), svc };
   }
@@ -43,7 +45,15 @@ describe('ReportsController', () => {
     const { ctrl, svc } = make();
     await ctrl.testPush();
     expect(svc.testPush).toHaveBeenCalled();
-    await ctrl.dailyTip(user());
-    expect(svc.dailyTip).toHaveBeenCalledWith(1);
+    const u = user();
+    await ctrl.dailyTip(u);
+    expect(svc.dailyTip).toHaveBeenCalledWith(u, undefined);
+  });
+
+  it('dailyTip forwards persona query param', async () => {
+    const { ctrl, svc } = make();
+    const u = user({ is_admin: true });
+    await ctrl.dailyTip(u, 'blin');
+    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'blin');
   });
 });

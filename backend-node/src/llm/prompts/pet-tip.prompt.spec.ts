@@ -1,51 +1,54 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { ANGLE_SEEDS, SYSTEM_PROMPT, buildPetPrompt } from './pet-tip.prompt';
+import { SYSTEM_HEAD, buildPetPrompt } from './pet-tip.prompt';
+import { PERSONAS } from './pet-personas.prompt';
 
 describe('pet-tip prompt', () => {
-  it('exposes 8 angle seeds', () => {
-    expect(ANGLE_SEEDS).toHaveLength(8);
+  it('SYSTEM_HEAD enforces JSON-only output', () => {
+    expect(SYSTEM_HEAD).toContain('{"short": "...", "long": "..."}');
   });
 
-  it('SYSTEM_PROMPT enforces the 2-3 sentence rule', () => {
-    expect(SYSTEM_PROMPT).toContain('РОВНО 2–3 предложения');
-  });
-
-  it('matches Python-generated golden byte-for-byte', () => {
-    const golden = fs.readFileSync(
-      path.resolve(__dirname, '../../../test/fixtures/pet-tip-golden.txt'),
-      'utf8',
-    );
+  it('splices persona voice into system message', () => {
     const msgs = buildPetPrompt({
-      tasks: ['Написать отчёт', 'Созвон'],
-      habits: ['бег', 'чтение'],
-      deadlineToday: ['Оплатить счёт'],
-      overdue: ['Старая задача'],
-      angleSeedIndex: 0,
+      personaId: 'suhar',
+      tasks: ['X'],
+      habits: [],
+      deadlineToday: [],
+      overdue: [],
     });
-    const actual = `===SYSTEM===\n${msgs[0].content}\n===USER===\n${msgs[1].content}`;
-    expect(actual).toBe(golden);
+    expect(msgs[0].content).toContain(PERSONAS.suhar.voice);
+    expect(msgs[0].content).toContain('ТВОЯ ПЕРСОНА');
   });
 
   it('falls back to "нет задач" line when tasks are empty', () => {
     const msgs = buildPetPrompt({
+      personaId: 'blin',
       tasks: [],
       habits: [],
       deadlineToday: [],
       overdue: [],
-      angleSeedIndex: 0,
     });
     expect(msgs[1].content).toContain('Задач в My Day или расписании нет.');
   });
 
   it('omits the deadline line when none today', () => {
     const msgs = buildPetPrompt({
+      personaId: 'blin',
       tasks: ['X'],
       habits: [],
       deadlineToday: [],
       overdue: [],
-      angleSeedIndex: 0,
     });
     expect(msgs[1].content).not.toContain('Дедлайн сегодня');
+  });
+
+  it('throws on unknown persona id', () => {
+    expect(() =>
+      buildPetPrompt({
+        personaId: 'not-a-cat',
+        tasks: [],
+        habits: [],
+        deadlineToday: [],
+        overdue: [],
+      }),
+    ).toThrow(/Unknown persona/);
   });
 });

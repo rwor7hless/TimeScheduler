@@ -56,7 +56,10 @@ export class ReportsController {
   }
 
   @Get('daily-tip')
-  dailyTip(@CurrentUser() user: User): Promise<DailyTipResult> {
-    return this.reports.dailyTip(user.id);
+  dailyTip(
+    @CurrentUser() user: User,
+    @Query('persona') persona?: string,
+  ): Promise<DailyTipResult> {
+    return this.reports.dailyTip(user, persona);
   }
 }

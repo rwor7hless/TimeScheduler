@@ -4,6 +4,7 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { User, WeeklyReport } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
@@ -13,7 +14,12 @@ import {
   ANGLE_SEEDS as WEEKLY_ANGLES,
   buildWeeklyPrompt,
 } from '../llm/prompts/weekly-report.prompt';
-import { ANGLE_SEEDS as PET_ANGLES, buildPetPrompt } from '../llm/prompts/pet-tip.prompt';
+import { buildPetPrompt } from '../llm/prompts/pet-tip.prompt';
+import {
+  PERSONAS,
+  parseAndValidate,
+  pickPersona,
+} from '../llm/prompts/pet-personas.prompt';
 
 /**
  * If a report has been stuck in `in_progress` longer than this, we assume
@@ -22,13 +28,28 @@ import { ANGLE_SEEDS as PET_ANGLES, buildPetPrompt } from '../llm/prompts/pet-ti
  */
 export const STALE_IN_PROGRESS_MS = 3 * 60 * 1000;
 
-export interface DailyTipResult {
-  tip: string | null;
-  date: string;
-  disabled?: boolean;
+export interface DailyTipPersonaDto {
+  id: string;
+  name: string;
+  eyes_l: string;
+  eyes_r: string;
 }
 
-type DailyTipCacheEntry = { date: string; tip: string };
+export interface DailyTipResult {
+  date: string;
+  disabled?: boolean;
+  persona: DailyTipPersonaDto | null;
+  short: string | null;
+  long: string | null;
+}
+
+type DailyTipCacheEntry = {
+  date: string;
+  personaId: string;
+  persona: DailyTipPersonaDto;
+  short: string;
+  long: string;
+};
 
 /**
  * Non-stream orchestration for reports. The SSE stream lives in
@@ -45,6 +66,7 @@ export class ReportsService {
     private readonly llm: LlmService,
     private readonly ntfy: NtfyService,
     private readonly weeklyData: WeeklyDataService,
+    private readonly config: ConfigService,
   ) {}
 
   static todayIso(): string {
@@ -154,22 +176,33 @@ export class ReportsService {
     });
   }
 
-  async dailyTip(userId: number): Promise<DailyTipResult> {
+  async dailyTip(user: User, forcedPersona?: string): Promise<DailyTipResult> {
     const today = ReportsService.todayIso();
     if (!this.llm.llmAvailable()) {
-      return { tip: null, date: today, disabled: true };
+      return { date: today, disabled: true, persona: null, short: null, long: null };
     }
 
-    const cached = this.dailyTipCache.get(userId);
-    if (cached && cached.date === today) {
-      return { tip: cached.tip, date: today };
+    // Admin-only persona override; bypasses cache so switching reflects immediately.
+    const overrideId =
+      forcedPersona && user.is_admin && forcedPersona in PERSONAS ? forcedPersona : undefined;
+
+    if (!overrideId) {
+      const cached = this.dailyTipCache.get(user.id);
+      if (cached && cached.date === today) {
+        return {
+          date: today,
+          persona: cached.persona,
+          short: cached.short,
+          long: cached.long,
+        };
+      }
     }
 
     const todayStart = new Date(today + 'T00:00:00.000Z');
     const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
 
     const base = {
-      user_id: userId,
+      user_id: user.id,
       deleted_at: null,
       status: { not: 'DONE' as const },
     };
@@ -205,7 +238,7 @@ export class ReportsService {
         take: 3,
       }),
       this.prisma.habit.findMany({
-        where: { user_id: userId, is_active: true },
+        where: { user_id: user.id, is_active: true },
         select: { name: true },
         take: 6,
       }),
@@ -215,24 +248,78 @@ export class ReportsService {
     const schedTitles = schedRows.map((r) => r.title);
     const allTasks = [...myDayTitles, ...schedTitles.filter((t) => !myDayTitles.includes(t))];
 
+    const tz = this.config.get<string>('USER_TIMEZONE') ?? 'Europe/Moscow';
+    let localHour: number;
+    try {
+      localHour = Number(
+        new Intl.DateTimeFormat('en-US', {
+          hour: '2-digit',
+          hour12: false,
+          timeZone: tz,
+        }).format(new Date()),
+      );
+      if (!Number.isFinite(localHour)) localHour = new Date().getUTCHours();
+    } catch {
+      localHour = new Date().getUTCHours();
+    }
+
+    const personaId =
+      overrideId ??
+      pickPersona({
+        userId: user.id,
+        todayIso: today,
+        tasksCount: allTasks.length,
+        overdueCount: overdueRows.length,
+        deadlineTodayCount: deadlineRows.length,
+        hour: localHour,
+      });
+
     const messages = buildPetPrompt({
+      personaId,
       tasks: allTasks,
       habits: habitNames.map((h) => h.name),
       deadlineToday: deadlineRows.map((r) => r.title),
       overdue: overdueRows.map((r) => r.title),
-      angleSeedIndex: Math.floor(Math.random() * PET_ANGLES.length),
     });
 
-    let tip: string;
+    let raw: string;
     try {
-      tip = await this.llm.chatCompletion(messages, { maxTokens: 200 });
+      raw = await this.llm.chatCompletion(messages, { maxTokens: 260 });
     } catch (exc) {
       throw new ServiceUnavailableException(exc instanceof Error ? exc.message : String(exc));
     }
 
-    const cleaned = tip.trim();
-    this.dailyTipCache.set(userId, { date: today, tip: cleaned });
-    return { tip: cleaned, date: today };
+    let parsed;
+    try {
+      parsed = parseAndValidate(raw);
+    } catch (exc) {
+      throw new ServiceUnavailableException(exc instanceof Error ? exc.message : String(exc));
+    }
+
+    const p = PERSONAS[personaId];
+    const personaDto: DailyTipPersonaDto = {
+      id: personaId,
+      name: p.name,
+      eyes_l: p.eyes_l,
+      eyes_r: p.eyes_r,
+    };
+
+    if (!overrideId) {
+      this.dailyTipCache.set(user.id, {
+        date: today,
+        personaId,
+        persona: personaDto,
+        short: parsed.short,
+        long: parsed.long,
+      });
+    }
+
+    return {
+      date: today,
+      persona: personaDto,
+      short: parsed.short,
+      long: parsed.long,
+    };
   }
 
   /**
