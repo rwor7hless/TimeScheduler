@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
-import Rail from './Rail'
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -48,8 +47,6 @@ export default function AppShell() {
           onClick={() => setSidebarOpen(false)}
         />
       )}
-
-      <Rail />
 
       <Sidebar
         isOpen={sidebarOpen}

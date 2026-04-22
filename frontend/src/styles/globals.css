@@ -146,14 +146,14 @@ html.dark body {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 68px 288px 1fr;
+  grid-template-columns: 288px 1fr;
   gap: 16px;
   padding: 18px;
   min-height: 100vh;
   min-height: 100dvh;
 }
 @media (max-width: 1180px) {
-  .ts-shell { grid-template-columns: 68px 260px 1fr; }
+  .ts-shell { grid-template-columns: 260px 1fr; }
 }
 @media (max-width: 1023px) {
   .ts-shell { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
