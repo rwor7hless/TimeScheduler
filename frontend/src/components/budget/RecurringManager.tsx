@@ -14,6 +14,7 @@ import {
   useDeleteRecurring,
 } from '@/hooks/useBudget'
 import type { RecurringResponse } from '@/api/budget'
+import { BudgetCategoryIcon, IconRepeat } from '@/components/ui/icons'
 
 function fmt(n: number) { return n.toLocaleString('ru-RU') }
 
@@ -52,7 +53,9 @@ export default function RecurringManager({ isOpen, onClose }: Props) {
 
           {templates.length === 0 && (
             <div className="text-center py-10 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <div className="text-3xl mb-2">🔄</div>
+              <div className="mb-2 flex justify-center text-ink-muted">
+                <IconRepeat size={32} />
+              </div>
               <p className="text-sm text-gray-400">Шаблонов нет.</p>
               <p className="text-xs text-gray-400 mt-1">Напр., аренда 50 000 ₽ первого числа.</p>
             </div>
@@ -68,8 +71,8 @@ export default function RecurringManager({ isOpen, onClose }: Props) {
                     ? 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/30 opacity-60'
                     : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800',
                 )}>
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-base flex-shrink-0" style={{ backgroundColor: cat.color + '22' }}>
-                    {cat.icon}
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.color + '22', color: cat.color }}>
+                    <BudgetCategoryIcon id={cat.icon} size={18} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">
@@ -236,7 +239,7 @@ function RecurringForm({
                   )}
                   style={category === c.id ? { backgroundColor: c.color } : undefined}
                 >
-                  <span>{c.icon}</span>
+                  <BudgetCategoryIcon id={c.icon} size={14} />
                   <span className="truncate">{c.label}</span>
                 </button>
               ))}

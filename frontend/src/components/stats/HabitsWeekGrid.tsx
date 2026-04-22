@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import type { HabitProgress } from '@/types/stats'
+import { IconFlame } from '@/components/ui/icons'
 
 interface Props {
   habits: HabitProgress[]
@@ -119,9 +120,10 @@ export function HabitsWeekGrid({ habits }: Props) {
                               ? undefined
                               : { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }
                           }
-                          className="text-amber-500"
+                          className="inline-flex items-center text-amber-500"
+                          style={{ color: 'var(--color-accent)' }}
                         >
-                          🔥
+                          <IconFlame size={14} />
                         </motion.span>
                       )}
                       <span>{h.current_streak}</span>

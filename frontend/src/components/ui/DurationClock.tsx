@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect, useId } from 'react'
 import { Popover } from '@headlessui/react'
 import clsx from 'clsx'
+import { useTheme } from '@/context/ThemeContext'
 
 interface DurationClockProps {
   startTime: string
@@ -59,6 +60,8 @@ export default function DurationClock({
 }: DurationClockProps) {
   const svgRef = useRef<SVGSVGElement>(null)
   const gradId = `arc-${useId().replace(/:/g, '')}`
+  const { colors } = useTheme()
+  const accentColor = colors.accent
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState<number | null>(null)
   const [startH, setStartH] = useState('')
@@ -204,8 +207,8 @@ export default function DurationClock({
                 >
                   <defs>
                     <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="100%">
-                      <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.9" />
-                      <stop offset="100%" stopColor="#F59E0B" stopOpacity="0.4" />
+                      <stop offset="0%" stopColor={accentColor} stopOpacity="0.9" />
+                      <stop offset="100%" stopColor={accentColor} stopOpacity="0.4" />
                     </linearGradient>
                   </defs>
                   <circle

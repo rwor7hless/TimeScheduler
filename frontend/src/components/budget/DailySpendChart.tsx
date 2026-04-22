@@ -21,8 +21,7 @@ function fmt(n: number) {
 }
 
 export default function DailySpendChart({ summary }: { summary: SummaryResponse }) {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { isDark, colors } = useTheme()
   const [goal] = useBudgetGoal()
 
   const data = useMemo(() => {
@@ -104,7 +103,7 @@ export default function DailySpendChart({ summary }: { summary: SummaryResponse 
             {dailyBudget > 0 && (
               <ReferenceLine
                 y={dailyBudget}
-                stroke={isDark ? '#FCD34D' : '#D97706'}
+                stroke={isDark ? colors.accentLight : colors.accent}
                 strokeDasharray="4 4"
                 strokeWidth={1}
               />

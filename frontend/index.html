@@ -9,14 +9,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="TimeScheduler" />
-    <meta name="theme-color" content="#F9FAFB" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0F172A" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F8FAFC" />
     <link rel="manifest" href="/manifest.json" />
     <title>TimeScheduler</title>
     <script>
-      if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.classList.add('dark')
-      }
+      (function () {
+        var VALID = ['light','dark','sky','blossom','lavender','midnight','purple','rose','pink','gruvbox'];
+        var DARK  = ['dark','midnight','purple','rose','pink','gruvbox'];
+        var stored = localStorage.getItem('theme');
+        var t = VALID.indexOf(stored) !== -1 ? stored : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+        if (DARK.indexOf(t) !== -1) document.documentElement.classList.add('dark');
+      })();
     </script>
   </head>
   <body>

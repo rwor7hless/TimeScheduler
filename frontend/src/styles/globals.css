@@ -4,36 +4,248 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  /* Тёплый бумажный фон вместо cold gray — сохраняем amber как акцент */
-  --color-bg: #F5EFE3;
-  --color-bg-tint: #EDE5D2;
-  --color-surface: #FDFAF3;
-  --color-surface-muted: #F0E9D9;
-  --color-border: #E4DBC6;
-  --color-border-strong: #C9BDA1;
-  --color-text: #1F1B16;
-  --color-text-secondary: #6B6355;
-  --color-muted: #9A907E;
-  --color-accent: #D97706;
-  --color-accent-light: #F59E0B;
-  --color-danger: #EF4444;
-  --color-success: #10B981;
+/* ──────────────────────────────────────────────────────────────────────────
+   THEME TOKENS — семь палитр
+   Выбор темы — через data-theme на <html>. Для «тёмного семейства» (dark,
+   midnight, purple, rose, gruvbox) ThemeContext дополнительно вешает класс
+   .dark — благодаря этому продолжают работать все dark:-префиксы Tailwind
+   и слой overrides ниже.
+   Базовый :root = light (neutral). Остальные палитры — через атрибут.
+   ────────────────────────────────────────────────────────────────────────── */
+
+:root,
+:root[data-theme='light'] {
+  --color-bg:              #F8FAFC;
+  --color-bg-tint:         #F1F5F9;
+  --color-surface:         #FFFFFF;
+  --color-surface-muted:   #F1F5F9;
+  --color-border:          #E2E8F0;
+  --color-border-strong:   #CBD5E1;
+  --color-text:            #0F172A;
+  --color-text-secondary:  #475569;
+  --color-muted:           #94A3B8;
+  --color-accent:          #4F46E5;
+  --color-accent-light:    #6366F1;
+  --color-accent-dark:     #4338CA;
+  --color-danger:          #DC2626;
+  --color-success:         #059669;
+
+  --color-accent-rgb:       79, 70, 229;
+  --color-accent-light-rgb: 99, 102, 241;
+  --glow-1-rgb: 79, 70, 229;
+  --glow-2-rgb: 99, 102, 241;
+  --glow-strength: 0.85;
 }
 
-.dark {
-  /* Чернила вместо slate — тёплый глубокий фон */
-  --color-bg: #14110D;
-  --color-bg-tint: #1B1814;
-  --color-surface: #1E1A14;
-  --color-surface-muted: #262117;
-  --color-border: #3A3225;
-  --color-border-strong: #52472F;
-  --color-text: #F2E9D8;
-  --color-text-secondary: #B8AE98;
-  --color-muted: #7A7160;
-  --color-accent: #F59E0B;
-  --color-accent-light: #FBBF24;
+:root[data-theme='dark'] {
+  --color-bg:              #0F172A;
+  --color-bg-tint:         #162033;
+  --color-surface:         #1E293B;
+  --color-surface-muted:   #273449;
+  --color-border:          #334155;
+  --color-border-strong:   #475569;
+  --color-text:            #F1F5F9;
+  --color-text-secondary:  #CBD5E1;
+  --color-muted:           #64748B;
+  --color-accent:          #818CF8;
+  --color-accent-light:    #A5B4FC;
+  --color-accent-dark:     #6366F1;
+  --color-danger:          #F87171;
+  --color-success:         #34D399;
+
+  --color-accent-rgb:       129, 140, 248;
+  --color-accent-light-rgb: 165, 180, 252;
+  --glow-1-rgb: 129, 140, 248;
+  --glow-2-rgb: 99, 102, 241;
+  --glow-strength: 1.2;
+}
+
+:root[data-theme='sky'] {
+  --color-bg:              #E3F0FB;
+  --color-bg-tint:         #CFE3F5;
+  --color-surface:         #F0F7FD;
+  --color-surface-muted:   #DCEBF7;
+  --color-border:          #BAE6FD;
+  --color-border-strong:   #7DD3FC;
+  --color-text:            #0C4A6E;
+  --color-text-secondary:  #075985;
+  --color-muted:           #64748B;
+  --color-accent:          #0369A1;
+  --color-accent-light:    #0284C7;
+  --color-accent-dark:     #075985;
+  --color-danger:          #DC2626;
+  --color-success:         #059669;
+
+  --color-accent-rgb:       3, 105, 161;
+  --color-accent-light-rgb: 2, 132, 199;
+  --glow-1-rgb: 2, 132, 199;
+  --glow-2-rgb: 14, 165, 233;
+  --glow-strength: 0.8;
+}
+
+:root[data-theme='lavender'] {
+  /* Палитра «суккулент» — от plum #3C2A6B через лавандовый #8963CF
+     к нежно-розово-лавандовому #D5B5E4. Pastel-светлая, спокойная. */
+  --color-bg:              #ECE2F4;
+  --color-bg-tint:         #E0D3EC;
+  --color-surface:         #F4ECF7;
+  --color-surface-muted:   #E0D3EC;
+  --color-border:          #D5B5E4;
+  --color-border-strong:   #BDA6E0;
+  --color-text:            #3C2A6B;
+  --color-text-secondary:  #6B4B9B;
+  --color-muted:           #9595D4;
+  --color-accent:          #8963CF;
+  --color-accent-light:    #A586D8;
+  --color-accent-dark:     #6B4B9B;
+  --color-danger:          #B91C1C;
+  --color-success:         #047857;
+
+  --color-accent-rgb:       137, 99, 207;
+  --color-accent-light-rgb: 165, 134, 216;
+  --glow-1-rgb: 137, 99, 207;
+  --glow-2-rgb: 189, 166, 224;
+  --glow-strength: 0.7;
+}
+
+:root[data-theme='blossom'] {
+  /* Палитра «оттенки розового» — пудра, лососёвый, бордовый. Deep-тёмный
+     из этой же палитры уходит в ink, серединный dust-rose — в accent. */
+  --color-bg:              #F7E2DE;
+  --color-bg-tint:         #F0D5D0;
+  --color-surface:         #FCEDE9;
+  --color-surface-muted:   #F0D5D0;
+  --color-border:          #E3C0BD;
+  --color-border-strong:   #CB8A8D;
+  --color-text:            #2B1A1C;
+  --color-text-secondary:  #5E3D41;
+  --color-muted:           #A85A60;
+  --color-accent:          #722F37;
+  --color-accent-light:    #A85A60;
+  --color-accent-dark:     #4A1F24;
+  --color-danger:          #B91C1C;
+  --color-success:         #047857;
+
+  --color-accent-rgb:       114, 47, 55;
+  --color-accent-light-rgb: 168, 90, 96;
+  --glow-1-rgb: 168, 90, 96;
+  --glow-2-rgb: 203, 138, 141;
+  --glow-strength: 0.7;
+}
+
+:root[data-theme='midnight'] {
+  --color-bg:              #0B0C0E;
+  --color-bg-tint:         #101114;
+  --color-surface:         #17181C;
+  --color-surface-muted:   #1F2025;
+  --color-border:          #2B2C31;
+  --color-border-strong:   #3A3B42;
+  --color-text:            #E4E5E7;
+  --color-text-secondary:  #A6A8AD;
+  --color-muted:           #6D7078;
+  --color-accent:          #3B82F6;
+  --color-accent-light:    #60A5FA;
+  --color-accent-dark:     #2563EB;
+  --color-danger:          #F87171;
+  --color-success:         #34D399;
+
+  --color-accent-rgb:       59, 130, 246;
+  --color-accent-light-rgb: 96, 165, 250;
+  --glow-1-rgb: 59, 130, 246;
+  --glow-2-rgb: 37, 99, 235;
+  --glow-strength: 1.15;
+}
+
+:root[data-theme='purple'] {
+  --color-bg:              #0A0A0D;
+  --color-bg-tint:         #0F0F13;
+  --color-surface:         #15151B;
+  --color-surface-muted:   #1F1F26;
+  --color-border:          #2C2B32;
+  --color-border-strong:   #3B3B43;
+  --color-text:            #E6E5EA;
+  --color-text-secondary:  #A9A8AE;
+  --color-muted:           #75727C;
+  --color-accent:          #A855F7;
+  --color-accent-light:    #C084FC;
+  --color-accent-dark:     #9333EA;
+  --color-danger:          #F87171;
+  --color-success:         #34D399;
+
+  --color-accent-rgb:       168, 85, 247;
+  --color-accent-light-rgb: 192, 132, 252;
+  --glow-1-rgb: 168, 85, 247;
+  --glow-2-rgb: 139, 92, 246;
+  --glow-strength: 1.15;
+}
+
+:root[data-theme='rose'] {
+  --color-bg:              #0E0B0D;
+  --color-bg-tint:         #130F11;
+  --color-surface:         #181416;
+  --color-surface-muted:   #211D1F;
+  --color-border:          #302B2D;
+  --color-border-strong:   #413B3D;
+  --color-text:            #E8E4E5;
+  --color-text-secondary:  #AFA9AB;
+  --color-muted:           #75706F;
+  --color-accent:          #F43F5E;
+  --color-accent-light:    #FB7185;
+  --color-accent-dark:     #E11D48;
+  --color-danger:          #FCA5A5;
+  --color-success:         #34D399;
+
+  --color-accent-rgb:       244, 63, 94;
+  --color-accent-light-rgb: 251, 113, 133;
+  --glow-1-rgb: 244, 63, 94;
+  --glow-2-rgb: 251, 113, 133;
+  --glow-strength: 1.15;
+}
+
+:root[data-theme='pink'] {
+  --color-bg:              #0B0A0D;
+  --color-bg-tint:         #100E12;
+  --color-surface:         #161418;
+  --color-surface-muted:   #201E23;
+  --color-border:          #2E2C31;
+  --color-border-strong:   #3F3D42;
+  --color-text:            #EAE5E8;
+  --color-text-secondary:  #B0A9AD;
+  --color-muted:           #757074;
+  --color-accent:          #F472B6;
+  --color-accent-light:    #F9A8D4;
+  --color-accent-dark:     #EC4899;
+  --color-danger:          #FB7185;
+  --color-success:         #34D399;
+
+  --color-accent-rgb:       244, 114, 182;
+  --color-accent-light-rgb: 249, 168, 212;
+  --glow-1-rgb: 244, 114, 182;
+  --glow-2-rgb: 249, 168, 212;
+  --glow-strength: 1.15;
+}
+
+:root[data-theme='gruvbox'] {
+  --color-bg:              #1D2021;
+  --color-bg-tint:         #282828;
+  --color-surface:         #32302F;
+  --color-surface-muted:   #3C3836;
+  --color-border:          #504945;
+  --color-border-strong:   #665C54;
+  --color-text:            #EBDBB2;
+  --color-text-secondary:  #D5C4A1;
+  --color-muted:           #A89984;
+  --color-accent:          #FE8019;
+  --color-accent-light:    #FABD2F;
+  --color-accent-dark:     #D65D0E;
+  --color-danger:          #FB4934;
+  --color-success:         #B8BB26;
+
+  --color-accent-rgb:       254, 128, 25;
+  --color-accent-light-rgb: 250, 189, 47;
+  --glow-1-rgb: 254, 128, 25;
+  --glow-2-rgb: 250, 189, 47;
+  --glow-strength: 1.3;
 }
 
 html {
@@ -68,9 +280,15 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Бумажная атмосфера ────────────────────────────────────────────────── */
-/* Крупное зерно + мягкие «пятна света» поверх фона. Применяется к body
-   через ::before / ::after, чтобы не плодить обёрток в React. */
+@keyframes themePopIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+
+/* ── Ambient glow ─────────────────────────────────────────────────────────
+   Мягкие тонированные «пятна света» поверх фона. Состав одинаковый во
+   всех палитрах — меняется только цвет (--glow-N-rgb) и интенсивность
+   (--glow-strength). На тёмных темах блики чуть ярче, чтобы не исчезали. */
 body::before {
   content: '';
   position: fixed;
@@ -78,35 +296,52 @@ body::before {
   z-index: 0;
   pointer-events: none;
   background:
-    radial-gradient(1200px 600px at 15% -10%, rgba(217, 119, 6, 0.08), transparent 60%),
-    radial-gradient(900px 500px at 100% 10%, rgba(217, 119, 6, 0.05), transparent 55%),
-    radial-gradient(700px 700px at 50% 120%, rgba(180, 83, 9, 0.05), transparent 60%);
-}
-.dark body::before,
-.dark::before {
-  background:
-    radial-gradient(1200px 600px at 15% -10%, rgba(245, 158, 11, 0.06), transparent 60%),
-    radial-gradient(900px 500px at 100% 10%, rgba(245, 158, 11, 0.04), transparent 55%),
-    radial-gradient(700px 700px at 50% 120%, rgba(180, 83, 9, 0.08), transparent 60%);
+    radial-gradient(1200px 600px at 15% -10%, rgba(var(--glow-1-rgb), calc(0.09 * var(--glow-strength))), transparent 60%),
+    radial-gradient(900px 500px at 100% 10%,   rgba(var(--glow-2-rgb), calc(0.07 * var(--glow-strength))), transparent 55%),
+    radial-gradient(700px 700px at 50% 120%,   rgba(var(--glow-1-rgb), calc(0.07 * var(--glow-strength))), transparent 60%);
 }
 
+/* ── Grain overlay ────────────────────────────────────────────────────────
+   Лёгкий шум, чтобы фон дышал. Два варианта зерна: тёмный (по умолчанию,
+   для светлых тем) и светлый (для всех тёмных). Теплые палитры (rose,
+   gruvbox) используют свой оттенок зерна, чтобы не выбиваться из тона. */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: 0.22;
   mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.2 0 0 0 0 0.15 0 0 0 0 0.1 0 0 0 0.6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.12 0 0 0 0 0.18 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 .dark body::after {
-  opacity: 0.5;
+  opacity: 0.38;
   mix-blend-mode: screen;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.9 0 0 0 0 0.75 0 0 0 0 0.5 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.85 0 0 0 0 0.86 0 0 0 0 0.92 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-theme='blossom'] body::after {
+  opacity: 0.26;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.28 0 0 0 0 0.12 0 0 0 0 0.14 0 0 0 0.5 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-theme='lavender'] body::after {
+  opacity: 0.26;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.20 0 0 0 0 0.12 0 0 0 0 0.32 0 0 0 0.45 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-theme='rose'] body::after {
+  opacity: 0.42;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.98 0 0 0 0 0.80 0 0 0 0 0.85 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-theme='pink'] body::after {
+  opacity: 0.44;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1.00 0 0 0 0 0.82 0 0 0 0 0.92 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+:root[data-theme='gruvbox'] body::after {
+  opacity: 0.45;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.92 0 0 0 0 0.82 0 0 0 0 0.62 0 0 0 0.22 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
 
-/* Всё содержимое приложения должно быть выше декораций */
+/* Всё содержимое приложения выше декораций */
 #root { position: relative; z-index: 1; }
 
 * {
@@ -116,53 +351,84 @@ body::after {
 ::-webkit-scrollbar {
   width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: var(--color-border);
   border-radius: 3px;
 }
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #475569;
-}
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: var(--color-border-strong);
 }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #64748B;
-}
+/* ── Accent utilities (cross-theme overrides) ─────────────────────────────
+   Старый код опирался на amber-* классы, прибитые к warm-paper палитре.
+   Здесь мы переопределяем их для ВСЕХ тем через текущий акцент, чтобы
+   монограмма, активные ссылки, кнопки и focus-кольца жили по палитре. */
 
-/* ── Dark mode overrides for Tailwind utility classes ─────────────────────── */
-/* These allow components to automatically adapt without adding dark: to each */
+/* Backgrounds */
+.bg-amber-50\/60         { background-color: rgba(var(--color-accent-rgb), 0.09) !important; }
+.bg-amber-100            { background-color: rgba(var(--color-accent-rgb), 0.18) !important; }
+.bg-amber-500            { background-color: var(--color-accent) !important; }
+.bg-amber-700\/40        { background-color: rgba(var(--color-accent-rgb), 0.40) !important; }
+.hover\:bg-amber-600:hover { background-color: var(--color-accent-dark) !important; }
 
-.dark .bg-white           { background-color: var(--color-surface) !important; }
-.dark .bg-gray-50         { background-color: var(--color-surface) !important; }
-.dark .bg-gray-100        { background-color: var(--color-surface-muted) !important; }
+/* Text */
+.text-amber-500          { color: var(--color-accent) !important; }
+.text-amber-700          { color: var(--color-accent) !important; }
+
+/* Borders */
+.border-amber-600\/70    { border-color: rgba(var(--color-accent-rgb), 0.70) !important; }
+.focus\:border-amber-400\/50:focus { border-color: rgba(var(--color-accent-rgb), 0.50) !important; }
+
+/* Focus rings */
+.focus\:ring-amber-500\/30:focus { --tw-ring-color: rgba(var(--color-accent-rgb), 0.30) !important; }
+.focus\:ring-amber-500\/50:focus { --tw-ring-color: rgba(var(--color-accent-rgb), 0.50) !important; }
+.focus\:ring-amber-500:focus     { --tw-ring-color: var(--color-accent) !important; }
+
+/* ── Global surface mapping ───────────────────────────────────────────────
+   Легаси-классы Tailwind (bg-white, bg-gray-50, bg-gray-100) во всех темах
+   ведут к токенам палитры. В light/dark визуально никаких изменений, но в
+   sky / blossom / lavender хедер, сайдбар и карточки перестают выпадать
+   белыми пятнами — подхватывают окрашенный surface темы. */
+.bg-white        { background-color: var(--color-surface) !important; }
+.bg-gray-50      { background-color: var(--color-surface) !important; }
+.bg-gray-100     { background-color: var(--color-surface-muted) !important; }
+
+/* ── Dark mode overrides для Tailwind-утилит ──────────────────────────────
+   Благодаря переменным, значения автоматически совпадают с активной
+   тёмной палитрой — менять под каждую тему не нужно. */
 .dark .bg-gray-200        { background-color: var(--color-border) !important; }
+.dark .bg-gray-700        { background-color: var(--color-surface-muted) !important; }
+.dark .bg-gray-800        { background-color: var(--color-surface) !important; }
+.dark .bg-gray-900        { background-color: var(--color-bg) !important; }
 
 .dark .text-gray-900      { color: var(--color-text) !important; }
-.dark .text-gray-800      { color: #E6DCC6 !important; }
-.dark .text-gray-700      { color: #CEC3AA !important; }
+.dark .text-gray-800      { color: var(--color-text) !important; }
+.dark .text-gray-700      { color: var(--color-text-secondary) !important; }
 .dark .text-gray-600      { color: var(--color-text-secondary) !important; }
 .dark .text-gray-500      { color: var(--color-muted) !important; }
 .dark .text-gray-400      { color: var(--color-muted) !important; }
 .dark .text-gray-300      { color: var(--color-text-secondary) !important; }
+.dark .text-gray-200      { color: var(--color-text) !important; }
+.dark .text-gray-100      { color: var(--color-text) !important; }
 
 .dark .border-gray-100    { border-color: var(--color-border) !important; }
 .dark .border-gray-200    { border-color: var(--color-border) !important; }
 .dark .border-gray-300    { border-color: var(--color-border-strong) !important; }
+.dark .border-gray-600    { border-color: var(--color-border-strong) !important; }
+.dark .border-gray-700    { border-color: var(--color-border) !important; }
 
-.dark .hover\:bg-gray-50:hover  { background-color: var(--color-surface) !important; }
-.dark .hover\:bg-gray-100:hover { background-color: var(--color-surface-muted) !important; }
-.dark .hover\:bg-gray-200:hover { background-color: var(--color-border) !important; }
-.dark .hover\:text-gray-900:hover { color: #F1F5F9 !important; }
-.dark .hover\:text-gray-700:hover { color: #CBD5E1 !important; }
+.dark .hover\:bg-gray-50:hover   { background-color: var(--color-surface) !important; }
+.dark .hover\:bg-gray-100:hover  { background-color: var(--color-surface-muted) !important; }
+.dark .hover\:bg-gray-200:hover  { background-color: var(--color-border) !important; }
+.dark .hover\:bg-gray-700:hover  { background-color: var(--color-surface-muted) !important; }
+.dark .hover\:bg-gray-800:hover  { background-color: var(--color-surface) !important; }
+.dark .hover\:text-gray-900:hover { color: var(--color-text) !important; }
+.dark .hover\:text-gray-700:hover { color: var(--color-text-secondary) !important; }
+.dark .hover\:text-gray-200:hover { color: var(--color-text) !important; }
+.dark .hover\:text-gray-100:hover { color: var(--color-text) !important; }
 
 /* Forms */
 .dark input,
@@ -172,92 +438,99 @@ body::after {
   color: var(--color-text) !important;
   border-color: var(--color-border) !important;
 }
-
-/* Transparent-text inputs (backdrop highlight trick) — don't override */
 .dark input.quick-add {
   background-color: transparent !important;
   color: transparent !important;
   border-color: transparent !important;
 }
-
 .dark input::placeholder,
 .dark textarea::placeholder {
   color: var(--color-muted) !important;
 }
 
-/* Cards and modals */
-.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -2px rgba(0,0,0,0.3); }
-.dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.4), 0 2px 4px -1px rgba(0,0,0,0.3); }
-.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+/* Тени в тёмных темах плотнее, чтобы карточки читались на глубоком фоне */
+.dark .shadow-lg { box-shadow: 0 10px 15px -3px rgba(0,0,0,0.55), 0 4px 6px -2px rgba(0,0,0,0.35); }
+.dark .shadow-md { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.45), 0 2px 4px -1px rgba(0,0,0,0.3); }
+.dark .shadow-sm { box-shadow: 0 1px 3px rgba(0,0,0,0.45); }
 
-/* Amber states in dark mode */
-.dark .bg-amber-50              { background-color: rgba(120,80,0,0.15) !important; }
-.dark .hover\:bg-amber-50:hover { background-color: rgba(120,80,0,0.15) !important; }
-.dark .bg-amber-50\/30          { background-color: rgba(120,80,0,0.10) !important; }
-.dark .bg-amber-50\/50          { background-color: rgba(120,80,0,0.12) !important; }
-/* Hover with opacity variants — calendar slots */
-.dark .hover\:bg-amber-50\/50:hover { background-color: rgba(120,80,0,0.18) !important; }
-.dark .hover\:bg-amber-50\/40:hover { background-color: rgba(120,80,0,0.14) !important; }
-.dark .border-amber-300         { border-color: #92400E !important; }
+/* Accent-tinted highlight-панели в dark (календарь, kanban-over, chip-и) */
+.dark .bg-amber-50              { background-color: rgba(var(--glow-1-rgb), 0.13) !important; }
+.dark .hover\:bg-amber-50:hover { background-color: rgba(var(--glow-1-rgb), 0.16) !important; }
+.dark .bg-amber-50\/30          { background-color: rgba(var(--glow-1-rgb), 0.08) !important; }
+.dark .bg-amber-50\/50          { background-color: rgba(var(--glow-1-rgb), 0.12) !important; }
+.dark .bg-amber-50\/20          { background-color: rgba(var(--glow-1-rgb), 0.06) !important; }
+.dark .bg-amber-50\/60          { background-color: rgba(var(--glow-1-rgb), 0.14) !important; }
+.dark .hover\:bg-amber-50\/50:hover { background-color: rgba(var(--glow-1-rgb), 0.16) !important; }
+.dark .hover\:bg-amber-50\/40:hover { background-color: rgba(var(--glow-1-rgb), 0.14) !important; }
+.dark .border-amber-300         { border-color: rgba(var(--glow-1-rgb), 0.55) !important; }
+.dark .border-amber-500\/50     { border-color: rgba(var(--glow-1-rgb), 0.50) !important; }
+.dark .bg-amber-900\/15         { background-color: rgba(var(--glow-1-rgb), 0.14) !important; }
+.dark .bg-amber-900\/30         { background-color: rgba(var(--glow-1-rgb), 0.20) !important; }
+.dark .bg-amber-900\/40         { background-color: rgba(var(--glow-1-rgb), 0.25) !important; }
+.dark .bg-amber-400\/40         { background-color: rgba(var(--glow-1-rgb), 0.40) !important; }
+.dark .text-amber-400           { color: var(--color-accent-light) !important; }
+.dark .text-amber-900           { color: var(--color-accent-light) !important; }
 
-/* Stat cards */
-.dark .bg-emerald-50 { background-color: rgba(6,78,59,0.3) !important; }
-.dark .bg-orange-50  { background-color: rgba(124,45,18,0.3) !important; }
-.dark .bg-violet-50  { background-color: rgba(76,29,149,0.3) !important; }
+/* Stat cards с семантическими тинтами (success/danger/violet — independent) */
+.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.16) !important; }
+.dark .bg-orange-50  { background-color: rgba(249,115,22,0.16) !important; }
+.dark .bg-violet-50  { background-color: rgba(139,92,246,0.18) !important; }
 
-/* Kanban columns */
-.dark .bg-gray-50.rounded-xl { background-color: #1E293B !important; }
-
-/* Focus rings */
-.dark .focus\:ring-gray-300:focus { --tw-ring-color: #475569; }
-
-/* Recharts tooltip */
-.dark .recharts-default-tooltip {
-  background: #1E293B !important;
-  border-color: #334155 !important;
-  color: #F1F5F9 !important;
-}
-
-/* Stat cards text colors in dark */
 .dark .text-emerald-900 { color: #6EE7B7 !important; }
-.dark .text-amber-900   { color: #FCD34D !important; }
 .dark .text-orange-900  { color: #FDBA74 !important; }
 .dark .text-violet-900  { color: #C4B5FD !important; }
 
-/* Color picker ring (TaskModal) */
-.dark .ring-gray-800 { --tw-ring-color: #94A3B8 !important; }
+/* Kanban-колонки */
+.dark .bg-gray-50.rounded-xl { background-color: var(--color-surface-muted) !important; }
+
+/* Focus rings */
+.dark .focus\:ring-gray-300:focus { --tw-ring-color: var(--color-border-strong) !important; }
+
+/* Recharts tooltip — всегда по токенам темы */
+.recharts-default-tooltip {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+}
+.dark .recharts-default-tooltip {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45) !important;
+}
+.recharts-tooltip-label { color: var(--color-text-secondary) !important; }
+.recharts-tooltip-item { color: var(--color-text) !important; }
+
+/* CartesianGrid линии — подстраиваются под цвет границы темы */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: var(--color-border);
+}
+
+/* Color picker ring */
+.dark .ring-gray-800 { --tw-ring-color: var(--color-muted) !important; }
 
 /* ── Glassmorphism modal ──────────────────────────────────────────────────── */
 .modal-glass {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
   border: 1px solid rgba(255, 255, 255, 0.55);
 }
 .dark .modal-glass {
-  background: rgba(15, 23, 42, 0.72) !important;
+  background: rgba(20, 20, 32, 0.68) !important;
   backdrop-filter: blur(24px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
 }
 
-/* Time column background (Calendar) */
-.dark .bg-gray-50\/50 { background-color: rgba(30,41,59,0.5) !important; }
-
-/* Today highlight in WeekView */
-.dark .bg-amber-50\/20 { background-color: rgba(120,80,0,0.08) !important; }
-
-/* Hover slots in calendar */
-.dark .hover\:bg-amber-50\/40:hover { background-color: rgba(120,80,0,0.14) !important; }
-
-/* KanbanPage over-state */
-.dark .bg-amber-50\/50 { background-color: rgba(120,80,0,0.12) !important; }
+/* Time-column фон (Calendar) */
+.dark .bg-gray-50\/50 { background-color: rgba(var(--glow-1-rgb), 0.05) !important; }
 
 /* Scrollable period selector (StatsPage) */
-.dark .bg-gray-100.rounded-lg { background-color: #1E293B !important; }
-.dark .bg-white.shadow-sm { background-color: #334155 !important; }
+.dark .bg-gray-100.rounded-lg { background-color: var(--color-surface-muted) !important; }
+.dark .bg-white.shadow-sm { background-color: var(--color-surface) !important; }
 
-/* ── Markdown preview styles ──────────────────────────────────────────────── */
+/* ── Markdown preview ────────────────────────────────────────────────────── */
 
 .markdown-preview {
   color: var(--color-text);
@@ -300,7 +573,6 @@ body::after {
 .markdown-preview li > ul,
 .markdown-preview li > ol { margin-bottom: 0; }
 
-/* GFM task list */
 .markdown-preview input[type="checkbox"] {
   margin-right: 0.4em;
   accent-color: var(--color-accent);
@@ -319,17 +591,17 @@ body::after {
   font-size: 0.85em;
   padding: 0.15em 0.4em;
   border-radius: 4px;
-  background-color: #F3F4F6;
-  color: #D97706;
+  background-color: var(--color-surface-muted);
+  color: var(--color-accent);
 }
 
 .dark .markdown-preview code {
-  background-color: #1E293B;
-  color: #FCD34D;
+  background-color: var(--color-surface-muted);
+  color: var(--color-accent-light);
 }
 
 .markdown-preview pre {
-  background-color: #111827;
+  background-color: #0F172A;
   color: #E5E7EB;
   padding: 1rem;
   border-radius: 8px;
@@ -339,8 +611,8 @@ body::after {
 }
 
 .dark .markdown-preview pre {
-  background-color: #0F172A;
-  color: #CBD5E1;
+  background-color: var(--color-bg);
+  color: var(--color-text);
 }
 
 .markdown-preview pre code {
@@ -367,7 +639,6 @@ body::after {
 .markdown-preview em { font-style: italic; }
 .markdown-preview del { text-decoration: line-through; opacity: 0.7; }
 
-/* GFM tables */
 .markdown-preview table {
   width: 100%;
   border-collapse: collapse;
@@ -381,7 +652,6 @@ body::after {
   text-align: left;
 }
 .markdown-preview th {
-  background-color: #F9FAFB;
+  background-color: var(--color-surface-muted);
   font-weight: 600;
 }
-.dark .markdown-preview th { background-color: #1E293B; }

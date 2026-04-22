@@ -10,6 +10,7 @@ import {
   useDeleteBudgetTag,
 } from '@/hooks/useBudget'
 import type { BudgetTagResponse } from '@/api/budget'
+import { IconTag } from '@/components/ui/icons'
 
 interface Props {
   isOpen: boolean
@@ -49,7 +50,9 @@ export default function TagManager({ isOpen, onClose }: Props) {
 
           {tags.length === 0 && (
             <div className="text-center py-8 bg-gray-50 dark:bg-gray-800/50 rounded-xl">
-              <div className="text-3xl mb-2">🏷️</div>
+              <div className="mb-2 flex justify-center text-ink-muted">
+                <IconTag size={32} />
+              </div>
               <p className="text-sm text-gray-400">Тегов ещё нет.</p>
             </div>
           )}

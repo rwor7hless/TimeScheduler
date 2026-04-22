@@ -13,14 +13,17 @@ export default {
           100: '#FEF9C3',
           200: '#FEF08A',
         },
+        // `accent` теперь полностью привязан к активной палитре.
+        // hover:bg-accent-dark и focus:ring-accent автоматически
+        // переключаются между indigo/sky/blue/purple/rose/orange в зависимости от темы.
         accent: {
-          DEFAULT: '#D97706',
-          light: '#F59E0B',
-          dark: '#B45309',
+          DEFAULT: 'var(--color-accent)',
+          light: 'var(--color-accent-light)',
+          dark: 'var(--color-accent-dark)',
         },
         // Семантические токены, завязанные на CSS-переменные.
-        // Предпочитать их в новом коде. Старые bg-gray-* / bg-white уже
-        // перекрываются override-слоем в globals.css.
+        // Предпочитать в новом коде. Старые bg-gray-* / bg-white перекрываются
+        // override-слоем в globals.css.
         surface: {
           DEFAULT: 'var(--color-surface)',
           muted: 'var(--color-surface-muted)',
@@ -45,8 +48,8 @@ export default {
         mono: ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
       },
       boxShadow: {
-        'paper': '0 1px 0 rgba(31,27,22,0.04), 0 4px 12px rgba(31,27,22,0.06)',
-        'paper-lg': '0 1px 0 rgba(31,27,22,0.05), 0 12px 32px rgba(31,27,22,0.10)',
+        'paper': '0 1px 0 rgba(15,23,42,0.04), 0 4px 12px rgba(15,23,42,0.08)',
+        'paper-lg': '0 1px 0 rgba(15,23,42,0.05), 0 12px 32px rgba(15,23,42,0.12)',
       },
     },
   },

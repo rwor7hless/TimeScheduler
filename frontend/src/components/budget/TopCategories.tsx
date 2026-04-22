@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import { EXPENSE_CATEGORIES, type ExpenseCategoryId } from '@/types/budget'
 import type { SummaryResponse, SummaryCategory } from '@/api/budget'
+import { BudgetCategoryIcon } from '@/components/ui/icons'
 
 function getCat(id: string | null | undefined) {
   return EXPENSE_CATEGORIES.find((c) => c.id === id) ?? EXPENSE_CATEGORIES[EXPENSE_CATEGORIES.length - 1]
@@ -46,10 +47,10 @@ export default function TopCategories({
               className="w-full group flex items-center gap-3 rounded-lg px-2 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-700/40 transition-colors text-left"
             >
               <div
-                className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0"
-                style={{ backgroundColor: cat.color + '22' }}
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: cat.color + '22', color: cat.color }}
               >
-                {cat.icon}
+                <BudgetCategoryIcon id={cat.icon} size={15} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">

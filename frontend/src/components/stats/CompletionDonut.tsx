@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion'
+import { useTheme } from '@/context/ThemeContext'
 import { AnimatedNumber } from './AnimatedNumber'
 
 interface Props {
@@ -16,6 +17,7 @@ interface Props {
  */
 export function CompletionDonut({ value, label, size = 160 }: Props) {
   const shouldReduceMotion = useReducedMotion()
+  const { colors } = useTheme()
   const stroke = size * 0.08
   const radius = (size - stroke) / 2
   const circumference = 2 * Math.PI * radius
@@ -34,8 +36,8 @@ export function CompletionDonut({ value, label, size = 160 }: Props) {
       <svg width={size} height={size} className="-rotate-90">
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#F59E0B" />
-            <stop offset="100%" stopColor="#F97316" />
+            <stop offset="0%" stopColor={colors.accentLight} />
+            <stop offset="100%" stopColor={colors.accent} />
           </linearGradient>
         </defs>
         {/* Track */}
@@ -70,11 +72,13 @@ export function CompletionDonut({ value, label, size = 160 }: Props) {
           <div className="text-2xl font-bold text-gray-300 dark:text-gray-600">—</div>
         ) : (
           <div className="flex items-baseline">
-            <AnimatedNumber
-              value={pct}
-              className="text-4xl font-bold bg-gradient-to-br from-amber-500 to-orange-500 bg-clip-text text-transparent tabular-nums"
-            />
-            <span className="text-lg font-semibold text-amber-500 ml-0.5">%</span>
+            <span
+              className="text-4xl font-bold bg-clip-text text-transparent tabular-nums"
+              style={{ backgroundImage: `linear-gradient(to bottom right, ${colors.accentLight}, ${colors.accent})` }}
+            >
+              <AnimatedNumber value={pct} />
+            </span>
+            <span className="text-lg font-semibold ml-0.5" style={{ color: colors.accent }}>%</span>
           </div>
         )}
         {label && (

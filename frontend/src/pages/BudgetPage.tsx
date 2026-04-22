@@ -7,7 +7,6 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
 } from 'recharts'
-import { useTheme } from '@/context/ThemeContext'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Modal from '@/components/ui/Modal'
@@ -43,6 +42,7 @@ import QuickAddBar from '@/components/budget/QuickAddBar'
 import RecurringManager from '@/components/budget/RecurringManager'
 import ConvertPlannedModal from '@/components/budget/ConvertPlannedModal'
 import TagManager from '@/components/budget/TagManager'
+import { BudgetCategoryIcon, IconTarget, IconTag, IconRepeat } from '@/components/ui/icons'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -58,7 +58,8 @@ function CategoryPill({ id }: { id: ExpenseCategoryId | null | undefined }) {
   const cat = getCat(id)
   return (
     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium text-white" style={{ backgroundColor: cat.color }}>
-      {cat.icon} {cat.label}
+      <BudgetCategoryIcon id={cat.icon} size={12} />
+      {cat.label}
     </span>
   )
 }
@@ -83,7 +84,7 @@ function CategoryPicker({ value, onChange }: { value: ExpenseCategoryId; onChang
             )}
             style={value === cat.id ? { backgroundColor: cat.color } : undefined}
           >
-            <span>{cat.icon}</span>
+            <BudgetCategoryIcon id={cat.icon} size={14} />
             <span className="truncate">{cat.label}</span>
           </button>
         ))}
@@ -350,8 +351,8 @@ function EntryModal({
             <div className="space-y-1.5">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Категория</label>
               <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center text-sm" style={{ backgroundColor: getCat(category).color + '33' }}>
-                  {getCat(category).icon}
+                <div className="w-6 h-6 rounded-full flex items-center justify-center" style={{ backgroundColor: getCat(category).color + '33', color: getCat(category).color }}>
+                  <BudgetCategoryIcon id={getCat(category).icon} size={13} />
                 </div>
                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{getCat(category).label}</span>
                 <span className="ml-auto text-xs text-gray-400">из лимита</span>
@@ -457,8 +458,8 @@ function AllocationCard({
     <div className={clsx('bg-white dark:bg-gray-800 rounded-xl border transition-all', pct >= 90 ? 'border-red-200 dark:border-red-800/40' : 'border-gray-200 dark:border-gray-700')}>
       <div className="p-4">
         <div className="flex items-center gap-3 mb-3">
-          <div className="w-10 h-10 rounded-full flex items-center justify-center text-xl flex-shrink-0" style={{ backgroundColor: cat.color + '22' }}>
-            {cat.icon}
+          <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: cat.color + '22', color: cat.color }}>
+            <BudgetCategoryIcon id={cat.icon} size={20} />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2">
@@ -705,7 +706,9 @@ function MonthTab({
 
       {allocations.length === 0 && (
         <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-200 dark:border-gray-700">
-          <div className="text-3xl mb-2">🎯</div>
+          <div className="mb-2 flex justify-center text-ink-muted">
+            <IconTarget size={32} />
+          </div>
           <p className="text-sm text-gray-400 font-medium">Лимитов нет</p>
           <p className="text-xs text-gray-400 mt-1">Задайте лимит на категорию — напр., 10 000 ₽ на еду.</p>
           <Button size="sm" className="mt-3" onClick={onAddAlloc}>+ Создать лимит</Button>
@@ -739,8 +742,8 @@ function MonthTab({
           <div className="divide-y divide-gray-50 dark:divide-gray-700/50">
             {freeExpenses.map(tx => (
               <div key={tx.id} className="group/tx flex items-center gap-3 px-4 py-2.5">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm flex-shrink-0" style={{ backgroundColor: getCat(tx.category).color + '22' }}>
-                  {getCat(tx.category).icon}
+                <div className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: getCat(tx.category).color + '22', color: getCat(tx.category).color }}>
+                  <BudgetCategoryIcon id={getCat(tx.category).icon} size={14} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm text-gray-800 dark:text-gray-200 truncate">{tx.description || '—'}</div>
@@ -1010,8 +1013,8 @@ function HistoryTab({
         <div className="space-y-2">
           {items.map(tx => (
             <div key={`tx-${tx.id}`} className="group flex items-center gap-3 px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-lg" style={{ backgroundColor: getCat(tx.category).color + '22' }}>
-                {getCat(tx.category).icon}
+              <div className="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: getCat(tx.category).color + '22', color: getCat(tx.category).color }}>
+                <BudgetCategoryIcon id={getCat(tx.category).icon} size={18} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{tx.description || '—'}</div>
@@ -1054,7 +1057,7 @@ function HistoryTab({
 
 // ─── Year tab ─────────────────────────────────────────────────────────────────
 
-function YearTab({ allTransactions, viewYear, isDark }: { allTransactions: TransactionResponse[]; viewYear: number; isDark: boolean }) {
+function YearTab({ allTransactions, viewYear }: { allTransactions: TransactionResponse[]; viewYear: number }) {
   const months = useMemo(() => {
     return Array.from({ length: 12 }, (_, i) => {
       const m1 = i + 1
@@ -1082,12 +1085,7 @@ function YearTab({ allTransactions, viewYear, isDark }: { allTransactions: Trans
     return Array.from(map.values()).sort((a, b) => b.value - a.value)
   }, [allTransactions, viewYear])
 
-  const tooltipStyle = {
-    fontSize: 12, borderRadius: 8,
-    backgroundColor: isDark ? '#1E293B' : '#fff',
-    border: isDark ? '1px solid #334155' : '1px solid #E5E7EB',
-    boxShadow: 'none',
-  }
+  const tooltipStyle = { fontSize: 12 }
 
   return (
     <div className="space-y-4">
@@ -1110,29 +1108,33 @@ function YearTab({ allTransactions, viewYear, isDark }: { allTransactions: Trans
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Доходы и расходы по месяцам</h3>
-        <ResponsiveContainer width="100%" height={220}>
-          <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} barGap={2}>
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 9, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${fmt(v)} ₽`} />
-            <Bar dataKey="income"  fill="#10B981" radius={[4,4,0,0]} name="Доходы"  maxBarSize={24} />
-            <Bar dataKey="expense" fill="#EF4444" radius={[4,4,0,0]} name="Расходы" maxBarSize={24} />
-          </BarChart>
-        </ResponsiveContainer>
+        <div style={{ color: 'var(--color-muted)' }}>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }} barGap={2}>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'currentColor' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: 'currentColor' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${fmt(v)} ₽`} />
+              <Bar dataKey="income"  fill="#10B981" radius={[4,4,0,0]} name="Доходы"  maxBarSize={24} />
+              <Bar dataKey="expense" fill="#EF4444" radius={[4,4,0,0]} name="Расходы" maxBarSize={24} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Накопления по месяцам (доход − расход)</h3>
-        <ResponsiveContainer width="100%" height={160}>
-          <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-            <YAxis tick={{ fontSize: 9, fill: '#9CA3AF' }} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${fmt(v)} ₽`} />
-            <Bar dataKey="saved" name="Отложено" maxBarSize={28} radius={[4,4,0,0]}>
-              {months.map((m, i) => <Cell key={i} fill={m.saved >= 0 ? '#3B82F6' : '#F97316'} />)}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        <div style={{ color: 'var(--color-muted)' }}>
+          <ResponsiveContainer width="100%" height={160}>
+            <BarChart data={months} margin={{ top: 4, right: 4, bottom: 0, left: -16 }}>
+              <XAxis dataKey="label" tick={{ fontSize: 10, fill: 'currentColor' }} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 9, fill: 'currentColor' }} axisLine={false} tickLine={false} />
+              <Tooltip contentStyle={tooltipStyle} formatter={(v: number) => `${fmt(v)} ₽`} />
+              <Bar dataKey="saved" name="Отложено" maxBarSize={28} radius={[4,4,0,0]}>
+                {months.map((m, i) => <Cell key={i} fill={m.saved >= 0 ? '#3B82F6' : '#F97316'} />)}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1167,7 +1169,7 @@ function YearTab({ allTransactions, viewYear, isDark }: { allTransactions: Trans
                   {catData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} formatter={(v: number, name: string) => [`${fmt(v)} ₽`, name]} />
-                <Legend iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 11, color: isDark ? '#CBD5E1' : '#4B5563' }}>{value}</span>} />
+                <Legend iconType="circle" iconSize={8} formatter={(value) => <span style={{ fontSize: 11, color: 'var(--color-text-secondary)' }}>{value}</span>} />
               </PieChart>
             </ResponsiveContainer>
           </div>
@@ -1213,8 +1215,6 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 export default function BudgetPage() {
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
 
   const [tab, setTab]           = useState<Tab>('month')
   const [viewDate, setViewDate] = useState(new Date())
@@ -1347,7 +1347,7 @@ export default function BudgetPage() {
 
   const handleCheckPlanned = (item: PlannedPurchaseResponse) => {
     if (item.done) {
-      toast('Уже в расходах', { icon: 'ℹ️' })
+      toast('Уже в расходах')
       return
     }
     setConvertPlan(item)
@@ -1427,18 +1427,18 @@ export default function BudgetPage() {
         <button
           type="button"
           onClick={() => setRecurringOpen(true)}
-          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           title="Регулярные платежи"
         >
-          🔄 <span className="hidden sm:inline">Регулярные</span>
+          <IconRepeat size={14} /> <span className="hidden sm:inline">Регулярные</span>
         </button>
         <button
           type="button"
           onClick={() => setTagManagerOpen(true)}
-          className="flex-shrink-0 flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="flex-shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
           title="Теги"
         >
-          🏷️ <span className="hidden sm:inline">Теги</span>
+          <IconTag size={14} /> <span className="hidden sm:inline">Теги</span>
         </button>
       </div>
 
@@ -1478,7 +1478,7 @@ export default function BudgetPage() {
               onDeleteTx={id => setDeleteTarget({ kind: 'tx', id })}
             />
           )}
-          {tab === 'year' && <YearTab allTransactions={allTransactions} viewYear={year} isDark={isDark} />}
+          {tab === 'year' && <YearTab allTransactions={allTransactions} viewYear={year} />}
         </>
       )}
 

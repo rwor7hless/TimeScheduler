@@ -2,6 +2,13 @@ import clsx from 'clsx'
 import type { Task, Priority } from '@/types/task'
 import { WEEKDAY_LABELS } from '@/types/task'
 import TagBadgeGroup from './TagBadgeGroup'
+import {
+  IconArrowDown,
+  IconDash,
+  IconArrowUp,
+  IconZap,
+} from '@/components/ui/icons'
+import type { ComponentType } from 'react'
 
 interface TaskCardProps {
   task: Task
@@ -11,11 +18,14 @@ interface TaskCardProps {
   overlapping?: boolean
 }
 
-const PRIORITY_CONFIG: Record<Priority, { icon: string; className: string }> = {
-  low: { icon: '↓', className: 'text-gray-400' },
-  medium: { icon: '—', className: 'text-blue-400' },
-  high: { icon: '↑', className: 'text-orange-500' },
-  urgent: { icon: '⚡', className: 'text-red-500' },
+const PRIORITY_CONFIG: Record<
+  Priority,
+  { Icon: ComponentType<{ size?: number }>; className: string }
+> = {
+  low:    { Icon: IconArrowDown, className: 'text-gray-400' },
+  medium: { Icon: IconDash,      className: 'text-blue-400' },
+  high:   { Icon: IconArrowUp,   className: 'text-orange-500' },
+  urgent: { Icon: IconZap,       className: 'text-red-500' },
 }
 
 function getDeadlineStatus(deadline: string | null): 'overdue' | 'soon' | null {
@@ -93,8 +103,8 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
                 {task.title}
               </h4>
             </div>
-            <span className={clsx('flex-shrink-0 text-xs font-bold leading-none mt-0.5', overlapping ? 'text-white/90' : prio.className)} title={task.priority}>
-              {prio.icon}
+            <span className={clsx('flex-shrink-0 leading-none mt-0.5 inline-flex', overlapping ? 'text-white/90' : prio.className)} title={task.priority}>
+              <prio.Icon size={13} />
             </span>
           </div>
           {!compact && task.description && (

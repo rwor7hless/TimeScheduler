@@ -108,7 +108,7 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
 }
 
 export default function StatsPeriodView({ period }: { period: 'month' | 'year' }) {
-  const { theme } = useTheme()
+  const { colors } = useTheme()
   const { data: stats, isLoading, isError, refetch } = useStats(period)
 
   const chartData = useMemo(
@@ -167,46 +167,46 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Выполнения по дням</h3>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
-              <defs>
-                <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#D97706" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#D97706" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#334155' : '#F3F4F6'} vertical={false} />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 9, fill: '#9CA3AF' }}
-                axisLine={false}
-                tickLine={false}
-                interval={period === 'year' ? 29 : 4}
-              />
-              <YAxis tick={{ fontSize: 9, fill: '#9CA3AF' }} axisLine={false} tickLine={false} allowDecimals={false} />
-              <Tooltip
-                contentStyle={{
-                  fontSize: 12,
-                  borderRadius: 8,
-                  border: theme === 'dark' ? '1px solid #334155' : '1px solid #E5E7EB',
-                  backgroundColor: theme === 'dark' ? '#1E293B' : '#fff',
-                  color: theme === 'dark' ? '#F1F5F9' : '#111827',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-                }}
-                labelFormatter={(label) => `Дата: ${label}`}
-                formatter={(value: number) => [`${value} задач`, 'Выполнено']}
-              />
-              <Area
-                type="monotone"
-                dataKey="count"
-                stroke="#D97706"
-                strokeWidth={2}
-                fill="url(#colorCount)"
-                dot={{ r: 2.5, fill: '#D97706', strokeWidth: 0 }}
-                activeDot={{ r: 4, fill: '#D97706', stroke: '#fff', strokeWidth: 2 }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <div style={{ color: 'var(--color-muted)' }}>
+            <ResponsiveContainer width="100%" height={200}>
+              <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
+                <defs>
+                  <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={colors.accent} stopOpacity={0.3} />
+                    <stop offset="95%" stopColor={colors.accent} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis
+                  dataKey="label"
+                  tick={{ fontSize: 9, fill: 'currentColor' }}
+                  axisLine={false}
+                  tickLine={false}
+                  interval={period === 'year' ? 29 : 4}
+                />
+                <YAxis
+                  tick={{ fontSize: 9, fill: 'currentColor' }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  labelFormatter={(label) => `Дата: ${label}`}
+                  formatter={(value: number) => [`${value} задач`, 'Выполнено']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="count"
+                  stroke={colors.accent}
+                  strokeWidth={2}
+                  fill="url(#colorCount)"
+                  dot={{ r: 2.5, fill: colors.accent, strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: colors.accent, stroke: colors.surface, strokeWidth: 2 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">

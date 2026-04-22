@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
 import { EXPENSE_CATEGORIES, type ExpenseCategoryId } from '@/types/budget'
+import { BudgetCategoryIcon } from '@/components/ui/icons'
 import { parseBudgetInput, buildBudgetSegments } from '@/utils/parseBudget'
 import { friendlyDate } from '@/utils/parseTask'
 import { useBudgetTags } from '@/hooks/useBudget'
@@ -154,10 +155,11 @@ export default function QuickAddBar({ onSubmit, autoFocusOnMount }: Props) {
           )}
           {cat && parsed.type === 'expense' && (
             <span
-              className="px-1.5 py-0.5 rounded-full text-white text-[11px] font-medium"
+              className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-white text-[11px] font-medium"
               style={{ backgroundColor: cat.color }}
             >
-              {cat.icon} {cat.label}
+              <BudgetCategoryIcon id={cat.icon} size={12} />
+              {cat.label}
             </span>
           )}
           {parsed.date && (

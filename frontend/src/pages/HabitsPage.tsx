@@ -95,8 +95,7 @@ export default function HabitsPage() {
   const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null)
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null)
 
-  const { theme } = useTheme()
-  const isDark = theme === 'dark'
+  const { isDark } = useTheme()
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   const isCompleted = (habit: Habit, date: string) =>
@@ -357,9 +356,9 @@ export default function HabitsPage() {
                           style={{
                             backgroundColor:
                               day === null ? 'transparent'
-                              : day.future ? (isDark ? '#293548' : '#F3F4F6')
+                              : day.future ? 'var(--color-surface-muted)'
                               : day.completed ? selectedHabit.color
-                              : (isDark ? '#334155' : '#EBEBEB'),
+                              : 'var(--color-border)',
                             opacity: day?.future ? 0.5 : 1,
                           }}
                           title={day?.date}
@@ -376,32 +375,25 @@ export default function HabitsPage() {
 
               <div className="flex flex-col">
                 <p className="text-xs font-medium text-gray-500 mb-1 flex-shrink-0">Стрики — 30 дней</p>
-                <div className="h-[160px]">
+                <div className="h-[160px]" style={{ color: 'var(--color-muted)' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={buildStreakLineData()} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
                       <XAxis
                         dataKey="day"
-                        tick={{ fontSize: 9, fill: '#9CA3AF' }}
+                        tick={{ fontSize: 9, fill: 'currentColor' }}
                         axisLine={false}
                         tickLine={false}
                         interval={4}
                       />
                       <YAxis
-                        tick={{ fontSize: 9, fill: '#9CA3AF' }}
+                        tick={{ fontSize: 9, fill: 'currentColor' }}
                         axisLine={false}
                         tickLine={false}
                         allowDecimals={false}
                         minTickGap={10}
                       />
                       <Tooltip
-                        contentStyle={{
-                          fontSize: 11, borderRadius: 8,
-                          backgroundColor: isDark ? '#1E293B' : '#fff',
-                          border: isDark ? '1px solid #334155' : '1px solid #E5E7EB',
-                          boxShadow: 'none',
-                        }}
-                        itemStyle={{ color: isDark ? '#F1F5F9' : '#111827' }}
-                        labelStyle={{ color: isDark ? '#94A3B8' : '#6B7280' }}
+                        contentStyle={{ fontSize: 11 }}
                         formatter={(v: number, name: string) => [`${v} дн.`, name]}
                       />
                       {habits?.map(h => (
@@ -487,14 +479,7 @@ export default function HabitsPage() {
                             </Pie>
                             <Tooltip
                               formatter={(v: number, name: string) => [`${v} раз`, name]}
-                              contentStyle={{
-                                fontSize: 11, borderRadius: 8,
-                                backgroundColor: isDark ? '#1E293B' : '#fff',
-                                border: isDark ? '1px solid #334155' : '1px solid #E5E7EB',
-                                boxShadow: 'none',
-                              }}
-                              itemStyle={{ color: isDark ? '#F1F5F9' : '#111827' }}
-                              labelStyle={{ color: isDark ? '#94A3B8' : '#6B7280' }}
+                              contentStyle={{ fontSize: 11 }}
                             />
                           </PieChart>
                         </ResponsiveContainer>
@@ -508,7 +493,7 @@ export default function HabitsPage() {
                               className="w-[7px] h-[7px] rounded-full flex-shrink-0"
                               style={{ backgroundColor: isDark ? entry.neon : entry.color }}
                             />
-                            <span style={{ color: isDark ? '#CBD5E1' : '#4B5563', fontSize: 10 }}>{entry.label}</span>
+                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 10 }}>{entry.label}</span>
                           </div>
                         ))}
                       </div>
