@@ -199,15 +199,18 @@ function TodayTaskRow({
 function BacklogTaskRow({
   task,
   todayStr,
-  onDone,
+  onToggle,
+  onAddToMyDay,
   onClick,
 }: {
   task: Task
   todayStr: string
-  onDone: () => void
+  onToggle: () => void
+  onAddToMyDay?: () => void
   onClick: () => void
 }) {
-  const isOverdue = task.deadline != null && task.deadline.slice(0, 10) < todayStr
+  const done = task.status === 'done'
+  const isOverdue = !done && task.deadline != null && task.deadline.slice(0, 10) < todayStr
   const dateLabel = formatRelativeDate(
     task.scheduled_start ?? task.deadline,
     todayStr,
@@ -216,22 +219,32 @@ function BacklogTaskRow({
   return (
     <div
       className={clsx(
-        'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all',
-        isOverdue
+        'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group',
+        done
+          ? 'opacity-40 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700/50'
+          : isOverdue
           ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800/50 hover:border-red-300'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       )}
     >
       <button
         type="button"
-        onClick={onDone}
-        title="Отметить выполненной"
-        className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center border-2 border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 transition-all group"
+        onClick={onToggle}
+        title={done ? 'Снять отметку' : 'Отметить выполненной'}
+        className={clsx(
+          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border-2',
+          done
+            ? 'text-white border-transparent'
+            : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+        )}
+        style={done ? { backgroundColor: task.color } : undefined}
       >
         <svg
           width="9" height="9" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
-          className="opacity-0 group-hover:opacity-100 text-emerald-500 transition-opacity"
+          className={clsx(
+            done ? '' : 'opacity-0 group-hover:opacity-100 text-emerald-500 transition-opacity'
+          )}
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
@@ -241,14 +254,19 @@ function BacklogTaskRow({
         type="button"
         onClick={onClick}
         title={task.title}
-        className="flex-1 min-w-0 text-sm font-medium text-left text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400 transition-colors truncate"
+        className={clsx(
+          'flex-1 min-w-0 text-sm font-medium text-left transition-colors truncate',
+          done
+            ? 'line-through text-gray-400 dark:text-gray-500'
+            : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
+        )}
       >
         {truncateTitle(task.title)}
       </button>
-      {task.tags && task.tags.length > 0 && (
+      {!done && task.tags && task.tags.length > 0 && (
         <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
       )}
-      {!isOverdue && dateLabel && (
+      {!done && !isOverdue && dateLabel && (
         <span
           className={clsx(
             'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
@@ -264,6 +282,18 @@ function BacklogTaskRow({
         <span className="text-[10px] font-medium text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
           Просрочено
         </span>
+      )}
+      {!done && onAddToMyDay && (
+        <button
+          type="button"
+          onClick={onAddToMyDay}
+          title="Добавить в сегодня"
+          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-0 group-hover:opacity-100"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+        </button>
       )}
     </div>
   )
@@ -351,25 +381,10 @@ export default function TodayPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
-  const [showPicker, setShowPicker] = useState(false)
-  const [pickerSearch, setPickerSearch] = useState('')
   const [backlogOpen, setBacklogOpen] = useState(false)
   const [tomorrowOpen, setTomorrowOpen] = useState(false)
-  const pickerRef = useRef<HTMLDivElement>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!showPicker) return
-    function handleClick(e: MouseEvent) {
-      if (pickerRef.current && !pickerRef.current.contains(e.target as Node)) {
-        setShowPicker(false)
-        setPickerSearch('')
-      }
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [showPicker])
 
   // Auto-clear scheduled date on tasks whose scheduled day has already passed
   // — они уходят в бэклог вместо «висящих просроченных». Делаем это один раз
@@ -494,30 +509,10 @@ export default function TodayPage() {
     return allTasks.filter(
       (t) =>
         !t.is_archived &&
-        t.status !== 'done' &&
         !todayIds.has(t.id) &&
         !tomorrowIds.has(t.id)
     )
   }, [allTasks, todayUnified, tomorrowTasks])
-
-  // ── Picker (add from list) ────────────────────────────────────────────────
-  const allPickerTasks = useMemo(() => {
-    if (!allTasks) return []
-    return allTasks.filter((t) => !t.my_day && !t.is_archived && t.status !== 'done')
-  }, [allTasks])
-
-  const pickerTasks = useMemo(() => {
-    const q = pickerSearch.trim().toLowerCase()
-    return allPickerTasks
-      .filter((t) => !q || t.title.toLowerCase().includes(q))
-      .sort((a, b) => {
-        const ba = a.board_id == null ? '' : (boards?.find((board) => board.id === a.board_id)?.name ?? '')
-        const bb = b.board_id == null ? '' : (boards?.find((board) => board.id === b.board_id)?.name ?? '')
-        if (ba < bb) return -1
-        if (ba > bb) return 1
-        return a.title.localeCompare(b.title, 'ru')
-      })
-  }, [allPickerTasks, pickerSearch, boards])
 
   // ── Progress ──────────────────────────────────────────────────────────────
   const activeHabits = useMemo(() => habits?.filter((h) => h.is_active) ?? [], [habits])
@@ -537,14 +532,6 @@ export default function TodayPage() {
     }
   }
 
-  const handleMarkDone = async (task: Task) => {
-    try {
-      await patchTask.mutateAsync({ id: task.id, data: { status: 'done', my_day: true } })
-    } catch {
-      toast.error('Не удалось обновить задачу')
-    }
-  }
-
   const handleRemoveFromMyDay = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { my_day: false } })
@@ -556,8 +543,6 @@ export default function TodayPage() {
   const handleAddToMyDay = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { my_day: true } })
-      setShowPicker(false)
-      setPickerSearch('')
     } catch {
       toast.error('Не удалось обновить задачу')
     }
@@ -771,65 +756,6 @@ export default function TodayPage() {
             </div>
           )}
 
-          {/* Add from picker */}
-          {allPickerTasks.length > 0 && (
-            <div className="relative" ref={pickerRef}>
-              <button
-                type="button"
-                onClick={() => { setShowPicker((v) => !v); setPickerSearch('') }}
-                className="flex items-center gap-1.5 text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-                </svg>
-                Добавить из списка
-              </button>
-
-              {showPicker && (
-                <div className="absolute top-6 left-0 z-20 w-72 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden">
-                  <div className="p-2 border-b border-gray-100 dark:border-gray-700">
-                    <input
-                      type="text"
-                      autoFocus
-                      value={pickerSearch}
-                      onChange={(e) => setPickerSearch(e.target.value)}
-                      placeholder="Поиск..."
-                      className="w-full text-sm px-2.5 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none border border-transparent focus:border-amber-400 transition-colors"
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {pickerTasks.length === 0 ? (
-                      <p className="text-xs text-gray-400 dark:text-gray-500 p-3 text-center">Ничего не найдено</p>
-                    ) : (
-                      pickerTasks.map((task) => {
-                        const boardName =
-                          task.board_id == null
-                            ? null
-                            : (boards?.find((b) => b.id === task.board_id)?.name ?? `Проект ${task.board_id}`)
-                        return (
-                          <button
-                            key={task.id}
-                            type="button"
-                            onClick={() => handleAddToMyDay(task)}
-                            className="w-full flex items-center gap-2.5 px-3 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                          >
-                            <div className="w-1.5 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
-                            <span title={task.title} className="flex-1 min-w-0 text-sm text-gray-800 dark:text-gray-200 truncate">{truncateTitle(task.title)}</span>
-                            {boardName && (
-                              <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 truncate max-w-[60px]">
-                                {boardName}
-                              </span>
-                            )}
-                          </button>
-                        )
-                      })
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
           {/* Tomorrow — collapsed by default */}
           {tomorrowTasks.length > 0 && (
             <section className="pt-1">
@@ -858,7 +784,8 @@ export default function TodayPage() {
                       key={task.id}
                       task={task}
                       todayStr={todayStr}
-                      onDone={() => handleMarkDone(task)}
+                      onToggle={() => handleTaskToggle(task)}
+                      onAddToMyDay={() => handleAddToMyDay(task)}
                       onClick={() => openEdit(task)}
                     />
                   ))}
@@ -916,7 +843,8 @@ export default function TodayPage() {
                               key={task.id}
                               task={task}
                               todayStr={todayStr}
-                              onDone={() => handleMarkDone(task)}
+                              onToggle={() => handleTaskToggle(task)}
+                              onAddToMyDay={() => handleAddToMyDay(task)}
                               onClick={() => openEdit(task)}
                             />
                           ))}
