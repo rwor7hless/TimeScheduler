@@ -83,12 +83,16 @@ export function usePatchTask() {
       // Cancel outgoing refetches
       await qc.cancelQueries({ queryKey: ['tasks'] })
 
-      // Snapshot previous values
+      // Snapshot previous values — array caches only; single-task caches
+      // are kept out of the optimistic update.
       const previousQueries = qc.getQueriesData<Task[]>({ queryKey: ['tasks'] })
 
-      // Optimistically update all task queries
+      // Optimistically update list queries only. The `queryKey: ['tasks']`
+      // prefix also matches single-task caches (['tasks', userId, id]) whose
+      // data is a Task object, not a Task[] — mapping over it would throw
+      // and wipe the cache, making rows visually vanish on status change.
       qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) => {
-        if (!old) return old
+        if (!Array.isArray(old)) return old
         return old.map((task) => {
           if (task.id === id) {
             return { ...task, ...data } as Task
@@ -132,7 +136,7 @@ export function useDeleteTask() {
       const previousQueries = qc.getQueriesData<Task[]>({ queryKey: ['tasks'] })
 
       qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) => {
-        if (!old) return old
+        if (!Array.isArray(old)) return old
         return old
           .filter((task) => task.id !== id)
           .map((task) => ({
