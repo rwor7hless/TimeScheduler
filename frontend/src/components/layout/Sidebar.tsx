@@ -1,179 +1,364 @@
-import { NavLink } from 'react-router-dom'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import { useAuth } from '@/context/AuthContext'
+import { useTheme } from '@/context/ThemeContext'
 import { useUnreadReportsCount } from '@/hooks/useReports'
+import { searchApi, type SearchResult } from '@/api/search'
+import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 
-const TodayIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
-  </svg>
-)
+type Item = {
+  to: string
+  label: string
+  count?: number
+  showDot?: boolean
+  match?: (p: string) => boolean
+  icon: JSX.Element
+}
 
-const CalendarIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
-  </svg>
-)
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
+    </svg>
+  )
+}
+function CalIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" />
+    </svg>
+  )
+}
+function BoardsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="4" width="6" height="16" rx="2" />
+      <rect x="11" y="4" width="4" height="10" rx="2" />
+      <rect x="17" y="4" width="4" height="14" rx="2" />
+    </svg>
+  )
+}
+function HabitIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 12l4 4 12-12" />
+    </svg>
+  )
+}
+function StatsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
+    </svg>
+  )
+}
+function BudgetIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <rect x="3" y="6" width="18" height="13" rx="2" /><circle cx="16" cy="12" r="1.8" />
+    </svg>
+  )
+}
+function BellIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <path d="M7 3h10l4 4v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
+      <path d="M7 12h10M7 16h7M7 8h6" />
+    </svg>
+  )
+}
+function AdminIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
+    </svg>
+  )
+}
 
-const ProjectsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-  </svg>
-)
-
-const HabitsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-  </svg>
-)
-
-const StatsIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-  </svg>
-)
-
-
-const BellIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-  </svg>
-)
-
-const AdminIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-  </svg>
-)
-
-const BudgetIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/><line x1="6" y1="15" x2="10" y2="15"/>
-  </svg>
-)
-
-const LogoutIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
-  </svg>
-)
-
-const navItems = (isAdmin: boolean) => [
-  { to: '/today', label: 'Сегодня', Icon: TodayIcon },
-  { to: '/calendar/day', label: 'Календарь', Icon: CalendarIcon },
-  { to: '/projects', label: 'Проекты', Icon: ProjectsIcon },
-  { to: '/habits', label: 'Привычки', Icon: HabitsIcon },
-  { to: '/budget', label: 'Бюджет', Icon: BudgetIcon },
-  { to: '/stats', label: 'Статистика', Icon: StatsIcon },
-  { to: '/notifications', label: 'История', Icon: BellIcon },
-
-  ...(isAdmin ? [{ to: '/admin', label: 'Админ', Icon: AdminIcon }] : []),
-]
+const PRIO_COLOR: Record<string, string> = {
+  low: 'var(--ink-3)',
+  medium: 'var(--blue)',
+  high: 'var(--orange)',
+  urgent: 'var(--danger)',
+}
 
 interface SidebarProps {
   isOpen: boolean
   onClose: () => void
+  searchRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
   const { logout, isAdmin, user } = useAuth()
-  const unreadCount = useUnreadReportsCount()
+  const { theme, toggle } = useTheme()
+  const unread = useUnreadReportsCount()
+  const { pathname } = useLocation()
+  const navigate = useNavigate()
+
+  const [query, setQuery] = useState('')
+  const [results, setResults] = useState<SearchResult | null>(null)
+  const [showResults, setShowResults] = useState(false)
+  const internalRef = useRef<HTMLInputElement>(null)
+  const inputRef = (searchRef as React.RefObject<HTMLInputElement>) ?? internalRef
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const dropRef = useRef<HTMLDivElement>(null)
+
+  const runSearch = useCallback(async (q: string) => {
+    if (q.trim().length < 1) {
+      setResults(null)
+      setShowResults(false)
+      return
+    }
+    try {
+      const data = await searchApi.search(q.trim())
+      setResults(data)
+      setShowResults(true)
+    } catch {
+      setResults(null)
+    }
+  }, [])
+
+  function onSearchChange(v: string) {
+    setQuery(v)
+    clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => runSearch(v), 300)
+  }
+
+  function navigateToResult(type: string, id: number, boardId?: number | null) {
+    if (type === 'task') {
+      navigate(boardId ? `/project/${boardId}` : '/project')
+    } else if (type === 'habit') navigate('/habits')
+    else if (type === 'board') navigate(`/project/${id}`)
+    setQuery('')
+    setResults(null)
+    setShowResults(false)
+    onClose()
+  }
+
+  useEffect(() => {
+    function onClick(e: MouseEvent) {
+      if (
+        dropRef.current && !dropRef.current.contains(e.target as Node) &&
+        !inputRef.current?.contains(e.target as Node)
+      ) {
+        setShowResults(false)
+      }
+    }
+    document.addEventListener('mousedown', onClick)
+    return () => document.removeEventListener('mousedown', onClick)
+  }, [inputRef])
+
+  const planning: Item[] = [
+    { to: '/today', label: 'Сегодня', icon: <ClockIcon /> },
+    { to: '/calendar/day', label: 'Календарь', match: (p) => p.startsWith('/calendar'), icon: <CalIcon /> },
+    { to: '/projects', label: 'Проекты', match: (p) => p.startsWith('/projects') || p.startsWith('/project'), icon: <BoardsIcon /> },
+  ]
+  const tracking: Item[] = [
+    { to: '/habits', label: 'Привычки', icon: <HabitIcon /> },
+    { to: '/stats', label: 'Статистика', icon: <StatsIcon /> },
+    { to: '/budget', label: 'Бюджет', icon: <BudgetIcon /> },
+  ]
+  const history: Item[] = [
+    { to: '/notifications', label: 'История', count: unread > 0 ? unread : undefined, showDot: unread > 0, icon: <BellIcon /> },
+  ]
+  if (isAdmin) history.push({ to: '/admin', label: 'Админ', icon: <AdminIcon /> })
+
+  const hasResults = results && (results.tasks.length + results.habits.length + results.boards.length) > 0
+
+  function renderLink(item: Item) {
+    const isActive = item.match ? item.match(pathname) : pathname === item.to || pathname.startsWith(item.to + '/')
+    return (
+      <NavLink
+        key={item.to}
+        to={item.to}
+        onClick={onClose}
+        className={clsx('ts-side__link', isActive && 'active')}
+      >
+        {item.icon}
+        <span style={{ flex: 1 }}>{item.label}</span>
+        {typeof item.count === 'number' && <span className="ts-side__count">{item.count}</span>}
+        {item.showDot && typeof item.count !== 'number' && <span className="ts-side__dot" />}
+      </NavLink>
+    )
+  }
 
   return (
-    <>
-      {isOpen && (
-        <div
-          className="fixed inset-0 bg-black/20 z-40 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      <aside
-        className={clsx(
-          'fixed top-0 left-0 h-full w-56 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-700 z-50 transition-transform duration-200 lg:translate-x-0 lg:static lg:z-auto flex-shrink-0',
-          isOpen ? 'translate-x-0' : '-translate-x-full'
-        )}
-      >
-        <div className="flex flex-col h-full">
-          <div className="px-5 py-5 border-b border-gray-100 dark:border-gray-700">
-            <NavLink
-              to="/today"
-              className="group flex items-center gap-2.5 hover:opacity-85 transition-opacity"
-              aria-label="TimeScheduler"
-            >
-              {/* Монограмма TS — засечная лигатура в рамке */}
-              <span
-                className="relative flex items-center justify-center w-9 h-9 rounded-[10px] border border-amber-600/70 bg-amber-50/60 dark:bg-amber-900/15 dark:border-amber-500/50"
-                aria-hidden
-              >
-                <span
-                  className="font-display text-[17px] leading-none text-amber-700 dark:text-amber-400"
-                  style={{ fontVariationSettings: '"SOFT" 30, "opsz" 72', fontWeight: 500, letterSpacing: '-0.04em' }}
-                >
-                  Ts
-                </span>
-                <span className="absolute -bottom-[3px] left-1.5 right-1.5 h-px bg-amber-700/40 dark:bg-amber-400/40" />
-              </span>
-              <span className="flex flex-col leading-none">
-                <span
-                  className="font-display text-[15px] text-gray-900 dark:text-gray-100"
-                  style={{ fontVariationSettings: '"SOFT" 40, "opsz" 48', fontWeight: 500 }}
-                >
-                  Timescheduler
-                </span>
-                <span className="text-[9px] uppercase tracking-[0.22em] text-gray-400 dark:text-gray-500 mt-1">
-                  journal · planner
-                </span>
-              </span>
-            </NavLink>
-            {user && (
-              <div className="flex items-center gap-2 mt-4">
-                <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center text-xs font-bold text-amber-700 dark:text-amber-400 font-display">
-                  {user.username.charAt(0).toUpperCase()}
-                </div>
-                <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{user.username}</span>
-              </div>
-            )}
-          </div>
-
-          <nav className="flex-1 px-2 py-3 space-y-0.5">
-            {navItems(isAdmin).map(({ to, label, Icon }) => (
-              <NavLink
-                key={to}
-                to={to}
-                onClick={onClose}
-                className={({ isActive }) =>
-                  clsx(
-                    'flex items-center gap-2.5 px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium transition-colors touch-manipulation',
-                    isActive
-                      ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                      : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'
-                  )
-                }
-              >
-                <span className="relative">
-                  <Icon />
-                  {to === '/notifications' && unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-500" />
-                  )}
-                </span>
-                {label}
-              </NavLink>
-            ))}
-          </nav>
-
-          <div className="px-2 py-3 border-t border-gray-100 dark:border-gray-700">
-            <button
-              type="button"
-              onClick={logout}
-              className="flex items-center gap-2.5 w-full px-3 py-3 min-h-[44px] rounded-lg text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100 transition-colors touch-manipulation"
-            >
-              <LogoutIcon />
-              Выход
-            </button>
-          </div>
+    <aside className={clsx('ts-side glass', isOpen && 'is-open')}>
+      {/* User */}
+      <div className="ts-side__user">
+        <div className="ts-side__avatar">
+          <div>{user?.username?.charAt(0).toUpperCase() ?? 'U'}</div>
         </div>
-      </aside>
-    </>
+        <div style={{ minWidth: 0 }}>
+          <div className="ts-side__name">
+            {user?.username ?? 'User'}
+          </div>
+          <div className="ts-side__mail">rwor7hless@gmail.com</div>
+        </div>
+      </div>
+
+      <div>
+        <div className="ts-side__group-title">Планирование</div>
+        <nav className="ts-side__nav">{planning.map(renderLink)}</nav>
+      </div>
+
+      <div>
+        <div className="ts-side__group-title">Трекинг</div>
+        <nav className="ts-side__nav">{tracking.map(renderLink)}</nav>
+      </div>
+
+      <div>
+        <div className="ts-side__group-title">Архив</div>
+        <nav className="ts-side__nav">{history.map(renderLink)}</nav>
+      </div>
+
+      {/* Bottom: search + theme + logout */}
+      <div className="ts-side__bottom">
+        <div style={{ position: 'relative' }}>
+          <div className="ts-side__group-title">Поиск</div>
+          <div className="ts-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="7" /><path d="m20 20-3-3" />
+            </svg>
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => onSearchChange(e.target.value)}
+              onFocus={() => results && setShowResults(true)}
+              placeholder="Задачи, привычки, доски"
+            />
+          </div>
+
+          {showResults && (
+            <div
+              ref={dropRef}
+              className="glass-strong"
+              style={{
+                position: 'absolute',
+                bottom: 'calc(100% + 8px)',
+                left: 0,
+                right: 0,
+                maxHeight: 320,
+                overflowY: 'auto',
+                zIndex: 60,
+                padding: 8,
+                borderRadius: 14,
+              }}
+            >
+              {hasResults ? (
+                <>
+                  {results!.tasks.length > 0 && (
+                    <div>
+                      <div className="ts-side__group-title">Задачи</div>
+                      {results!.tasks.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => navigateToResult('task', t.id, t.board_id)}
+                          className="ts-side__link"
+                          style={{ padding: '7px 10px' }}
+                        >
+                          <span
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              background: t.color,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t.title}
+                          </span>
+                          {t.tags && t.tags.length > 0 && <TagBadgeGroup tags={t.tags} />}
+                          <span style={{ fontSize: 10, color: PRIO_COLOR[t.priority] ?? 'var(--ink-3)', fontWeight: 600 }}>
+                            {t.priority}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {results!.habits.length > 0 && (
+                    <div style={{ borderTop: '1px solid var(--line)', marginTop: 6, paddingTop: 6 }}>
+                      <div className="ts-side__group-title">Привычки</div>
+                      {results!.habits.map((h) => (
+                        <button
+                          key={h.id}
+                          type="button"
+                          onClick={() => navigateToResult('habit', h.id)}
+                          className="ts-side__link"
+                          style={{ padding: '7px 10px' }}
+                        >
+                          <span style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
+                          <span style={{ flex: 1 }}>{h.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {results!.boards.length > 0 && (
+                    <div style={{ borderTop: '1px solid var(--line)', marginTop: 6, paddingTop: 6 }}>
+                      <div className="ts-side__group-title">Доски</div>
+                      {results!.boards.map((b) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => navigateToResult('board', b.id)}
+                          className="ts-side__link"
+                          style={{ padding: '7px 10px' }}
+                        >
+                          <BoardsIcon />
+                          <span style={{ flex: 1 }}>{b.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--ink-3)' }}>
+                  Ничего не найдено
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={toggle}
+            className="icon-btn"
+            title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+            aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}
+          >
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <circle cx="12" cy="12" r="4.5" />
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+              </svg>
+            ) : (
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+              </svg>
+            )}
+          </button>
+          <button
+            type="button"
+            onClick={logout}
+            className="icon-btn"
+            title="Выйти"
+            aria-label="Выйти"
+            style={{ marginLeft: 'auto' }}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+              <polyline points="16 17 21 12 16 7" />
+              <line x1="21" y1="12" x2="9" y2="12" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </aside>
   )
 }

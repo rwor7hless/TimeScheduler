@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
-import Header from './Header'
+import Rail from './Rail'
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -10,40 +10,58 @@ export default function AppShell() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      // Ignore when typing in an input/textarea/select
       const tag = (e.target as HTMLElement).tagName
       if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       if ((e.target as HTMLElement).isContentEditable) return
 
       if (e.key === '/' && !e.ctrlKey && !e.metaKey) {
         e.preventDefault()
-        if (searchInputRef.current) {
-          searchInputRef.current.focus()
-        }
+        searchInputRef.current?.focus()
       }
-
       if (e.key === 'n' && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
         e.preventDefault()
         navigate('/calendar/day?new=1')
       }
     }
-
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
   }, [navigate])
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header
-          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
-          searchRef={searchInputRef}
+    <div className="ts-shell">
+      {/* Mobile burger (only below 1024px) */}
+      <button
+        type="button"
+        aria-label="Меню"
+        onClick={() => setSidebarOpen(true)}
+        className="ts-shell__burger icon-btn lg:hidden"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </button>
+
+      {/* Mobile backdrop */}
+      {sidebarOpen && (
+        <div
+          className="ts-shell__backdrop lg:hidden"
+          onClick={() => setSidebarOpen(false)}
         />
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+      )}
+
+      <Rail />
+
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        searchRef={searchInputRef}
+      />
+
+      <main className="ts-shell__main glass">
+        <div className="ts-shell__content">
           <Outlet />
-        </main>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

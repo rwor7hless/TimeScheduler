@@ -44,7 +44,10 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
               >
                 <div className="flex-1 min-h-0 px-5 sm:px-6 py-5 overflow-y-auto overflow-x-hidden">
                   {title && (
-                    <Dialog.Title className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-4 shrink-0">
+                    <Dialog.Title
+                      className="text-base font-semibold mb-4 shrink-0"
+                      style={{ color: 'var(--ink)' }}
+                    >
                       {title}
                     </Dialog.Title>
                   )}
