@@ -624,7 +624,12 @@ export default function TodayPage() {
 
       {/* ── Pet (mobile) ────────────────────────────────────────────────────── */}
       <div className="lg:hidden">
-        <AsciiPet tip={tip} isLoading={tipLoading} />
+        <AsciiPet
+          short={tip?.short ?? null}
+          long={tip?.long ?? null}
+          persona={tip?.persona ?? null}
+          isLoading={tipLoading}
+        />
       </div>
 
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
@@ -859,7 +864,12 @@ export default function TodayPage() {
         {/* Right — pet + habits */}
         <div className="space-y-5">
           <div className="hidden lg:block">
-            <AsciiPet tip={tip} isLoading={tipLoading} />
+            <AsciiPet
+          short={tip?.short ?? null}
+          long={tip?.long ?? null}
+          persona={tip?.persona ?? null}
+          isLoading={tipLoading}
+        />
           </div>
 
           <div>
