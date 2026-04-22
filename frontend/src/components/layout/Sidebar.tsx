@@ -195,7 +195,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
           <div className="ts-side__name">
             {user?.username ?? 'User'}
           </div>
-          <div className="ts-side__mail">rwor7hless@gmail.com</div>
         </div>
       </div>
 
