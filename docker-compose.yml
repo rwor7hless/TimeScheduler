@@ -7,7 +7,6 @@ services:
       POSTGRES_PASSWORD: ts_secure_pass_2026
     ports:
       - "5433:5432"   # host-side access for local Node dev; inside the compose network db:5432 still works.
-                      # Obsoletes the dev-only ts-pg-proxy socat workaround from Phase 1.
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -16,21 +15,6 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
-    build:
-      context: ./backend
-      network: host
-    env_file: .env
-    environment:
-      DATABASE_URL: postgresql+asyncpg://ts_user:ts_secure_pass_2026@db:5432/timescheduler
-    ports:
-      - "8000:8000"
-    depends_on:
-      db:
-        condition: service_healthy
-    volumes:
-      - ./backups:/app/backups
-
   backend-node:
     build:
       context: ./backend-node
@@ -38,11 +22,6 @@ services:
       network: host
     env_file: .env
     environment:
-      # Inside the compose network pg is on 'db:5432'. Prisma needs
-      # postgresql:// (not the +asyncpg dialect Python uses), so we
-      # override DATABASE_URL_PRISMA here — keeping DATABASE_URL unchanged
-      # for the Python container which still runs on port 8000 during
-      # A/B.
       DATABASE_URL_PRISMA: postgresql://ts_user:ts_secure_pass_2026@db:5432/timescheduler
       PORT: 4000
     ports:
@@ -64,8 +43,5 @@ services:
 
 volumes:
   pgdata:
-    # Reuse the `timescheduler_pgdata` volume the original Python backend
-    # wrote into, regardless of the compose project name (worktree dir name
-    # would otherwise create a fresh, empty volume per checkout).
     name: timescheduler_pgdata
     external: true
