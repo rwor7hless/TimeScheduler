@@ -242,7 +242,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
                 right: 0,
                 maxHeight: 320,
                 overflowY: 'auto',
-                zIndex: 60,
+                zIndex: 46,
                 padding: 8,
                 borderRadius: 14,
               }}

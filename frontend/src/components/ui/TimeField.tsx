@@ -151,7 +151,7 @@ export default function TimeField({
         <div
           ref={popoverRef}
           className={clsx(
-            'fixed z-[100] flex rounded-xl shadow-xl overflow-hidden',
+            'fixed z-[60] flex rounded-xl shadow-xl overflow-hidden',
             'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
           )}
           style={{ top: pos.top, left: pos.left, width: POPOVER_WIDTH }}

@@ -1412,13 +1412,13 @@ export default function BudgetPage() {
 
       {/* Tabs + Recurring button */}
       <div className="flex gap-2 items-center">
-        <div className="flex flex-1 gap-0.5 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+        <div className="ts-tabs flex-1" style={{ margin: 0 }}>
           {TABS.map(t => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={clsx('flex-1 px-3 py-1.5 text-sm rounded-md transition-colors font-medium', tab === t.id ? 'bg-white dark:bg-gray-700 shadow-sm text-gray-900 dark:text-gray-100' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300')}
+              className={clsx(tab === t.id && 'active')}
             >
               {t.label}
             </button>

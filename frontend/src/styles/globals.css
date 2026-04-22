@@ -274,7 +274,7 @@ html.dark body {
     left: 12px;
     bottom: 12px;
     width: 288px;
-    z-index: 50;
+    z-index: 45;
     transform: translateX(calc(-100% - 24px));
     transition: transform 0.25s ease;
   }

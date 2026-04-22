@@ -1,7 +1,6 @@
 import { useCallback, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import clsx from 'clsx'
-import { motion } from 'framer-motion'
 import StatsPeriodView from '@/components/stats/StatsPeriodView'
 import StatsWeekView from '@/components/stats/StatsWeekView'
 import { mondayOfTodayISO } from '@/hooks/useWeekStats'
@@ -50,27 +49,16 @@ export default function StatsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Статистика</h2>
-        <div className="relative flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+      <div className="topbar">
+        <h1 className="page-title">Статистика</h1>
+        <div className="ts-tabs" style={{ margin: 0, border: 0 }}>
           {TABS.map(({ id, label }) => (
             <button
               key={id}
+              type="button"
               onClick={() => setTab(id)}
-              className={clsx(
-                'relative px-3 py-1.5 text-sm rounded-md transition-colors z-10',
-                tab === id
-                  ? 'font-medium text-gray-900 dark:text-gray-100'
-                  : 'text-gray-600 dark:text-gray-300',
-              )}
+              className={clsx(tab === id && 'active')}
             >
-              {tab === id && (
-                <motion.span
-                  layoutId="stats-tab-indicator"
-                  className="absolute inset-0 bg-white dark:bg-gray-700 shadow-sm rounded-md -z-10"
-                  transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                />
-              )}
               {label}
             </button>
           ))}
