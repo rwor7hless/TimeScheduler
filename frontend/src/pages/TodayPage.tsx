@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { format, isSameDay, parseISO } from 'date-fns'
+import { addDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask, useCreateTask, useBoards } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
@@ -334,7 +334,10 @@ function buildSegments(text: string, spans: TokenSpan[]) {
 export default function TodayPage() {
   const today = useMemo(() => new Date(), [])
   const todayStr = format(today, 'yyyy-MM-dd')
+  const tomorrow = useMemo(() => addDays(today, 1), [today])
+  const tomorrowStr = format(tomorrow, 'yyyy-MM-dd')
   const wd = weekdayIndex(today)
+  const wdTomorrow = weekdayIndex(tomorrow)
 
   const { data: allTasks, isLoading: tasksLoading } = useTasks()
   const { data: boards } = useBoards()
@@ -351,6 +354,7 @@ export default function TodayPage() {
   const [showPicker, setShowPicker] = useState(false)
   const [pickerSearch, setPickerSearch] = useState('')
   const [backlogOpen, setBacklogOpen] = useState(false)
+  const [tomorrowOpen, setTomorrowOpen] = useState(false)
   const pickerRef = useRef<HTMLDivElement>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
@@ -443,8 +447,7 @@ export default function TodayPage() {
         (t) =>
           !t.is_archived &&
           !seen.has(t.id) &&
-          t.deadline?.slice(0, 10) === todayStr &&
-          t.status !== 'done'
+          t.deadline?.slice(0, 10) === todayStr
       )
       .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'deadline' }) })
 
@@ -456,17 +459,46 @@ export default function TodayPage() {
     return result
   }, [allTasks, today, todayStr, wd])
 
+  // ── Tomorrow ──────────────────────────────────────────────────────────────
+  const tomorrowTasks = useMemo(() => {
+    if (!allTasks) return []
+    const todayIds = new Set(todayUnified.map((e) => e.task.id))
+    const matches = (t: Task) => {
+      if (t.is_archived || t.status === 'done') return false
+      if (todayIds.has(t.id)) return false
+      if (t.scheduled_start) {
+        if (t.repeat_days?.length) {
+          if (t.repeat_days.includes(wdTomorrow)) return true
+        } else if (isSameDay(parseISO(t.scheduled_start), tomorrow)) {
+          return true
+        }
+      }
+      if (t.deadline?.slice(0, 10) === tomorrowStr) return true
+      return false
+    }
+    return allTasks
+      .filter(matches)
+      .sort((a, b) => {
+        const aT = a.scheduled_start ? new Date(a.scheduled_start).getTime() : Infinity
+        const bT = b.scheduled_start ? new Date(b.scheduled_start).getTime() : Infinity
+        if (aT !== bT) return aT - bT
+        return a.title.localeCompare(b.title, 'ru')
+      })
+  }, [allTasks, todayUnified, tomorrow, tomorrowStr, wdTomorrow])
+
   // ── Backlog ───────────────────────────────────────────────────────────────
   const backlogTasks = useMemo(() => {
     if (!allTasks) return []
     const todayIds = new Set(todayUnified.map((e) => e.task.id))
+    const tomorrowIds = new Set(tomorrowTasks.map((t) => t.id))
     return allTasks.filter(
       (t) =>
         !t.is_archived &&
         t.status !== 'done' &&
-        !todayIds.has(t.id)
+        !todayIds.has(t.id) &&
+        !tomorrowIds.has(t.id)
     )
-  }, [allTasks, todayUnified])
+  }, [allTasks, todayUnified, tomorrowTasks])
 
   // ── Picker (add from list) ────────────────────────────────────────────────
   const allPickerTasks = useMemo(() => {
@@ -507,7 +539,7 @@ export default function TodayPage() {
 
   const handleMarkDone = async (task: Task) => {
     try {
-      await patchTask.mutateAsync({ id: task.id, data: { status: 'done' } })
+      await patchTask.mutateAsync({ id: task.id, data: { status: 'done', my_day: true } })
     } catch {
       toast.error('Не удалось обновить задачу')
     }
@@ -796,6 +828,43 @@ export default function TodayPage() {
                 </div>
               )}
             </div>
+          )}
+
+          {/* Tomorrow — collapsed by default */}
+          {tomorrowTasks.length > 0 && (
+            <section className="pt-1">
+              <button
+                type="button"
+                onClick={() => setTomorrowOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+              >
+                <svg
+                  width="10" height="10" viewBox="0 0 24 24" fill="none"
+                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                  className={clsx('transition-transform', tomorrowOpen ? 'rotate-90' : '')}
+                >
+                  <polyline points="9 18 15 12 9 6" />
+                </svg>
+                Завтра
+                <span className="ml-0.5 text-[10px] font-normal normal-case tracking-normal">
+                  ({tomorrowTasks.length})
+                </span>
+              </button>
+
+              {tomorrowOpen && (
+                <div className="mt-2 space-y-1.5">
+                  {tomorrowTasks.map((task) => (
+                    <BacklogTaskRow
+                      key={task.id}
+                      task={task}
+                      todayStr={todayStr}
+                      onDone={() => handleMarkDone(task)}
+                      onClick={() => openEdit(task)}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
           )}
 
           {/* Backlog — collapsed by default */}
