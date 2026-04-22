@@ -1024,16 +1024,16 @@ select:focus {
    untouched components automatically adopt the new look.
    ============================================================================ */
 
-/* Surfaces */
+/* Surfaces — backdrop-filter НЕ ставим на каждом .bg-*, иначе стек из сотен
+   таких элементов (строки задач, карточки) даёт visual banding. Блюрят только
+   корневые .glass/.glass-card/.glass-soft/.glass-strong. */
 .bg-white,
 .dark .bg-white,
 .bg-gray-50,
 .dark .bg-gray-50,
 .bg-gray-100,
 .dark .bg-gray-100 {
-  background-color: var(--glass) !important;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  background-color: var(--glass-2) !important;
 }
 .bg-gray-900,
 .dark .bg-gray-900,
@@ -1041,11 +1041,9 @@ select:focus {
 .dark .bg-gray-800,
 .bg-gray-950,
 .dark .bg-gray-950 {
-  background-color: var(--glass) !important;
-  backdrop-filter: blur(14px) saturate(140%);
-  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  background-color: var(--glass-2) !important;
 }
-.bg-gray-200, .dark .bg-gray-200 { background-color: var(--glass-2) !important; }
+.bg-gray-200, .dark .bg-gray-200 { background-color: var(--glass-3) !important; }
 
 /* Text */
 .text-gray-900, .dark .text-gray-900,
