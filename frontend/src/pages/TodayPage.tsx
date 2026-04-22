@@ -94,14 +94,9 @@ function TodayTaskRow({
       className={clsx(
         'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group',
         done
-          ? 'opacity-40 border-gray-100 dark:border-gray-700/50'
+          ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
       )}
-      style={
-        done
-          ? { backgroundColor: `${task.color}08`, borderColor: `${task.color}30` }
-          : undefined
-      }
     >
       {/* Checkbox */}
       <button
@@ -126,11 +121,21 @@ function TodayTaskRow({
       </button>
 
       {/* Color accent */}
-      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+      <div
+        className={clsx('w-1 h-4 rounded-full flex-shrink-0', done && 'opacity-50')}
+        style={{ backgroundColor: task.color }}
+      />
 
       {/* Time badge (scheduled) */}
       {timeLabel && (
-        <span className="text-[11px] font-mono text-gray-400 dark:text-gray-500 flex-shrink-0 w-10 select-none">
+        <span
+          className={clsx(
+            'text-[11px] font-mono flex-shrink-0 w-10 select-none',
+            done
+              ? 'text-gray-400 dark:text-gray-600 line-through'
+              : 'text-gray-400 dark:text-gray-500',
+          )}
+        >
           {timeLabel}
         </span>
       )}
@@ -143,7 +148,7 @@ function TodayTaskRow({
         className={clsx(
           'flex-1 min-w-0 text-sm font-medium text-left truncate transition-colors',
           done
-            ? 'line-through text-gray-400 dark:text-gray-500'
+            ? 'line-through text-gray-500 dark:text-gray-400'
             : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
         )}
       >
@@ -221,7 +226,7 @@ function BacklogTaskRow({
       className={clsx(
         'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group',
         done
-          ? 'opacity-40 bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700/50'
+          ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
           : isOverdue
           ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800/50 hover:border-red-300'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
@@ -249,7 +254,10 @@ function BacklogTaskRow({
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </button>
-      <div className="w-1 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+      <div
+        className={clsx('w-1 h-4 rounded-full flex-shrink-0', done && 'opacity-50')}
+        style={{ backgroundColor: task.color }}
+      />
       <button
         type="button"
         onClick={onClick}
@@ -257,7 +265,7 @@ function BacklogTaskRow({
         className={clsx(
           'flex-1 min-w-0 text-sm font-medium text-left transition-colors truncate',
           done
-            ? 'line-through text-gray-400 dark:text-gray-500'
+            ? 'line-through text-gray-500 dark:text-gray-400'
             : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
         )}
       >
