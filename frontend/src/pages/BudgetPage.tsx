@@ -1412,7 +1412,7 @@ export default function BudgetPage() {
 
       {/* Tabs + Recurring button */}
       <div className="flex gap-2 items-center">
-        <div className="ts-tabs flex-1" style={{ margin: 0 }}>
+        <div className="ts-subtabs">
           {TABS.map(t => (
             <button
               key={t.id}
@@ -1424,6 +1424,7 @@ export default function BudgetPage() {
             </button>
           ))}
         </div>
+        <div className="flex-1" />
         <button
           type="button"
           onClick={() => setRecurringOpen(true)}

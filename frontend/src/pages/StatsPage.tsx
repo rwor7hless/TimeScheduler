@@ -51,7 +51,7 @@ export default function StatsPage() {
     <div className="space-y-6">
       <div className="topbar">
         <h1 className="page-title">Статистика</h1>
-        <div className="ts-tabs" style={{ margin: 0, border: 0 }}>
+        <div className="ts-subtabs">
           {TABS.map(({ id, label }) => (
             <button
               key={id}

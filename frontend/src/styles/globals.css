@@ -636,6 +636,45 @@ html.dark body {
   color: var(--ink);
 }
 
+/* Pill-style subtabs (image.png reference — «Workflows / Permissions»).
+   Active tab sits inside a soft light capsule with inner highlight +
+   drop shadow; inactive are muted text-only. */
+.ts-subtabs {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.ts-subtabs a,
+.ts-subtabs button {
+  font-family: inherit;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 6px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  text-decoration: none;
+}
+.ts-subtabs a:hover,
+.ts-subtabs button:hover { color: var(--ink-2); }
+.ts-subtabs a.active,
+.ts-subtabs button.active,
+.ts-subtabs a[aria-current="true"] {
+  color: var(--ink);
+  background: var(--glass-3);
+  border-color: var(--line-strong);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06), 0 4px 10px -6px rgba(0,0,0,0.15);
+}
+
 .ts-tabs {
   display: flex;
   gap: 22px;
