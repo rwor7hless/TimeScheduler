@@ -195,9 +195,10 @@ html.dark body {
     display: block !important;
     height: auto !important;
     min-height: 0 !important;
-    /* Reserve vertical space for the fixed burger button (≈40px + 14px top
-       + breathing room) so page content never slides under it. */
-    padding-top: 44px !important;
+    /* burger теперь в левом-нижнем углу — резервируем снизу, чтобы
+       контент не заезжал под него. Страницы с FAB (бюджет) имеют
+       собственный pb-24, так что этот отступ с ними суммируется безопасно. */
+    padding-bottom: 60px !important;
   }
 }
 @media (max-width: 640px) {
@@ -215,9 +216,11 @@ html.dark body {
 
 .ts-shell__burger {
   position: fixed;
-  top: 14px;
-  right: 14px;
+  bottom: 16px;
+  left: 16px;
   z-index: 45;
+  /* чуть заметнее на мобильном, чтобы не терялась среди контента */
+  box-shadow: 0 6px 16px -6px rgba(0,0,0,0.35);
 }
 
 /* Rail */
