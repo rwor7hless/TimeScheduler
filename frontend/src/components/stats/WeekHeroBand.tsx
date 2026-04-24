@@ -112,16 +112,7 @@ export function WeekHeroBand({ stats }: Props) {
   const productivity = stats.productivity_percent
 
   return (
-    <section className="relative overflow-hidden rounded-xl border border-amber-200/50 dark:border-gray-700 bg-gradient-to-br from-amber-50 via-white to-violet-50 dark:bg-none dark:bg-gray-800 px-5 sm:px-6 py-5 sm:py-6">
-      {/* Light-mode only: faint soft-white in the bottom corner to soften the
-          amber→violet sweep. In dark we go completely flat (like every other
-          card in the app) so the hero stops feeling like a foreign object. */}
-      <div className="absolute inset-0 bg-gradient-to-br from-white/0 via-white/0 to-white/40 dark:opacity-0 pointer-events-none" />
-      {/* Sole brand marker in dark mode: a thin amber line along the top edge.
-          Same card surface as everything else, just a subtle top accent that
-          says "this is the hero" without changing the colour language. */}
-      <div className="absolute top-0 left-0 right-0 h-px opacity-0 dark:opacity-100 bg-gradient-to-r from-transparent via-amber-500/70 to-transparent pointer-events-none" />
-
+    <section className="relative overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 sm:px-6 py-5 sm:py-6">
       <div className="relative">
         <div className="text-[11px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-3 text-center">
           Ваша неделя в 3 цифрах
@@ -159,7 +150,7 @@ export function WeekHeroBand({ stats }: Props) {
           />
         </div>
 
-        <div className="mt-5 pt-4 border-t border-amber-200/40 dark:border-gray-700 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-400 justify-center text-center">
+        <div className="mt-5 pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-x-6 gap-y-1 text-xs text-gray-600 dark:text-gray-400 justify-center text-center">
           {best && (
             <span>
               Лучший день:{' '}

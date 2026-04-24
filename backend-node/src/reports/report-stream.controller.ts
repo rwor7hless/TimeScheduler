@@ -97,6 +97,12 @@ export class ReportStreamController {
     });
 
     const accumulated: string[] = [];
+    // Модель сначала пишет <scratch>...</scratch> (CoT), потом отчёт. Пока
+    // мы не увидели закрывающий тег, копим чанки в scratchBuffer и не шлём
+    // ничего клиенту. После </scratch> — возобновляем стрим с остатка.
+    let scratchOpen = false;
+    let scratchClosed = false;
+    let scratchBuffer = '';
     try {
       const data = await this.weeklyData.buildWeeklyData(user.id, report.week_start);
       const messages = buildWeeklyPrompt(data, {
@@ -106,14 +112,53 @@ export class ReportStreamController {
       for await (const chunk of this.llm.streamChatCompletion(messages, { maxTokens: 4096 })) {
         if (disconnected) break;
         accumulated.push(chunk);
-        res.write(`data: ${JSON.stringify({ t: chunk })}\n\n`);
+
+        if (scratchClosed) {
+          res.write(`data: ${JSON.stringify({ t: chunk })}\n\n`);
+          continue;
+        }
+
+        scratchBuffer += chunk;
+
+        if (!scratchOpen) {
+          // Ждём первые непустые символы. Если модель начала не со scratch,
+          // просто сливаем всё накопленное и продолжаем без буферизации.
+          const trimmed = scratchBuffer.trimStart();
+          if (trimmed.length === 0) continue;
+          if (trimmed.startsWith('<scratch>')) {
+            scratchOpen = true;
+          } else {
+            // Нет CoT — сливаем буфер в стрим разом.
+            scratchClosed = true;
+            res.write(`data: ${JSON.stringify({ t: scratchBuffer })}\n\n`);
+            scratchBuffer = '';
+            continue;
+          }
+        }
+
+        // В режиме scratchOpen ждём закрывающий тег.
+        const closeIdx = scratchBuffer.indexOf('</scratch>');
+        if (closeIdx !== -1) {
+          scratchClosed = true;
+          // Всё до и включая </scratch> (+ сразу идущие переводы строк) — режем.
+          const afterTag = scratchBuffer
+            .slice(closeIdx + '</scratch>'.length)
+            .replace(/^[\r\n]+/, '');
+          scratchBuffer = '';
+          if (afterTag.length > 0) {
+            res.write(`data: ${JSON.stringify({ t: afterTag })}\n\n`);
+          }
+        }
       }
 
       if (disconnected) {
         return;
       }
 
-      const full = accumulated.join('').replace(/^\n+/, '');
+      const full = accumulated
+        .join('')
+        .replace(/<scratch>[\s\S]*?<\/scratch>\s*/i, '')
+        .replace(/^\n+/, '');
       if (!full) {
         throw new Error('LLM вернул пустой ответ.');
       }

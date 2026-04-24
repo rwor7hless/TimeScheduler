@@ -63,12 +63,12 @@ const sampleData: WeeklyDataInput = {
 };
 
 describe('weekly-report prompt', () => {
-  it('has 18 banned phrases', () => {
-    expect(BANNED_PHRASES).toHaveLength(18);
+  it('has 36 banned phrases', () => {
+    expect(BANNED_PHRASES).toHaveLength(36);
   });
 
-  it('has 10 angle seeds', () => {
-    expect(ANGLE_SEEDS).toHaveLength(10);
+  it('has 8 angle seeds', () => {
+    expect(ANGLE_SEEDS).toHaveLength(8);
   });
 
   it('DEFAULT_BUCKET is the untitled-project label', () => {
@@ -82,9 +82,9 @@ describe('weekly-report prompt', () => {
   });
 
   it('formatTone branches on overall rate', () => {
-    expect(formatTone(10)).toMatch(/прямо и жёстко/);
-    expect(formatTone(50)).toMatch(/честную критику/);
-    expect(formatTone(90)).toMatch(/искренняя радость/);
+    expect(formatTone(10)).toMatch(/сухо и честно/);
+    expect(formatTone(50)).toMatch(/^ровно\./);
+    expect(formatTone(90)).toMatch(/сдержанно-довольно/);
   });
 
   it('aggregates totals from projects', () => {
@@ -102,18 +102,23 @@ describe('weekly-report prompt', () => {
   it('formatTemplate highlights best vs worst real project', () => {
     const out = formatTemplate(sampleData);
     // «Дом» has 100%, «Работа» has 20% → best=Дом, worst=Работа
-    expect(out).toContain('лучший — **«Дом»**');
-    expect(out).toContain('худший — **«Работа»**');
+    expect(out).toContain('**«Дом»**');
+    expect(out).toContain('**«Работа»**');
+    expect(out).toMatch(/лучший[\s\S]*«Дом»/);
+    expect(out).toMatch(/худший[\s\S]*«Работа»/);
   });
 
-  it('buildWeeklyPrompt matches the Python-generated golden file byte-for-byte', () => {
-    const golden = fs.readFileSync(
-      path.resolve(__dirname, '../../../test/fixtures/weekly-prompt-golden.txt'),
-      'utf8',
-    );
-    const msgs = buildWeeklyPrompt(sampleData, { angleSeedIndex: 0 });
-    const actual = `===SYSTEM===\n${msgs[0].content}\n===USER===\n${msgs[1].content}`;
-    expect(actual).toBe(golden);
+  // Golden-fixture test временно отключен: промпт переписан под менее «ИИшный»
+  // тон, и побайтовая сверка с Python-версией уже не актуальна (Python-сторона
+  // ушла). Оставили ниже смоук-ассертов, проверяющих смысл: структура секций,
+  // наличие ключевых блоков.
+  it('SYSTEM_PROMPT enforces the new anti-AI voice rules', () => {
+    expect(SYSTEM_PROMPT).toContain('## Вступление');
+    expect(SYSTEM_PROMPT).toContain('## Оценка недели');
+    expect(SYSTEM_PROMPT).toContain('## 3 совета на следующую неделю');
+    expect(SYSTEM_PROMPT).toContain('## Итог');
+    // не мотивационный тренер, а спокойный наблюдатель
+    expect(SYSTEM_PROMPT).not.toMatch(/наставник|коуч|мотиватор/);
   });
 
   it('buildWeeklyPrompt without seed returns 2 messages', () => {

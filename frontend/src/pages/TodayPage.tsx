@@ -654,6 +654,8 @@ export default function TodayPage() {
           long={tip?.long ?? null}
           persona={tip?.persona ?? null}
           isLoading={tipLoading}
+          progress={(taskPct + habitPct) / 200}
+          celebrateKey={doneTodayCount + doneHabits}
         />
       </div>
 
@@ -870,11 +872,13 @@ export default function TodayPage() {
         <div className="space-y-5">
           <div className="hidden lg:block">
             <AsciiPet
-          short={tip?.short ?? null}
-          long={tip?.long ?? null}
-          persona={tip?.persona ?? null}
-          isLoading={tipLoading}
-        />
+              short={tip?.short ?? null}
+              long={tip?.long ?? null}
+              persona={tip?.persona ?? null}
+              isLoading={tipLoading}
+              progress={(taskPct + habitPct) / 200}
+              celebrateKey={doneTodayCount + doneHabits}
+            />
           </div>
 
           <div>

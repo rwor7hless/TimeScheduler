@@ -32,9 +32,11 @@ export class PlannedController {
   @Get()
   list(
     @CurrentUser() user: User,
-    @Query('year', new ParseIntPipe({ optional: true })) year?: number,
-    @Query('month', new ParseIntPipe({ optional: true })) month?: number,
+    @Query('year') yearRaw?: string,
+    @Query('month') monthRaw?: string,
   ): Promise<PlannedPurchaseResponseDto[]> {
+    const year = yearRaw !== undefined && yearRaw !== '' ? Number(yearRaw) : undefined;
+    const month = monthRaw !== undefined && monthRaw !== '' ? Number(monthRaw) : undefined;
     return this.planned.list(user.id, year, month);
   }
 

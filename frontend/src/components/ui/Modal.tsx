@@ -42,7 +42,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
                   maxWidth === '2xl' ? 'max-w-2xl' : maxWidth === '4xl' ? 'max-w-4xl' : 'max-w-md'
                 }`}
               >
-                <div className="flex-1 min-h-0 px-5 sm:px-6 py-5 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 min-h-0 px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto overflow-x-hidden">
                   {title && (
                     <Dialog.Title
                       className="text-base font-semibold mb-4 shrink-0"

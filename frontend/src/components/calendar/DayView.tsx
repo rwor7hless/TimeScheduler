@@ -14,7 +14,22 @@ interface DayViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const TOTAL_MINUTES = 24 * 60
 const SNAP = 15
-const HOUR_H = 100
+const HOUR_H_DESKTOP = 100
+const HOUR_H_MOBILE = 52
+
+function useHourHeight(): number {
+  const [h, setH] = useState<number>(() =>
+    typeof window !== 'undefined' && window.innerWidth < 640 ? HOUR_H_MOBILE : HOUR_H_DESKTOP,
+  )
+  useEffect(() => {
+    const onResize = () => {
+      setH(window.innerWidth < 640 ? HOUR_H_MOBILE : HOUR_H_DESKTOP)
+    }
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+  return h
+}
 
 function getLocalNow(): { minutesFromMidnight: number; dateStr: string } {
   const now = new Date()
@@ -109,6 +124,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
   const hasMoved = useRef(false)
   const [ghost, setGhost] = useState<GhostState | null>(null)
   const [localNow, setLocalNow] = useState(() => getLocalNow())
+  const HOUR_H = useHourHeight()
 
   useEffect(() => {
     const tick = () => setLocalNow(getLocalNow())
@@ -125,7 +141,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
     const targetPx = (targetMin / TOTAL_MINUTES) * HOUR_H * 24
     const containerH = scrollRef.current.clientHeight
     scrollRef.current.scrollTop = Math.max(0, targetPx - containerH / 2)
-  }, [date])
+  }, [date, HOUR_H])
 
   const dayTasks = useMemo(() => {
     const wd = weekdayIndex(date)
@@ -219,16 +235,16 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
   }, [])
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden h-full flex flex-col min-h-0">
+    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col min-h-0">
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 bg-gray-50/50">
+          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-400 select-none"
+                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-500 dark:text-gray-300 select-none"
               >
                 {format(addHours(startOfDay(date), hour), 'HH:00')}
               </div>
@@ -241,13 +257,13 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="border-t border-gray-100 cursor-pointer hover:bg-amber-50/50 transition-colors relative"
+                className="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors relative"
                 onClick={() => {
                   if (ghost) return
                   onSlotClick(format(addHours(startOfDay(date), hour), "yyyy-MM-dd'T'HH:mm"))
                 }}
               >
-                <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200 opacity-40 pointer-events-none" />
+                <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200 dark:bg-gray-700 opacity-40 pointer-events-none" />
               </div>
             ))}
 

@@ -347,13 +347,15 @@ export class ReportsService {
       const messages = buildWeeklyPrompt(data, {
         angleSeedIndex: Math.floor(Math.random() * WEEKLY_ANGLES.length),
       });
-      const content = await this.llm.chatCompletion(messages);
+      const rawContent = await this.llm.chatCompletion(messages);
+      // Модель думает в <scratch>...</scratch> перед отчётом. Удаляем.
+      const content = rawContent.replace(/<scratch>[\s\S]*?<\/scratch>\s*/i, '').replace(/^\n+/, '');
 
       await this.prisma.weeklyReport.update({
         where: { id: report.id },
         data: {
           status: 'done',
-          content: content.replace(/^\n+/, ''),
+          content,
           error_msg: null,
           updated_at: new Date(),
         },

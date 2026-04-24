@@ -83,7 +83,7 @@ export default function CalendarPage() {
   if (isLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="flex flex-col lg:h-[calc(100vh-9rem)] min-h-0 overflow-x-hidden">
+    <div className="flex flex-col h-[calc(100dvh-140px)] lg:h-[calc(100vh-9rem)] min-h-0 overflow-x-hidden">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0 mb-2">
         {/* Nav + date */}

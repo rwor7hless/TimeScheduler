@@ -435,7 +435,12 @@ export default function AsciiPet({
           <div className="w-2 h-2 bg-white dark:bg-[var(--color-surface)] border-l border-t border-gray-200 dark:border-[var(--color-border)] rotate-45" />
         </div>
       )}
-      <div className="relative bg-white dark:bg-[var(--color-surface)] border border-gray-200 dark:border-[var(--color-border)] rounded-2xl px-3.5 py-2.5 shadow-paper">
+      <div
+        className={clsx(
+          'relative bg-white dark:bg-[var(--color-surface)] border border-gray-200 dark:border-[var(--color-border)] rounded-2xl px-3.5 py-2.5 shadow-paper',
+          canExpand && 'pb-7',
+        )}
+      >
         {/* Хвостик — слева для horizontal */}
         {layout === 'horizontal' && (
           <>
@@ -464,30 +469,15 @@ export default function AsciiPet({
               exit={{ opacity: 0, y: -3 }}
               transition={{ duration: 0.25 }}
             >
-              <button
-                type="button"
-                disabled={!canExpand}
-                onClick={() => canExpand && setExpanded((v) => !v)}
+              <div
                 className={clsx(
-                  'w-full text-left font-display text-[12.5px] leading-[1.45] text-gray-700 dark:text-gray-200 transition-colors',
-                  canExpand && 'hover:text-gray-900 dark:hover:text-white cursor-pointer',
+                  'font-display text-[12.5px] leading-[1.45] text-gray-700 dark:text-gray-200',
                   !expanded && canExpand && 'line-clamp-3',
                 )}
                 style={{ fontVariationSettings: '"SOFT" 60, "opsz" 14', fontWeight: 450 }}
-                aria-expanded={expanded}
               >
                 {bubbleText}
-                {canExpand && !expanded && (
-                  <span className="ml-1 text-amber-600 dark:text-amber-400 text-[11px] font-sans font-medium">
-                    ещё
-                  </span>
-                )}
-                {canExpand && expanded && (
-                  <span className="ml-1 text-amber-600 dark:text-amber-400 text-[11px] font-sans font-medium">
-                    свернуть
-                  </span>
-                )}
-              </button>
+              </div>
             </motion.div>
           </AnimatePresence>
         )}
@@ -495,6 +485,16 @@ export default function AsciiPet({
           <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             — {persona.name}
           </div>
+        )}
+        {canExpand && (
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            className="absolute bottom-1.5 right-2.5 text-[10.5px] font-medium text-amber-600 dark:text-amber-400 hover:underline focus:outline-none"
+          >
+            {expanded ? 'свернуть' : 'ещё'}
+          </button>
         )}
       </div>
     </motion.div>

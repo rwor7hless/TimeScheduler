@@ -30,9 +30,14 @@ export class TransactionsController {
   @Get()
   list(
     @CurrentUser() user: User,
-    @Query('year', new ParseIntPipe({ optional: true })) year?: number,
-    @Query('month', new ParseIntPipe({ optional: true })) month?: number,
+    @Query('year') yearRaw?: string,
+    @Query('month') monthRaw?: string,
   ): Promise<TransactionResponseDto[]> {
+    // Ручной парсинг: @Query + ParseIntPipe({optional:true}) криво работает
+    // в этой версии Nest — пустой query даёт "Validation failed". Здесь
+    // undefined остаётся undefined, строка парсится в int.
+    const year = yearRaw !== undefined && yearRaw !== '' ? Number(yearRaw) : undefined;
+    const month = monthRaw !== undefined && monthRaw !== '' ? Number(monthRaw) : undefined;
     return this.txs.list(user.id, year, month);
   }
 

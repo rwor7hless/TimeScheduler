@@ -16,7 +16,8 @@ interface WeekViewProps {
 const HOURS = Array.from({ length: 24 }, (_, i) => i)
 const TOTAL_MINUTES = 24 * 60
 const SNAP = 15
-const HOUR_H = 80
+const HOUR_H_DESKTOP = 80
+const HOUR_H_MOBILE = 44
 
 function useIsMobile() {
   const [mobile, setMobile] = useState(() => window.innerWidth < 640)
@@ -115,6 +116,7 @@ interface GhostState {
 
 export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTaskMove, onDayClick }: WeekViewProps) {
   const isMobile = useIsMobile()
+  const HOUR_H = isMobile ? HOUR_H_MOBILE : HOUR_H_DESKTOP
   const weekStart = startOfWeek(date, { weekStartsOn: 1 })
   // На мобильном — 3 дня (вчера/сегодня/завтра), на десктопе — 7
   const days = useMemo(() => {
@@ -145,7 +147,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
     const targetPx = (targetMin / TOTAL_MINUTES) * HOUR_H * 24
     const containerH = scrollRef.current.clientHeight
     scrollRef.current.scrollTop = Math.max(0, targetPx - containerH / 2)
-  }, [date])
+  }, [date, HOUR_H])
 
   const weekdayIndex = (d: Date) => (d.getDay() + 6) % 7
 

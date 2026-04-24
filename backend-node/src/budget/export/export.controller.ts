@@ -32,12 +32,14 @@ export class ExportController {
   async download(
     @CurrentUser() user: User,
     @Res() res: Response,
-    @Query('year', new ParseIntPipe({ optional: true })) year?: number,
-    @Query('month', new ParseIntPipe({ optional: true })) month?: number,
+    @Query('year') yearRaw?: string,
+    @Query('month') monthRaw?: string,
     @Query('from') fromDate?: string,
     @Query('to') toDate?: string,
     @Query('type') type?: string,
   ): Promise<void> {
+    const year = yearRaw !== undefined && yearRaw !== '' ? Number(yearRaw) : undefined;
+    const month = monthRaw !== undefined && monthRaw !== '' ? Number(monthRaw) : undefined;
     const where: Prisma.TransactionWhereInput = { user_id: user.id };
     if (year !== undefined && month !== undefined) {
       const { start, end } = monthRange0(year, month);
