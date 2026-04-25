@@ -19,7 +19,7 @@ export const PERSONAS: PersonaInfo[] = [
   { id: 'suhar',    name: 'Сухарь',   eyes_l: '¬', eyes_r: '¬' },
   { id: 'valeryan', name: 'Валерьян', eyes_l: '°', eyes_r: '°' },
   { id: 'blin',     name: 'Блин',     eyes_l: '-', eyes_r: '-' },
-  { id: 'shprot',   name: 'Шпрот',    eyes_l: '•`', eyes_r: '´•' },
+  { id: 'shprot',   name: 'Шпрот',    eyes_l: '•', eyes_r: '•' },
   { id: 'plyushka', name: 'Плюшка',   eyes_l: '◡', eyes_r: '◡' },
   { id: 'marquis',  name: 'Маркиз',   eyes_l: '=', eyes_r: '=' },
   { id: 'lazer',    name: 'Лазер',    eyes_l: '>', eyes_r: '<' },
