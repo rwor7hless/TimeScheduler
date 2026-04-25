@@ -26,6 +26,7 @@ type Mood =
   | 'proud'
   | 'celebrate'
   | 'petted'
+  | 'dizzy'
 
 interface Face {
   eyeL: string
@@ -45,10 +46,18 @@ const MOODS: Record<Mood, Face> = {
   proud:      { eyeL: '★', eyeR: '★', mouth: '> ᵕ <', ears: '/\\_/\\', tint: 'var(--color-accent)',        label: 'горд'    },
   celebrate:  { eyeL: '*', eyeR: '*', mouth: '> ◡ <', ears: '/\\_/\\', tint: 'var(--color-accent-light)',  label: 'ура!'    },
   petted:     { eyeL: 'u', eyeR: 'u', mouth: '> ◡ <', ears: '/\\_/\\', tint: 'var(--color-accent)',        label: 'мрррр'   },
+  dizzy:      { eyeL: '@', eyeR: '@', mouth: '~ . ~', ears: '/\\_/\\', tint: 'var(--color-accent)',        label: 'кружит' },
 }
 
-const BLINK: Partial<Face> = { eyeL: '-', eyeR: '-' }
-const WINK:  Partial<Face> = { eyeL: 'o', eyeR: '-' }
+const BLINK:    Partial<Face> = { eyeL: '-', eyeR: '-' }
+const WINK:     Partial<Face> = { eyeL: 'o', eyeR: '-' }
+const GLANCE_L: Partial<Face> = { eyeL: '<', eyeR: '<' }
+const GLANCE_R: Partial<Face> = { eyeL: '>', eyeR: '>' }
+const YAWN:     Partial<Face> = { eyeL: '~', eyeR: '~', mouth: '> O <' }
+
+/** Кадры глаз для анимации головокружения — кот «вращает» зрачки 10 секунд. */
+const DIZZY_EYE_FRAMES = ['@', '⊗', '✱', '◉', '✺', '◎']
+const DIZZY_DURATION_MS = 10_000
 
 function resolveBaseMood(hour: number, progress: number): Mood {
   if (hour >= 22 || hour < 5) return 'sleeping'
@@ -75,21 +84,196 @@ type Bucket =
   | 'evening-warm'
   | 'night'
   | 'petted'
+  | 'petted-extra'
+  | 'petted-too-much'
   | 'just-done'
 
 const PHRASES: Record<Bucket, string[]> = {
-  'morning-empty':  ['Утро. Чайку?',          'Что планируем?',      'С чего начнём?',         'Ещё потянемся — и вперёд'],
-  'morning-warm':   ['Бодрое утро, я смотрю', 'Так держать с утра',  'Ты сегодня ранняя пташка'],
-  'day-bored':      ['Ну что, приступим?',    'Хоть одну закроешь?', 'Скучновато тут...',      'Даже одна задача — уже движение'],
-  'day-working':    ['Идёт работа',           'Хороший темп',        'Потихоньку, потихоньку', 'Видно, что стараешься'],
-  'day-streak':     ['Ого, на волне!',        'Огонь сегодня',       'Ты прям включился',      'Не сбавляй'],
-  'day-almost':     ['Чуть-чуть осталось',    'Финишная прямая',     'Ещё немного — и всё'],
-  'day-done':       ['Всё закрыто! Кайф',     'Ты сегодня герой',    'Можно и поспать',        'Мрр, какая продуктивность'],
-  'evening-bored':  ['День почти прошёл...',  'Может ещё одну?',     'Не обязательно сегодня'],
-  'evening-warm':   ['Достойный день',        'Хорошо поработали',   'Можно выдохнуть'],
-  'night':          ['Зззз...',               'Тссс, я сплю',        'Уже ночь',               '*сопит*'],
-  'petted':         ['Мрррр',                 'Ещё, ещё...',         '♡ ♡ ♡',                  'Ты лучший'],
-  'just-done':      ['Отлично!',              'Есть ещё одна!',      'Так держать',            'Мурр!'],
+  'morning-empty': [
+    'Утро. Чайку?',
+    'Что планируем?',
+    'С чего начнём?',
+    'Ещё потянемся — и вперёд',
+    'Утро ленивое. Окей.',
+    'Сначала чай. Потом тоже чай.',
+    'Чистый лист — и хорошо.',
+    'Так-так. День начинается.',
+  ],
+  'morning-warm': [
+    'Бодрое утро, я смотрю',
+    'Так держать с утра',
+    'Ты сегодня ранняя пташка',
+    'Уже что-то закрыл? Уважаю.',
+    'Утром — самое то.',
+    'Хороший разгон.',
+    'Завожу мотор вместе с тобой.',
+  ],
+  'day-bored': [
+    'Ну что, приступим?',
+    'Хоть одну закроешь?',
+    'Скучновато тут...',
+    'Даже одна задача — уже движение',
+    'Список не двигается, и я тоже.',
+    'Если бы я мог жать чекбоксы — я бы помог.',
+    'Полудрёма продуктивности.',
+    'Можно одну. Маленькую.',
+  ],
+  'day-working': [
+    'Идёт работа',
+    'Хороший темп',
+    'Потихоньку, потихоньку',
+    'Видно, что стараешься',
+    'Ровно идём',
+    'Не суетись, и так норма.',
+    'Шум стоит — рабочий шум.',
+  ],
+  'day-streak': [
+    'Ого, на волне!',
+    'Огонь сегодня',
+    'Ты прям включился',
+    'Не сбавляй',
+    'Я даже зажмурился. Серьёзно.',
+    'Темп держится — и хорошо.',
+    'Так-так. Серия.',
+    'Ты сегодня поезд.',
+  ],
+  'day-almost': [
+    'Чуть-чуть осталось',
+    'Финишная прямая',
+    'Ещё немного — и всё',
+    'Видно дно списка.',
+    'Финал близко.',
+    'Совсем рядом, ага.',
+  ],
+  'day-done': [
+    'Всё закрыто! Кайф',
+    'Ты сегодня герой',
+    'Можно и поспать',
+    'Мрр, какая продуктивность',
+    'Список пуст. Тишина.',
+    'Я бы и сам так не смог.',
+    'Это была охота. И ты выиграл.',
+  ],
+  'evening-bored': [
+    'День почти прошёл...',
+    'Может ещё одну?',
+    'Не обязательно сегодня',
+    'Если устал — это тоже окей.',
+    'Завтра тоже день.',
+    'Перенос — это тоже решение.',
+  ],
+  'evening-warm': [
+    'Достойный день',
+    'Хорошо поработали',
+    'Можно выдохнуть',
+    'Закат над списком — самое то.',
+    'Сегодня было.',
+    'Свет на половине, дела на половине. Норма.',
+  ],
+  'night': [
+    'Зззз...',
+    'Тссс, я сплю',
+    'Уже ночь',
+    '*сопит*',
+    'Лапы в калачик.',
+    'Луна. Тихо.',
+    'Завтра разбудишь.',
+  ],
+  'petted': [
+    'Мрррр',
+    'Ещё, ещё...',
+    '♡ ♡ ♡',
+    'Ты лучший',
+    'Хорошо так.',
+    'Тёплая рука.',
+    'Уши тоже учитываются.',
+  ],
+  'petted-extra': [
+    'О, ещё ласки?',
+    'Так и баловать можно.',
+    'Мрр-мрр-мрр.',
+    'Серьёзная порция любви.',
+    'Так и привыкнуть недолго.',
+  ],
+  'petted-too-much': [
+    'Ой-ой, голова кружится',
+    'Хватит, хватит, мрр...',
+    'Передоз ласки!',
+    'Дай отдышаться',
+    '*шатается*',
+  ],
+  'just-done': [
+    'Отлично!',
+    'Есть ещё одна!',
+    'Так держать',
+    'Мурр!',
+    'Минус одна — приятно.',
+    'Закрыто. Дальше.',
+    'Один шаг — и хороший шаг.',
+  ],
+}
+
+/**
+ * Перекрытия фраз под персону: кот говорит в своём голосе.
+ * Если бакета нет — fallback на общий PHRASES.
+ * Достаточно покрыть «интерактивные» бакеты (petted/just-done) — остальные
+ * могут оставаться общими, чтобы не утомлять однотипностью.
+ */
+const PERSONA_PHRASES: Record<string, Partial<Record<Bucket, string[]>>> = {
+  suhar: {
+    'petted':           ['Ладно, ладно...',     'Один раз. Хватит.',     '*вздыхает*',       'Мрр. Нехотя.',         'Не балуй меня.'],
+    'petted-extra':     ['Сколько можно.',      'Тяжко тебе сегодня?',   'Ну, добавки.'],
+    'petted-too-much':  ['Иди, иди.',           'Достаточно. Сказал.',   'Пожалей кота.'],
+    'just-done':        ['Закрыл. Хорошо.',     'Одна. И что.',          'Хм. Норма.',       'Поработал — отойди.'],
+    'day-bored':        ['Тишина в списке.',    'Скучно. Опять.',        'Ну хоть бы одну.',  'Лапы устали ждать.'],
+    'night':            ['Сплю. Не мешай.',     'Тссс.',                  '*ворчит во сне*'],
+  },
+  valeryan: {
+    'petted':           ['Прикосновение — пунктуация дня.', 'Тёплый ритуал.',  'В этом что-то от музыки.', 'Тактильная философия.'],
+    'petted-extra':     ['Рука как маятник, я как метроном.', 'Контакт повторяется — значит, имеет смысл.'],
+    'petted-too-much':  ['Слишком много нежности — это тоже метафора.', 'Мир прикасается слишком плотно.'],
+    'just-done':        ['Задача растворилась.', 'Один штрих в дневнике вечности.', 'Вселенная едва вздохнула.'],
+    'day-bored':        ['Время капает. Список молчит.', 'Тишина пахнет несделанным.'],
+  },
+  blin: {
+    'petted':           ['Хорошо.',            'Мрр.',           'Так лучше.',     'Тише.'],
+    'petted-extra':     ['Достаточно.',         'Уже хорошо.'],
+    'petted-too-much':  ['Хватит.',             'Стоп.'],
+    'just-done':        ['Готово.',             'Одна.',           'Закрыта.',     'Дальше.'],
+    'day-bored':        ['Пусто. Начни.',       'Одна задача. Возьми её.'],
+    'morning-empty':    ['Утро. Шаг.',           'Один шаг. Этого хватит.'],
+  },
+  shprot: {
+    'petted':           ['Документирую: контакт.', 'Подозрительно мягко.', 'Алиби — мурчание.', 'Свидетель чесания.'],
+    'petted-extra':     ['Слишком регулярные жесты. Подозрительно.', 'Это уже улика.'],
+    'petted-too-much':  ['Дело закрыто. И я тоже.', 'Перебор. Уходим в тень.'],
+    'just-done':        ['Закрыто. Дело сшито.',    'В архив.',           'Минус один свидетель.'],
+    'day-bored':        ['Ни одного следа в списке.', 'Тишина — тоже улика.'],
+  },
+  plyushka: {
+    'petted':           ['Мрррр-у-у!',          'Ещё, ещё!',         '♡ моё сердечко ♡',  'Ты прелесть!',  'Тёплый ты.'],
+    'petted-extra':     ['Тут уже сердце тает',  'Так и хочется ещё.', 'Ого, какая забота'],
+    'petted-too-much':  ['Ой, голова... но классно.', 'Я люблю тебя, но дай вдохнуть', 'Слишком хорошо — это тоже состояние'],
+    'just-done':        ['Воу!',                 'Загляденье',          'Браво!',           'Кайф',           'У тебя получается.'],
+    'day-streak':       ['Ну ты и красавчик',    'Мрр, серия!',         'Так и горим.'],
+  },
+  marquis: {
+    'petted':           ['Премного благодарен.',  'Соблаговолили? Прошу.',  'Сие приятно.',   'Достойный жест.'],
+    'petted-extra':     ['Вы балуете меня, сударь.', 'Ну-с, повторим.'],
+    'petted-too-much':  ['Ну-ну, без излишеств.',  'Полно вам, право.'],
+    'just-done':        ['Превосходно.',          'Ну-с, так-так.',          'Изящно сделано.', 'Дело сделано, как и подобает.'],
+    'morning-empty':    ['Доброе утро, сударь.',  'Ну-с, начнём с чашки.'],
+    'evening-warm':     ['Достойный был день, право.', 'Свеча и тишина.'],
+    'night':            ['Доброй ночи, мой друг.', '*спит в ливрее*'],
+  },
+  lazer: {
+    'petted':           ['Топ!',                 'Контакт — топ!',       'Мур-мур-турбо!',   'Заряд получен.'],
+    'petted-extra':     ['Турбо-мур!',           'Боеготов!',             'Ещё контакт — ещё топливо.'],
+    'petted-too-much':  ['Перегрев! Перегрев!',  'Турбина шумит, надо охладиться', 'Стоп. Пит-стоп.'],
+    'just-done':        ['Пыщ!',                  'Минус один — топ.',     'Победа в гонке!', 'Скорость +1.', 'Газу!'],
+    'day-streak':       ['Серия — газ в пол!',    'Турбо-режим включён.',  'Чекпоинт за чекпоинтом!'],
+    'day-bored':        ['Стартовая решётка пустая.', 'Двигатель греется.', 'Команда «старт» где?'],
+  },
 }
 
 function pickBucket(
@@ -135,6 +319,8 @@ interface Props {
    * vertical   — кот сверху, бабл снизу (узкие сайдбары).
    */
   layout?: 'horizontal' | 'vertical'
+  /** Если задано — рядом с прогрессом покажется иконка «обновить». */
+  onRefresh?: () => void
 }
 
 export default function AsciiPet({
@@ -142,6 +328,7 @@ export default function AsciiPet({
   long,
   persona,
   isLoading,
+  onRefresh,
   progress = 0,
   celebrateKey = 0,
   layout = 'vertical',
@@ -173,39 +360,123 @@ export default function AsciiPet({
   const [petting, setPetting] = useState(false)
   const [heartBurst, setHeartBurst] = useState(0)
   const [expanded, setExpanded] = useState(false)
+  // Сколько раз погладили подряд (без 30-секундной паузы) — переключает
+  // пул фраз и запускает анимацию головокружения после 6-го клика.
+  const [petCount, setPetCount] = useState(0)
+  const petCountRef = useRef(0)
+  const lastPetTimeRef = useRef<number>(0)
+  const petResetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Головокружение: 10 секунд с блокировкой кликов.
+  const [dizzy, setDizzy] = useState(false)
+  const [dizzyFrame, setDizzyFrame] = useState(0)
+  const dizzyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const PETTING_DURATION_MS = 5000
+  const PET_LIMIT = 6
+
   const handlePet = useCallback(() => {
+    if (dizzy) return // 10-секундная блокировка после перегруза
+    const now = Date.now()
+    const wasRecent = lastPetTimeRef.current > 0 && now - lastPetTimeRef.current < 30_000
+    lastPetTimeRef.current = now
+    const nextCount = wasRecent ? petCountRef.current + 1 : 1
+    petCountRef.current = nextCount
+    setPetCount(nextCount)
+
+    // Перегруз ласки → 10 секунд головокружения, кот не реагирует на клики.
+    if (nextCount >= PET_LIMIT) {
+      setPetting(false)
+      setDizzy(true)
+      if (petResetTimerRef.current) clearTimeout(petResetTimerRef.current)
+      if (dizzyTimerRef.current) clearTimeout(dizzyTimerRef.current)
+      dizzyTimerRef.current = setTimeout(() => {
+        setDizzy(false)
+        setPetCount(0)
+        petCountRef.current = 0
+        lastPetTimeRef.current = 0
+        dizzyTimerRef.current = null
+      }, DIZZY_DURATION_MS)
+      return
+    }
+
     setPetting(true)
     setHeartBurst((k) => k + 1)
-    const t = setTimeout(() => setPetting(false), 1600)
+    if (petResetTimerRef.current) clearTimeout(petResetTimerRef.current)
+    petResetTimerRef.current = setTimeout(() => {
+      setPetCount(0)
+      petCountRef.current = 0
+      lastPetTimeRef.current = 0
+    }, 30_000)
+    const t = setTimeout(() => setPetting(false), PETTING_DURATION_MS)
     return () => clearTimeout(t)
-  }, [])
+  }, [dizzy])
 
-  // ── Моргание/wink поверх базового mood ───────────────────────────────
-  const [overlay, setOverlay] = useState<'none' | 'blink' | 'wink'>('none')
+  useEffect(
+    () => () => {
+      if (petResetTimerRef.current) clearTimeout(petResetTimerRef.current)
+      if (dizzyTimerRef.current) clearTimeout(dizzyTimerRef.current)
+    },
+    [],
+  )
+
+  // Пока petting активен — периодически пускаем новые порции сердечек,
+  // чтобы 5 секунд ласки не превращались в тишину после первого пшика.
+  useEffect(() => {
+    if (!petting) return
+    const id = setInterval(() => setHeartBurst((k) => k + 1), 1700)
+    return () => clearInterval(id)
+  }, [petting])
+
+  // Пока dizzy — крутим кадры глаз, чтобы они «вращались».
+  useEffect(() => {
+    if (!dizzy) {
+      setDizzyFrame(0)
+      return
+    }
+    const id = setInterval(() => setDizzyFrame((f) => f + 1), 200)
+    return () => clearInterval(id)
+  }, [dizzy])
+
+  // ── Idle-оверлеи поверх базового mood: моргание / wink / косой взгляд /
+  //    зевок. Один общий планировщик: каждые 5–15с случайно выбирает действие.
+  type Overlay = 'none' | 'blink' | 'wink' | 'glance-l' | 'glance-r' | 'yawn'
+  const [overlay, setOverlay] = useState<Overlay>('none')
   useEffect(() => {
     if (baseMood === 'sleeping' || petting) return
     let live = true
     let t: ReturnType<typeof setTimeout>
     const schedule = () => {
-      // Реже: 7-14с между морганиями
-      const delay = 7000 + Math.random() * 7000
+      const delay = 5000 + Math.random() * 10_000 // 5–15с
       t = setTimeout(() => {
         if (!live) return
-        const pick = Math.random() < 0.12 ? 'wink' : 'blink'
+        // Распределение: blink частый (≈50%), wink редкий, косые взгляды
+        // около трети, зевок очень редкий.
+        const r = Math.random()
+        let pick: Overlay
+        let dur: number
+        if (r < 0.5)        { pick = 'blink';     dur = 140 }
+        else if (r < 0.6)   { pick = 'wink';      dur = 260 }
+        else if (r < 0.78)  { pick = 'glance-l';  dur = 520 }
+        else if (r < 0.96)  { pick = 'glance-r';  dur = 520 }
+        else                { pick = 'yawn';      dur = 720 }
         setOverlay(pick)
         setTimeout(() => {
           if (!live) return
           setOverlay('none')
           schedule()
-        }, pick === 'wink' ? 260 : 140)
+        }, dur)
       }, delay)
     }
     schedule()
-    return () => { live = false; clearTimeout(t) }
+    return () => {
+      live = false
+      clearTimeout(t)
+    }
   }, [baseMood, petting])
 
   // ── Итоговый mood / лицо ─────────────────────────────────────────────
-  const mood: Mood = petting
+  const mood: Mood = dizzy
+    ? 'dizzy'
+    : petting
     ? 'petted'
     : celebrating
     ? 'celebrate'
@@ -215,9 +486,27 @@ export default function AsciiPet({
   const base: Face = mood === 'content' && persona
     ? { ...MOODS.content, eyeL: persona.eyes_l, eyeR: persona.eyes_r }
     : MOODS[mood]
+  // Анимированные глаза головокружения: каждые 200мс берём следующий символ.
+  const dizzyEyePatch: Partial<Face> = dizzy
+    ? {
+        eyeL: DIZZY_EYE_FRAMES[dizzyFrame % DIZZY_EYE_FRAMES.length],
+        eyeR: DIZZY_EYE_FRAMES[(dizzyFrame + 2) % DIZZY_EYE_FRAMES.length],
+      }
+    : {}
+  // Idle-оверлеи (моргание/glance/yawn) — только в спокойных состояниях.
+  const overlayPatch: Partial<Face> =
+    petting || dizzy
+      ? {}
+      : overlay === 'blink'    ? BLINK
+      : overlay === 'wink'     ? WINK
+      : overlay === 'glance-l' ? GLANCE_L
+      : overlay === 'glance-r' ? GLANCE_R
+      : overlay === 'yawn'     ? YAWN
+      : {}
   const face: Face = {
     ...base,
-    ...(overlay === 'blink' && !petting ? BLINK : overlay === 'wink' && !petting ? WINK : {}),
+    ...dizzyEyePatch,
+    ...overlayPatch,
   }
   const asciiArt = `${face.ears}\n(${face.eyeL}.${face.eyeR})\n${face.mouth}`
 
@@ -229,29 +518,45 @@ export default function AsciiPet({
   }, [])
 
   const contextualPhrase = useMemo(() => {
-    // Petting показывает свой пул сразу
-    if (petting) return pickFrom(PHRASES.petted, heartBurst)
+    const personaPhrases = persona ? PERSONA_PHRASES[persona.id] : undefined
+    // Головокружение: показываем фразы из «petted-too-much» (свои у персоны).
+    if (dizzy) {
+      const pool =
+        personaPhrases?.['petted-too-much'] ??
+        PHRASES['petted-too-much']
+      return pickFrom(pool, dizzyFrame)
+    }
+    // Petting показывает свой пул сразу. Бакет зависит от количества поглаживаний.
+    if (petting) {
+      const pettingBucket: Bucket =
+        petCount >= 6 ? 'petted-too-much' : petCount >= 4 ? 'petted-extra' : 'petted'
+      const pool =
+        personaPhrases?.[pettingBucket] ??
+        PHRASES[pettingBucket] ??
+        PHRASES.petted
+      return pickFrom(pool, heartBurst)
+    }
     const sinceDone = lastDoneRef.current ? Date.now() - lastDoneRef.current : null
     const bucket = pickBucket(hour, progress, sinceDone)
-    const pool = PHRASES[bucket]
+    const pool = personaPhrases?.[bucket] ?? PHRASES[bucket]
     // Меняем по: tick (час), celebrateKey (событие), bucket-строка (переход)
     const seed = tick * 7 + celebrateKey * 13 + bucket.length
     return pickFrom(pool, seed)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tick, celebrateKey, hour, progress, petting, heartBurst])
+  }, [tick, celebrateKey, hour, progress, petting, heartBurst, petCount, persona, dizzy, dizzyFrame])
 
   const isNight = mood === 'sleeping'
   const progressPct = Math.round(progress * 100)
 
   // Персона от родителя (short/long) имеет приоритет над контекстом;
-  // petting всегда показывает свою фразу.
-  const bubbleText: string | null = petting
+  // petting и dizzy всегда показывают свою фразу.
+  const bubbleText: string | null = petting || dizzy
     ? contextualPhrase
     : isLoading
     ? null
     : (expanded && long) || short || contextualPhrase
   // «ещё» показываем только когда есть РАЗНЫЕ short и long от родителя.
-  const canExpand = !petting && !!short && !!long && long !== short
+  const canExpand = !petting && !dizzy && !!short && !!long && long !== short
 
   // ── Сам кот (без бабла и без лейбла) ─────────────────────────────────
   const petCore = (
@@ -265,7 +570,9 @@ export default function AsciiPet({
             className="w-24 h-24 rounded-full blur-2xl opacity-60 transition-colors duration-700"
             style={{
               background:
-                mood === 'proud' || mood === 'celebrate' || mood === 'petted'
+                mood === 'dizzy'
+                  ? 'radial-gradient(circle, rgba(245,158,11,0.32), transparent 70%)'
+                  : mood === 'proud' || mood === 'celebrate' || mood === 'petted'
                   ? 'radial-gradient(circle, rgba(217,119,6,0.28), transparent 70%)'
                   : mood === 'happy'
                   ? 'radial-gradient(circle, rgba(217,119,6,0.14), transparent 70%)'
@@ -276,15 +583,19 @@ export default function AsciiPet({
           />
         </div>
 
-        {/* Кот — кликабелен, центрирован */}
+        {/* Кот — кликабелен, центрирован. На dizzy блокируем клики. */}
         <motion.button
           type="button"
           onClick={handlePet}
-          aria-label="погладить"
-          className="relative cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-md"
+          disabled={dizzy}
+          aria-label={dizzy ? 'кот в нокдауне, подожди' : 'погладить'}
+          className={clsx(
+            'relative focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400 rounded-md',
+            dizzy ? 'cursor-not-allowed' : 'cursor-pointer',
+          )}
           style={{ padding: 4 }}
-          whileHover={!isNight ? { scale: 1.04 } : undefined}
-          whileTap={{ scale: 0.94 }}
+          whileHover={!isNight && !dizzy ? { scale: 1.04 } : undefined}
+          whileTap={!dizzy ? { scale: 0.94 } : undefined}
         >
           <motion.pre
             className="font-mono pointer-events-none m-0 text-center"
@@ -299,13 +610,17 @@ export default function AsciiPet({
               textShadow:
                 mood === 'celebrate'
                   ? '0 0 8px rgba(245,158,11,0.4)'
+                  : mood === 'dizzy'
+                  ? '0 0 8px rgba(245,158,11,0.45)'
                   : mood === 'petted'
                   ? '0 0 6px rgba(217,119,6,0.25)'
                   : 'none',
               willChange: 'transform',
             }}
             animate={
-              isNight
+              mood === 'dizzy'
+                ? { rotate: [-6, 6, -6], y: [0, -1, 0, 1, 0], scale: [1, 0.97, 1, 0.97, 1] }
+                : isNight
                 ? { y: [0, -1, 0], opacity: [0.75, 0.9, 0.75] }
                 : mood === 'celebrate'
                 ? { y: [0, -3, 0, -3, 0] }
@@ -314,12 +629,14 @@ export default function AsciiPet({
                 : { y: [0, -1.2, 0] }
             }
             transition={
-              isNight
+              mood === 'dizzy'
+                ? { duration: 1.4, repeat: Infinity, ease: 'easeInOut' }
+                : isNight
                 ? { duration: 5.4, repeat: Infinity, ease: 'easeInOut' }
                 : mood === 'celebrate'
                 ? { duration: 1.0, ease: 'easeInOut' }
                 : mood === 'petted'
-                ? { duration: 0.9, repeat: 1, ease: 'easeInOut' }
+                ? { duration: 0.9, repeat: Infinity, ease: 'easeInOut' }
                 : { duration: 5.5, repeat: Infinity, ease: 'easeInOut' }
             }
           >
@@ -402,10 +719,53 @@ export default function AsciiPet({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Звёздочки кружат над головой при dizzy. Орбита — эллипс ~58×16,
+            смещён вверх. Один rotate на родителе, четыре звезды позиционированы
+            по углам 0/90/180/270 — получаем «карусель» вокруг центра головы. */}
+        <AnimatePresence>
+          {dizzy && (
+            <motion.div
+              key="dizzy-stars"
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+            >
+              <motion.div
+                className="absolute left-1/2 top-3"
+                style={{ width: 0, height: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: 1.8, repeat: Infinity, ease: 'linear' }}
+              >
+                {[0, 1, 2, 3].map((i) => {
+                  const angle = (i * Math.PI) / 2
+                  return (
+                    <motion.span
+                      key={i}
+                      className="absolute font-display text-amber-500 dark:text-amber-300"
+                      style={{
+                        left: Math.cos(angle) * 29 - 5,
+                        top:  Math.sin(angle) * 8  - 7,
+                        fontSize: 12,
+                      }}
+                      animate={{ opacity: [0.5, 1, 0.5], scale: [0.85, 1.1, 0.85] }}
+                      transition={{ duration: 0.9, delay: i * 0.18, repeat: Infinity, ease: 'easeInOut' }}
+                    >
+                      ✦
+                    </motion.span>
+                  )
+                })}
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
   )
 
-  // ── Лейбл настроения + прогресс ──────────────────────────────────────
+  // ── Лейбл настроения + прогресс + (опц.) кнопка обновления ──────────
   const moodBar = (
     <div className="h-4 flex items-center justify-center gap-1.5">
       <span
@@ -418,6 +778,31 @@ export default function AsciiPet({
       <span className="font-mono text-[10px] text-gray-400 dark:text-gray-500 tabular-nums">
         {progressPct}%
       </span>
+      {onRefresh && (
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isLoading}
+          aria-label="перегенерировать совет"
+          title="перегенерировать"
+          className="ml-0.5 w-4 h-4 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          <svg
+            width="11"
+            height="11"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={clsx(isLoading && 'animate-spin')}
+          >
+            <path d="M21 12a9 9 0 1 1-3-6.7L21 8" />
+            <polyline points="21 3 21 8 16 8" />
+          </svg>
+        </button>
+      )}
     </div>
   )
 
@@ -481,7 +866,7 @@ export default function AsciiPet({
             </motion.div>
           </AnimatePresence>
         )}
-        {persona && !petting && !isLoading && (
+        {persona && !petting && (
           <div className="mt-1 text-[10px] uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">
             — {persona.name}
           </div>

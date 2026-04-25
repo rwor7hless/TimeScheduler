@@ -47,13 +47,20 @@ describe('ReportsController', () => {
     expect(svc.testPush).toHaveBeenCalled();
     const u = user();
     await ctrl.dailyTip(u);
-    expect(svc.dailyTip).toHaveBeenCalledWith(u, undefined);
+    expect(svc.dailyTip).toHaveBeenCalledWith(u, undefined, false);
   });
 
   it('dailyTip forwards persona query param', async () => {
     const { ctrl, svc } = make();
     const u = user({ is_admin: true });
     await ctrl.dailyTip(u, 'blin');
-    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'blin');
+    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'blin', false);
+  });
+
+  it('dailyTip forwards refresh=1 as boolean true', async () => {
+    const { ctrl, svc } = make();
+    const u = user();
+    await ctrl.dailyTip(u, 'lazer', '1');
+    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'lazer', true);
   });
 });

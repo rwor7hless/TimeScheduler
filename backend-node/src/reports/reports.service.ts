@@ -14,7 +14,12 @@ import {
   ANGLE_SEEDS as WEEKLY_ANGLES,
   buildWeeklyPrompt,
 } from '../llm/prompts/weekly-report.prompt';
-import { buildPetPrompt } from '../llm/prompts/pet-tip.prompt';
+import {
+  buildPetPrompt,
+  dayOfWeekRu,
+  isWeekendInTz,
+  timeOfDayFromHour,
+} from '../llm/prompts/pet-tip.prompt';
 import {
   PERSONAS,
   parseAndValidate,
@@ -59,7 +64,12 @@ type DailyTipCacheEntry = {
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
-  private readonly dailyTipCache = new Map<number, DailyTipCacheEntry>();
+  /**
+   * Кеш per-(user, persona) — ключ `${userId}:${personaId}`.
+   * Раз в день генерируется одна запись на персону, чтобы пользователь мог
+   * переключаться между котами без LLM-вызова на каждый клик.
+   */
+  private readonly dailyTipCache = new Map<string, DailyTipCacheEntry>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -176,18 +186,26 @@ export class ReportsService {
     });
   }
 
-  async dailyTip(user: User, forcedPersona?: string): Promise<DailyTipResult> {
+  async dailyTip(
+    user: User,
+    forcedPersona?: string,
+    refresh = false,
+  ): Promise<DailyTipResult> {
     const today = ReportsService.todayIso();
     if (!this.llm.llmAvailable()) {
       return { date: today, disabled: true, persona: null, short: null, long: null };
     }
 
-    // Admin-only persona override; bypasses cache so switching reflects immediately.
+    // Override доступен любому пользователю. Защита от мусора в query — только
+    // валидные id персон. Всё кешируется per-(user, persona), так что
+    // переключение между котами не дёргает LLM повторно.
     const overrideId =
-      forcedPersona && user.is_admin && forcedPersona in PERSONAS ? forcedPersona : undefined;
+      forcedPersona && forcedPersona in PERSONAS ? forcedPersona : undefined;
 
-    if (!overrideId) {
-      const cached = this.dailyTipCache.get(user.id);
+    // Если есть валидный override — можем дёрнуть кеш до фетча данных.
+    // refresh=true принудительно обходит кеш и тянет свежий ответ от LLM.
+    if (overrideId && !refresh) {
+      const cached = this.dailyTipCache.get(`${user.id}:${overrideId}`);
       if (cached && cached.date === today) {
         return {
           date: today,
@@ -274,12 +292,31 @@ export class ReportsService {
         hour: localHour,
       });
 
+    // Авто-режим: кеш проверяем здесь (после вычисления auto-персоны).
+    // Override-кеш уже проверен выше, так что повторно не дёргаем.
+    // refresh=true пропускает кеш в обоих ветках.
+    if (!overrideId && !refresh) {
+      const cached = this.dailyTipCache.get(`${user.id}:${personaId}`);
+      if (cached && cached.date === today) {
+        return {
+          date: today,
+          persona: cached.persona,
+          short: cached.short,
+          long: cached.long,
+        };
+      }
+    }
+
+    const now = new Date();
     const messages = buildPetPrompt({
       personaId,
       tasks: allTasks,
       habits: habitNames.map((h) => h.name),
       deadlineToday: deadlineRows.map((r) => r.title),
       overdue: overdueRows.map((r) => r.title),
+      dayOfWeek: dayOfWeekRu(now, tz),
+      timeOfDay: timeOfDayFromHour(localHour),
+      isWeekend: isWeekendInTz(now, tz),
     });
 
     let raw: string;
@@ -304,15 +341,14 @@ export class ReportsService {
       eyes_r: p.eyes_r,
     };
 
-    if (!overrideId) {
-      this.dailyTipCache.set(user.id, {
-        date: today,
-        personaId,
-        persona: personaDto,
-        short: parsed.short,
-        long: parsed.long,
-      });
-    }
+    // Кеш per-(user, persona) — пишем всегда, в т.ч. для override.
+    this.dailyTipCache.set(`${user.id}:${personaId}`, {
+      date: today,
+      personaId,
+      persona: personaDto,
+      short: parsed.short,
+      long: parsed.long,
+    });
 
     return {
       date: today,
@@ -384,8 +420,11 @@ export class ReportsService {
     return `${dd}.${mm}`;
   }
 
-  /** Testing hook: reset daily-tip cache for a specific user. */
+  /** Testing hook: reset daily-tip cache for a specific user (все его персоны). */
   clearDailyTipCache(userId: number): void {
-    this.dailyTipCache.delete(userId);
+    const prefix = `${userId}:`;
+    for (const key of this.dailyTipCache.keys()) {
+      if (key.startsWith(prefix)) this.dailyTipCache.delete(key);
+    }
   }
 }

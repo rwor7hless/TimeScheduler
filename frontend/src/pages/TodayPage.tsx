@@ -1,11 +1,12 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { addDays, format, isSameDay, parseISO } from 'date-fns'
+import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useTasks, usePatchTask, useCreateTask, useBoards } from '@/hooks/useTasks'
+import { useTasks, usePatchTask, useCreateTask } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import AsciiPet from '@/components/today/AsciiPet'
+import PersonaPicker from '@/components/today/PersonaPicker'
 import Spinner from '@/components/ui/Spinner'
 import { useDailyTip } from '@/hooks/useDailyTip'
 import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
@@ -56,6 +57,41 @@ function formatRelativeDate(
 }
 
 type TodayTaskType = 'scheduled' | 'deadline' | 'my_day'
+
+// ─── Date sections (нижняя часть страницы — секции по дате) ────────────────
+
+type DateSectionKey = number | 'later' | 'noDate'
+
+/** "Дата задачи" для распределения по секциям: scheduled_start приоритетнее deadline. */
+function getTaskDateOnly(task: Task): string | null {
+  if (task.scheduled_start) return task.scheduled_start.slice(0, 10)
+  if (task.deadline) return task.deadline.slice(0, 10)
+  return null
+}
+
+function getDateSectionKey(task: Task, todayStr: string): DateSectionKey | null {
+  const taskDate = getTaskDateOnly(task)
+  if (!taskDate) return 'noDate'
+  if (taskDate <= todayStr) return null // прошлое или сегодня — обрабатывается отдельно
+  const diffDays = differenceInCalendarDays(parseISO(taskDate), parseISO(todayStr))
+  if (diffDays > 30) return 'later'
+  return diffDays
+}
+
+function getDateSectionLabel(key: DateSectionKey, today: Date): string {
+  if (key === 'later') return 'Позднее'
+  if (key === 'noDate') return 'Отложенное'
+  if (key === 1) return 'Завтра'
+  if (key === 2) return 'Послезавтра'
+  if (key === 3) return 'Через 3 дня'
+  if (typeof key === 'number') {
+    return format(addDays(today, key), 'd MMMM', { locale: ru })
+  }
+  return ''
+}
+
+/** Завтра / Послезавтра / Через 3 дня — открыты по умолчанию. Дальше — свёрнуто. */
+const DEFAULT_OPEN_SECTION_KEYS = new Set<string>(['1', '2', '3'])
 
 // ─── Unified task row ────────────────────────────────────────────────────────
 
@@ -227,8 +263,6 @@ function BacklogTaskRow({
         'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group',
         done
           ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
-          : isOverdue
-          ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800/50 hover:border-red-300'
           : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
       )}
     >
@@ -274,21 +308,18 @@ function BacklogTaskRow({
       {!done && task.tags && task.tags.length > 0 && (
         <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
       )}
-      {!done && !isOverdue && dateLabel && (
+      {!done && dateLabel && (
         <span
           className={clsx(
             'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
-            dateLabel.tomorrow
+            isOverdue
+              ? 'text-red-500 dark:text-red-400'
+              : dateLabel.tomorrow
               ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
               : 'text-gray-400 dark:text-gray-500',
           )}
         >
           {dateLabel.text}
-        </span>
-      )}
-      {isOverdue && (
-        <span className="text-[10px] font-medium text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
-          Просрочено
         </span>
       )}
       {!done && onAddToMyDay && (
@@ -372,25 +403,21 @@ function buildSegments(text: string, spans: TokenSpan[]) {
 export default function TodayPage() {
   const today = useMemo(() => new Date(), [])
   const todayStr = format(today, 'yyyy-MM-dd')
-  const tomorrow = useMemo(() => addDays(today, 1), [today])
-  const tomorrowStr = format(tomorrow, 'yyyy-MM-dd')
   const wd = weekdayIndex(today)
-  const wdTomorrow = weekdayIndex(tomorrow)
 
   const { data: allTasks, isLoading: tasksLoading } = useTasks()
-  const { data: boards } = useBoards()
   const { data: habits, isLoading: habitsLoading } = useHabits()
   const patchTask = usePatchTask()
   const createTask = useCreateTask()
   const toggleLog = useToggleHabitLog()
 
-  const { tip, isLoading: tipLoading } = useDailyTip()
+  const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
 
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
-  const [backlogOpen, setBacklogOpen] = useState(false)
-  const [tomorrowOpen, setTomorrowOpen] = useState(false)
+  const [topTab, setTopTab] = useState<'today' | 'overdue'>('today')
+  const [sectionOverrides, setSectionOverrides] = useState<Map<string, boolean>>(new Map())
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
 
@@ -482,45 +509,96 @@ export default function TodayPage() {
     return result
   }, [allTasks, today, todayStr, wd])
 
-  // ── Tomorrow ──────────────────────────────────────────────────────────────
-  const tomorrowTasks = useMemo(() => {
+  // ── Overdue (вкладка рядом с "Сегодня") ────────────────────────────────────
+  // Просрочено = есть deadline в прошлом, не done, не archived, не в "Сегодня",
+  // не повторяющаяся (у регулярных задач deadline трактуется иначе).
+  const overdueTasks = useMemo(() => {
     if (!allTasks) return []
     const todayIds = new Set(todayUnified.map((e) => e.task.id))
-    const matches = (t: Task) => {
-      if (t.is_archived || t.status === 'done') return false
-      if (todayIds.has(t.id)) return false
-      if (t.scheduled_start) {
-        if (t.repeat_days?.length) {
-          if (t.repeat_days.includes(wdTomorrow)) return true
-        } else if (isSameDay(parseISO(t.scheduled_start), tomorrow)) {
-          return true
-        }
-      }
-      if (t.deadline?.slice(0, 10) === tomorrowStr) return true
-      return false
-    }
     return allTasks
-      .filter(matches)
-      .sort((a, b) => {
+      .filter(
+        (t) =>
+          !todayIds.has(t.id) &&
+          !t.is_archived &&
+          t.status !== 'done' &&
+          !(t.repeat_days && t.repeat_days.length > 0) &&
+          t.deadline != null &&
+          t.deadline.slice(0, 10) < todayStr,
+      )
+      .sort((a, b) => a.deadline!.localeCompare(b.deadline!))
+  }, [allTasks, todayUnified, todayStr])
+
+  // ── Date sections (нижняя часть: Завтра / Послезавтра / Через 3 дня /
+  //    конкретные даты до +30 / Позднее / Отложенное) ─────────────────────────
+  const dateSections = useMemo(() => {
+    if (!allTasks) return []
+    const todayIds = new Set(todayUnified.map((e) => e.task.id))
+    const overdueIds = new Set(overdueTasks.map((t) => t.id))
+    const buckets = new Map<DateSectionKey, Task[]>()
+
+    for (const task of allTasks) {
+      if (task.is_archived) continue
+      if (task.status === 'done') continue
+      if (todayIds.has(task.id)) continue
+      if (overdueIds.has(task.id)) continue
+      if (task.repeat_days && task.repeat_days.length > 0) continue
+      const key = getDateSectionKey(task, todayStr)
+      if (key === null) continue
+      const arr = buckets.get(key)
+      if (arr) arr.push(task)
+      else buckets.set(key, [task])
+    }
+
+    for (const arr of buckets.values()) {
+      arr.sort((a, b) => {
+        const aD = getTaskDateOnly(a) ?? ''
+        const bD = getTaskDateOnly(b) ?? ''
+        if (aD !== bD) return aD < bD ? -1 : 1
         const aT = a.scheduled_start ? new Date(a.scheduled_start).getTime() : Infinity
         const bT = b.scheduled_start ? new Date(b.scheduled_start).getTime() : Infinity
         if (aT !== bT) return aT - bT
         return a.title.localeCompare(b.title, 'ru')
       })
-  }, [allTasks, todayUnified, tomorrow, tomorrowStr, wdTomorrow])
+    }
 
-  // ── Backlog ───────────────────────────────────────────────────────────────
-  const backlogTasks = useMemo(() => {
-    if (!allTasks) return []
-    const todayIds = new Set(todayUnified.map((e) => e.task.id))
-    const tomorrowIds = new Set(tomorrowTasks.map((t) => t.id))
-    return allTasks.filter(
-      (t) =>
-        !t.is_archived &&
-        !todayIds.has(t.id) &&
-        !tomorrowIds.has(t.id)
-    )
-  }, [allTasks, todayUnified, tomorrowTasks])
+    const sections: { key: DateSectionKey; label: string; tasks: Task[] }[] = []
+    for (let i = 1; i <= 30; i++) {
+      const arr = buckets.get(i)
+      if (arr && arr.length > 0) {
+        sections.push({ key: i, label: getDateSectionLabel(i, today), tasks: arr })
+      }
+    }
+    const later = buckets.get('later')
+    if (later && later.length > 0) {
+      sections.push({ key: 'later', label: getDateSectionLabel('later', today), tasks: later })
+    }
+    const noDate = buckets.get('noDate')
+    if (noDate && noDate.length > 0) {
+      sections.push({ key: 'noDate', label: getDateSectionLabel('noDate', today), tasks: noDate })
+    }
+    return sections
+  }, [allTasks, todayUnified, overdueTasks, todayStr, today])
+
+  // Если вкладка "Просрочено" открыта, а просрочек больше нет — переключаемся.
+  useEffect(() => {
+    if (topTab === 'overdue' && overdueTasks.length === 0) {
+      setTopTab('today')
+    }
+  }, [topTab, overdueTasks.length])
+
+  const isSectionOpen = (key: string): boolean => {
+    if (sectionOverrides.has(key)) return sectionOverrides.get(key)!
+    return DEFAULT_OPEN_SECTION_KEYS.has(key)
+  }
+
+  const toggleSection = (key: string) => {
+    const current = isSectionOpen(key)
+    setSectionOverrides((prev) => {
+      const next = new Map(prev)
+      next.set(key, !current)
+      return next
+    })
+  }
 
   // ── Progress ──────────────────────────────────────────────────────────────
   const activeHabits = useMemo(() => habits?.filter((h) => h.is_active) ?? [], [habits])
@@ -648,7 +726,7 @@ export default function TodayPage() {
       </div>
 
       {/* ── Pet (mobile) ────────────────────────────────────────────────────── */}
-      <div className="lg:hidden">
+      <div className="lg:hidden space-y-2">
         <AsciiPet
           short={tip?.short ?? null}
           long={tip?.long ?? null}
@@ -656,6 +734,12 @@ export default function TodayPage() {
           isLoading={tipLoading}
           progress={(taskPct + habitPct) / 200}
           celebrateKey={doneTodayCount + doneHabits}
+          onRefresh={refreshTip}
+        />
+        <PersonaPicker
+          selectedId={overrideId}
+          onPick={forcePersona}
+          disabled={tipLoading}
         />
       </div>
 
@@ -745,8 +829,45 @@ export default function TodayPage() {
             )}
           </div>
 
-          {/* Unified today list */}
-          {todayUnified.length === 0 ? (
+          {/* Tabs: Сегодня / Просрочено — вкладка появляется только если N>0 */}
+          {overdueTasks.length > 0 && (
+            <div className="ts-subtabs">
+              <button
+                type="button"
+                onClick={() => setTopTab('today')}
+                className={clsx(topTab === 'today' && 'active')}
+              >
+                Сегодня
+                {todayUnified.length > 0 && (
+                  <span className="ml-1 opacity-60">({todayUnified.length})</span>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setTopTab('overdue')}
+                className={clsx(topTab === 'overdue' && 'active')}
+              >
+                Просрочено
+                <span className="ml-1 text-red-500 dark:text-red-400">({overdueTasks.length})</span>
+              </button>
+            </div>
+          )}
+
+          {/* Top section: today list или overdue list */}
+          {topTab === 'overdue' && overdueTasks.length > 0 ? (
+            <div className="space-y-1.5">
+              {overdueTasks.map((task) => (
+                <BacklogTaskRow
+                  key={task.id}
+                  task={task}
+                  todayStr={todayStr}
+                  onToggle={() => handleTaskToggle(task)}
+                  onAddToMyDay={() => handleAddToMyDay(task)}
+                  onClick={() => openEdit(task)}
+                />
+              ))}
+            </div>
+          ) : todayUnified.length === 0 ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
               Нет задач на сегодня — добавь или назначь дедлайн
             </p>
@@ -766,111 +887,51 @@ export default function TodayPage() {
             </div>
           )}
 
-          {/* Tomorrow — collapsed by default */}
-          {tomorrowTasks.length > 0 && (
-            <section className="pt-1">
-              <button
-                type="button"
-                onClick={() => setTomorrowOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
-              >
-                <svg
-                  width="10" height="10" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className={clsx('transition-transform', tomorrowOpen ? 'rotate-90' : '')}
+          {/* Секции по дате: Завтра / Послезавтра / Через 3 дня / 5 мая / ... / Позднее / Отложенное */}
+          {dateSections.map((section) => {
+            const keyStr = String(section.key)
+            const open = isSectionOpen(keyStr)
+            return (
+              <section key={keyStr} className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => toggleSection(keyStr)}
+                  className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
                 >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-                Завтра
-                <span className="ml-0.5 text-[10px] font-normal normal-case tracking-normal">
-                  ({tomorrowTasks.length})
-                </span>
-              </button>
-
-              {tomorrowOpen && (
-                <div className="mt-2 space-y-1.5">
-                  {tomorrowTasks.map((task) => (
-                    <BacklogTaskRow
-                      key={task.id}
-                      task={task}
-                      todayStr={todayStr}
-                      onToggle={() => handleTaskToggle(task)}
-                      onAddToMyDay={() => handleAddToMyDay(task)}
-                      onClick={() => openEdit(task)}
-                    />
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* Backlog — collapsed by default */}
-          {backlogTasks.length > 0 && (
-            <section className="pt-1">
-              <button
-                type="button"
-                onClick={() => setBacklogOpen((v) => !v)}
-                className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
-              >
-                <svg
-                  width="10" height="10" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                  className={clsx('transition-transform', backlogOpen ? 'rotate-90' : '')}
-                >
-                  <polyline points="9 18 15 12 9 6" />
-                </svg>
-                Беклог
-                <span className="ml-0.5 text-[10px] font-normal normal-case tracking-normal">
-                  ({backlogTasks.length})
-                </span>
-              </button>
-
-              {backlogOpen && (
-                <div className="mt-2 space-y-4">
-                  {(() => {
-                    const groups: { boardId: number | null; name: string; tasks: Task[] }[] = []
-                    for (const task of backlogTasks) {
-                      const existing = groups.find((g) => g.boardId === task.board_id)
-                      if (existing) {
-                        existing.tasks.push(task)
-                      } else {
-                        const boardName =
-                          task.board_id == null
-                            ? 'Входящие'
-                            : (boards?.find((b) => b.id === task.board_id)?.name ?? `Проект ${task.board_id}`)
-                        groups.push({ boardId: task.board_id, name: boardName, tasks: [task] })
-                      }
-                    }
-                    return groups.map((group) => (
-                      <div key={group.boardId ?? 'main'}>
-                        <div className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-1.5 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-600 inline-block" />
-                          {group.name}
-                        </div>
-                        <div className="space-y-1.5">
-                          {group.tasks.map((task) => (
-                            <BacklogTaskRow
-                              key={task.id}
-                              task={task}
-                              todayStr={todayStr}
-                              onToggle={() => handleTaskToggle(task)}
-                              onAddToMyDay={() => handleAddToMyDay(task)}
-                              onClick={() => openEdit(task)}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    ))
-                  })()}
-                </div>
-              )}
-            </section>
-          )}
+                  <svg
+                    width="10" height="10" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={clsx('transition-transform', open ? 'rotate-90' : '')}
+                  >
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                  {section.label}
+                  <span className="ml-0.5 text-[10px] font-normal normal-case tracking-normal">
+                    ({section.tasks.length})
+                  </span>
+                </button>
+                {open && (
+                  <div className="mt-2 space-y-1.5">
+                    {section.tasks.map((task) => (
+                      <BacklogTaskRow
+                        key={task.id}
+                        task={task}
+                        todayStr={todayStr}
+                        onToggle={() => handleTaskToggle(task)}
+                        onAddToMyDay={() => handleAddToMyDay(task)}
+                        onClick={() => openEdit(task)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </section>
+            )
+          })}
         </div>
 
         {/* Right — pet + habits */}
         <div className="space-y-5">
-          <div className="hidden lg:block">
+          <div className="hidden lg:block space-y-2">
             <AsciiPet
               short={tip?.short ?? null}
               long={tip?.long ?? null}
@@ -878,6 +939,12 @@ export default function TodayPage() {
               isLoading={tipLoading}
               progress={(taskPct + habitPct) / 200}
               celebrateKey={doneTodayCount + doneHabits}
+              onRefresh={refreshTip}
+            />
+            <PersonaPicker
+              selectedId={overrideId}
+              onPick={forcePersona}
+              disabled={tipLoading}
             />
           </div>
 

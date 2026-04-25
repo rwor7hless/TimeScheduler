@@ -27,12 +27,16 @@ export const reportsApi = {
       })
       .then((r) => r.data),
 
-  getDailyTip: (forcePersona?: string): Promise<DailyTipResponse> =>
-    client
+  getDailyTip: (forcePersona?: string, refresh = false): Promise<DailyTipResponse> => {
+    const params: Record<string, string> = {}
+    if (forcePersona) params.persona = forcePersona
+    if (refresh) params.refresh = '1'
+    return client
       .get('/reports/daily-tip', {
-        params: forcePersona ? { persona: forcePersona } : undefined,
+        params: Object.keys(params).length > 0 ? params : undefined,
       })
-      .then((r) => r.data),
+      .then((r) => r.data)
+  },
 
   requestSummary: (): Promise<WeeklyReport> =>
     client.post('/reports/request-summary').then((r) => r.data),

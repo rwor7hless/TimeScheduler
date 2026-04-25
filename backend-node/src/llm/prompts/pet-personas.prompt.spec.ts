@@ -1,9 +1,9 @@
 import { PERSONAS, parseAndValidate, pickPersona } from './pet-personas.prompt';
 
 describe('pet-personas', () => {
-  it('exposes exactly 5 personas', () => {
+  it('exposes the seven canonical personas', () => {
     expect(Object.keys(PERSONAS).sort()).toEqual(
-      ['blin', 'plyushka', 'shprot', 'suhar', 'valeryan'].sort(),
+      ['blin', 'lazer', 'marquis', 'plyushka', 'shprot', 'suhar', 'valeryan'].sort(),
     );
   });
 

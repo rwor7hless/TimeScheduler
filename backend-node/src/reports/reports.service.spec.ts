@@ -216,32 +216,73 @@ describe('ReportsService', () => {
       expect(llm.chatCompletion).toHaveBeenCalledTimes(1);
     });
 
-    it('admin persona override bypasses cache and picks requested persona', async () => {
+    it('persona override picks requested persona for any user', async () => {
       const prisma = makePrisma();
       const llm = makeLlm(true);
       (llm.chatCompletion as jest.Mock).mockResolvedValue(
         '{"short": "s", "long": "l"}',
       );
       const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
-      const admin = makeUser({ is_admin: true });
-      const out = await svc.dailyTip(admin, 'blin');
+      const user = makeUser({ is_admin: false });
+      const out = await svc.dailyTip(user, 'blin');
       expect(out.persona?.id).toBe('blin');
-      // Second call with different persona must re-invoke LLM (cache bypass).
-      await svc.dailyTip(admin, 'shprot');
+      // Switching to a different persona on the same day = fresh LLM call (different cache key).
+      await svc.dailyTip(user, 'shprot');
       expect(llm.chatCompletion).toHaveBeenCalledTimes(2);
     });
 
-    it('non-admin cannot override persona', async () => {
+    it('repeated override of the same persona uses per-persona cache', async () => {
       const prisma = makePrisma();
       const llm = makeLlm(true);
       (llm.chatCompletion as jest.Mock).mockResolvedValue(
         '{"short": "s", "long": "l"}',
       );
       const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
-      const out = await svc.dailyTip(makeUser({ is_admin: false }), 'blin');
-      // override silently ignored — persona is deterministic from (id, date),
-      // so we just check that the response is valid (not necessarily blin).
+      const user = makeUser({ is_admin: false });
+      await svc.dailyTip(user, 'blin');
+      await svc.dailyTip(user, 'blin');
+      await svc.dailyTip(user, 'blin');
+      expect(llm.chatCompletion).toHaveBeenCalledTimes(1);
+    });
+
+    it('refresh=true bypasses cache and re-invokes LLM for the same persona', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "s", "long": "l"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const user = makeUser({ is_admin: false });
+      await svc.dailyTip(user, 'blin');
+      await svc.dailyTip(user, 'blin', true);
+      await svc.dailyTip(user, 'blin', true);
+      expect(llm.chatCompletion).toHaveBeenCalledTimes(3);
+    });
+
+    it('refresh=true also bypasses auto-mode cache', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "s", "long": "l"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const u = makeUser();
+      await svc.dailyTip(u);
+      await svc.dailyTip(u, undefined, true);
+      expect(llm.chatCompletion).toHaveBeenCalledTimes(2);
+    });
+
+    it('invalid persona id falls back to deterministic auto pick', async () => {
+      const prisma = makePrisma();
+      const llm = makeLlm(true);
+      (llm.chatCompletion as jest.Mock).mockResolvedValue(
+        '{"short": "s", "long": "l"}',
+      );
+      const svc = new ReportsService(prisma, llm, makeNtfy(), makeWeeklyData(), makeConfig());
+      const out = await svc.dailyTip(makeUser({ is_admin: false }), 'not-a-cat');
+      // Garbage override id игнорируется молча; персона выбирается auto-логикой.
       expect(out.persona).not.toBeNull();
+      expect(out.persona?.id).not.toBe('not-a-cat');
     });
 
     it('wraps chatCompletion errors as 503', async () => {

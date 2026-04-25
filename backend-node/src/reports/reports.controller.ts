@@ -59,7 +59,8 @@ export class ReportsController {
   dailyTip(
     @CurrentUser() user: User,
     @Query('persona') persona?: string,
+    @Query('refresh') refresh?: string,
   ): Promise<DailyTipResult> {
-    return this.reports.dailyTip(user, persona);
+    return this.reports.dailyTip(user, persona, refresh === '1');
   }
 }
