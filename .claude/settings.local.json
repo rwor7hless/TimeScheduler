@@ -31,7 +31,15 @@
       "Bash(docker compose *)",
       "Bash(npx tsc *)",
       "Bash(npx vite *)",
-      "Bash(python -c \"from prompts.pet_personas import PERSONAS; assert len\\(PERSONAS\\) == 5; print\\('ok'\\)\")"
+      "Bash(python -c \"from prompts.pet_personas import PERSONAS; assert len\\(PERSONAS\\) == 5; print\\('ok'\\)\")",
+      "Bash(docker volume *)",
+      "Bash(/bin/ls /home/wor7hless/Documents/Github/TimeScheduler/backend/app/routers/)",
+      "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/)",
+      "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/routers/__pycache__/)",
+      "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/services/__pycache__/)",
+      "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/__pycache__/)",
+      "Bash(getfacl /home/wor7hless/Documents/Github/TimeScheduler/backend/app/routers/)",
+      "Bash(/bin/ls *)"
     ]
   }
 }
