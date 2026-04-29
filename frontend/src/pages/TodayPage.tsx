@@ -110,7 +110,7 @@ function TodayTaskRow({
   onRemove?: () => void
   onClick: () => void
 }) {
-  const done = task.status === 'done'
+  const done = task.done
 
   const timeLabel =
     type === 'scheduled' && task.scheduled_start
@@ -250,7 +250,7 @@ function BacklogTaskRow({
   onAddToMyDay?: () => void
   onClick: () => void
 }) {
-  const done = task.status === 'done'
+  const done = task.done
   const isOverdue = !done && task.deadline != null && task.deadline.slice(0, 10) < todayStr
   const dateLabel = formatRelativeDate(
     task.scheduled_start ?? task.deadline,
@@ -421,59 +421,6 @@ export default function TodayPage() {
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
 
-  // Auto-clear scheduled date on tasks whose scheduled day has already passed
-  // — они уходят в бэклог вместо «висящих просроченных». Делаем это один раз
-  // за визит, показываем один тост со всеми и даём Undo.
-  const cleanupRanRef = useRef(false)
-  useEffect(() => {
-    if (!allTasks || cleanupRanRef.current) return
-
-    const overdue: Array<{ id: number; prevStart: string; prevEnd: string | null }> = []
-    for (const t of allTasks) {
-      if (t.is_archived) continue
-      if (t.status === 'done') continue
-      if (t.repeat_days && t.repeat_days.length > 0) continue
-      if (!t.scheduled_start) continue
-      if (t.scheduled_start.slice(0, 10) >= todayStr) continue
-      overdue.push({ id: t.id, prevStart: t.scheduled_start, prevEnd: t.scheduled_end ?? null })
-    }
-    if (overdue.length === 0) return
-
-    cleanupRanRef.current = true
-    for (const { id } of overdue) {
-      patchTask.mutate({ id, data: { scheduled_start: null, scheduled_end: null } })
-    }
-
-    const label =
-      overdue.length === 1
-        ? '1 просроченная задача перенесена в бэклог'
-        : `${overdue.length} просроченных задач перенесены в бэклог`
-
-    toast(
-      (toastObj) => (
-        <div className="flex items-center gap-3">
-          <span>{label}</span>
-          <button
-            type="button"
-            className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
-            onClick={() => {
-              for (const item of overdue) {
-                patchTask.mutate({
-                  id: item.id,
-                  data: { scheduled_start: item.prevStart, scheduled_end: item.prevEnd },
-                })
-              }
-              toast.dismiss(toastObj.id)
-            }}
-          >
-            Отменить
-          </button>
-        </div>
-      ),
-      { duration: 6000 },
-    )
-  }, [allTasks, todayStr, patchTask])
-
   // ── Unified "today" list: scheduled → deadline → my_day ──────────────────
   const todayUnified = useMemo(() => {
     if (!allTasks) return []
@@ -520,7 +467,7 @@ export default function TodayPage() {
         (t) =>
           !todayIds.has(t.id) &&
           !t.is_archived &&
-          t.status !== 'done' &&
+          !t.done &&
           !(t.repeat_days && t.repeat_days.length > 0) &&
           t.deadline != null &&
           t.deadline.slice(0, 10) < todayStr,
@@ -538,7 +485,7 @@ export default function TodayPage() {
 
     for (const task of allTasks) {
       if (task.is_archived) continue
-      if (task.status === 'done') continue
+      if (task.done) continue
       if (todayIds.has(task.id)) continue
       if (overdueIds.has(task.id)) continue
       if (task.repeat_days && task.repeat_days.length > 0) continue
@@ -603,16 +550,16 @@ export default function TodayPage() {
   // ── Progress ──────────────────────────────────────────────────────────────
   const activeHabits = useMemo(() => habits?.filter((h) => h.is_active) ?? [], [habits])
   const isHabitDone = (h: Habit) => h.logs.some((l) => l.date === todayStr)
-  const doneTodayCount = todayUnified.filter(({ task }) => task.status === 'done').length
+  const doneTodayCount = todayUnified.filter(({ task }) => task.done).length
   const doneHabits = activeHabits.filter(isHabitDone).length
   const taskPct = todayUnified.length > 0 ? Math.round((doneTodayCount / todayUnified.length) * 100) : 0
   const habitPct = activeHabits.length > 0 ? Math.round((doneHabits / activeHabits.length) * 100) : 0
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleTaskToggle = async (task: Task) => {
-    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    const newDone = !task.done
     try {
-      await patchTask.mutateAsync({ id: task.id, data: { status: newStatus } })
+      await patchTask.mutateAsync({ id: task.id, data: { done: newDone } })
     } catch {
       toast.error('Не удалось обновить задачу')
     }
