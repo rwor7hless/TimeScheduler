@@ -16,6 +16,7 @@ import type { Habit } from '@/types/habit'
 import {
   DndContext,
   PointerSensor,
+  TouchSensor,
   closestCenter,
   useSensor,
   useSensors,
@@ -480,7 +481,14 @@ export default function TodayPage() {
     for (const b of boards) m.set(b.id, b.name)
     return m
   }, [boards])
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+  // Mouse/trackpad: 6px movement starts drag (so a single click on a row
+  // child like the checkbox doesn't accidentally drag).
+  // Touch: hold for 200ms, allow 5px finger jitter — distinguishes a drag
+  // gesture from a scroll swipe and from a button tap.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
     const { active, over } = event
