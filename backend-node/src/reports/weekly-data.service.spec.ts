@@ -22,8 +22,8 @@ describe('WeeklyDataService', () => {
     const prisma = makePrisma();
     (prisma.board.findMany as jest.Mock).mockResolvedValue([{ id: 1, name: 'Work' }]);
     (prisma.task.findMany as jest.Mock).mockImplementation(
-      ({ where }: { where: { status: unknown; board_id: number | null } }) => {
-        if (where.board_id === 1 && where.status === 'DONE') {
+      ({ where }: { where: { done: unknown; board_id: number | null } }) => {
+        if (where.board_id === 1 && where.done === true) {
           return Promise.resolve([{ id: 10, title: 'Написать', priority: 'HIGH', deadline: null }]);
         }
         return Promise.resolve([]);
@@ -62,8 +62,8 @@ describe('WeeklyDataService', () => {
       { id: 2, name: 'Busy' },
     ]);
     (prisma.task.findMany as jest.Mock).mockImplementation(
-      ({ where }: { where: { board_id: number | null; status: unknown } }) => {
-        if (where.board_id === 2 && where.status === 'DONE') {
+      ({ where }: { where: { board_id: number | null; done: unknown } }) => {
+        if (where.board_id === 2 && where.done === true) {
           return Promise.resolve([{ id: 1, title: 't', priority: 'LOW', deadline: null }]);
         }
         return Promise.resolve([]);

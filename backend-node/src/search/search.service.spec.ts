@@ -44,12 +44,12 @@ describe('SearchService', () => {
     expect(where.deleted_at).toBeNull();
   });
 
-  it('serializes tasks with lowercased enums + type discriminator', async () => {
+  it('serializes tasks with done flag + lowercased priority + type discriminator', async () => {
     prisma.task.findMany.mockResolvedValueOnce([
       {
         id: 1,
         title: 'Ship it',
-        status: 'TODO',
+        done: false,
         priority: 'HIGH',
         color: '#111111',
         board_id: 5,
@@ -60,7 +60,7 @@ describe('SearchService', () => {
     expect(out.tasks[0]).toEqual({
       id: 1,
       title: 'Ship it',
-      status: 'todo',
+      done: false,
       priority: 'high',
       color: '#111111',
       board_id: 5,

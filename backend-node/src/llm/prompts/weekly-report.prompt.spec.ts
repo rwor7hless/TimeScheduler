@@ -25,21 +25,18 @@ const sampleData: WeeklyDataInput = {
         { title: 'Созвон с командой', priority: 'средний' },
       ],
       overdue_tasks: [{ title: 'Срочный фикс', priority: 'срочный', deadline: '08.04.2026' }],
-      in_progress_tasks: [{ title: 'Рефакторинг', priority: 'низкий' }],
       todo_count: 3,
     },
     {
       name: 'Дом',
       done_tasks: [{ title: 'Убрать кухню', priority: 'низкий' }],
       overdue_tasks: [],
-      in_progress_tasks: [],
       todo_count: 0,
     },
     {
       name: 'Без проекта',
       done_tasks: [],
       overdue_tasks: [{ title: 'Забытое', priority: 'средний', deadline: '05.04.2026' }],
-      in_progress_tasks: [],
       todo_count: 1,
     },
   ],
@@ -89,8 +86,8 @@ describe('weekly-report prompt', () => {
 
   it('aggregates totals from projects', () => {
     expect(totalDone(sampleData)).toBe(3);
-    // done=3, overdue=2, in_progress=1, todo=4 → active=10 → 30%
-    expect(overallRate(sampleData)).toBe(30);
+    // done=3, overdue=2, todo=4 → active=9 → 33%
+    expect(overallRate(sampleData)).toBe(33);
   });
 
   it('formatDataBlock treats "Без проекта" as non-project bucket', () => {

@@ -24,8 +24,8 @@ function makeTask(overrides: Partial<Task> = {}): Task {
     title: 'T',
     description: null,
     priority: 'MEDIUM',
-    status: 'TODO',
-    kanban_order: 0,
+    done: false,
+    position: 0,
     scheduled_start: null,
     scheduled_end: null,
     deadline: null,
@@ -152,7 +152,7 @@ describe('TasksService', () => {
             deleted_at: null,
             parent_id: null,
           }),
-          orderBy: { kanban_order: 'asc' },
+          orderBy: { position: 'asc' },
         }),
       );
     });
@@ -203,7 +203,7 @@ describe('TasksService', () => {
       expect(prisma.task.create).toHaveBeenCalled();
       const createArg = prisma.task.create.mock.calls[0][0];
       expect(TASK_COLOR_PALETTE).toContain(createArg.data.color);
-      expect(createArg.data.kanban_order).toBe(1); // max (null) + 1
+      expect(createArg.data.position).toBe(1); // max (null) + 1
       expect(result.id).toBe(99);
     });
 
@@ -244,101 +244,85 @@ describe('TasksService', () => {
   });
 
   describe('patch completed_at rules', () => {
-    it('stamps completed_at when moving a non-done task to done (completed_at was null)', async () => {
+    it('stamps completed_at when toggling done from false (completed_at was null)', async () => {
       prisma.task.findFirst
-        .mockResolvedValueOnce({ id: 1, parent_id: null, status: 'TODO', completed_at: null })
+        .mockResolvedValueOnce({ id: 1, parent_id: null, done: false, completed_at: null })
         .mockResolvedValueOnce(withRelations(makeTask()) as unknown as Task);
       prisma.task.update.mockResolvedValue({});
 
-      await service.patch(1, 1, { status: 'done' });
+      await service.patch(1, 1, { done: true });
 
       const updateArg = prisma.task.update.mock.calls[0][0];
-      expect(updateArg.data.status).toBe('DONE');
+      expect(updateArg.data.done).toBe(true);
       expect(updateArg.data.completed_at).toBeInstanceOf(Date);
     });
 
-    it('preserves completed_at when patching a task that was already done', async () => {
+    it('preserves completed_at when patching a task that is already done', async () => {
       const originalDone = new Date('2026-01-10T12:00:00.000Z');
       prisma.task.findFirst
         .mockResolvedValueOnce({
           id: 1,
           parent_id: null,
-          status: 'DONE',
+          done: true,
           completed_at: originalDone,
         })
         .mockResolvedValueOnce(withRelations(makeTask()) as unknown as Task);
       prisma.task.update.mockResolvedValue({});
 
-      await service.patch(1, 1, { status: 'done' });
+      await service.patch(1, 1, { done: true });
 
       const updateArg = prisma.task.update.mock.calls[0][0];
-      // Python's `if status == DONE and completed_at is None` branch — we
-      // did NOT satisfy it, so completed_at must NOT be in the payload.
+      // Re-toggle into done while completed_at already set → field omitted,
+      // preserving existing value.
       expect(updateArg.data.completed_at).toBeUndefined();
     });
 
-    it('clears completed_at when moving away from done', async () => {
+    it('clears completed_at when toggling done back to false', async () => {
       prisma.task.findFirst
         .mockResolvedValueOnce({
           id: 1,
           parent_id: null,
-          status: 'DONE',
+          done: true,
           completed_at: new Date(),
         })
         .mockResolvedValueOnce(withRelations(makeTask()) as unknown as Task);
       prisma.task.update.mockResolvedValue({});
 
-      await service.patch(1, 1, { status: 'todo' });
+      await service.patch(1, 1, { done: false });
 
       expect(prisma.task.update.mock.calls[0][0].data.completed_at).toBeNull();
     });
   });
 
-  describe('reorder completed_at preservation', () => {
-    it('preserves existing timestamps when moving DONE→DONE', async () => {
-      const preexisting = new Date('2026-01-10T12:00:00.000Z');
-      prisma.task.findMany.mockResolvedValue([
-        { id: 1, completed_at: preexisting },
-        { id: 2, completed_at: null },
-      ]);
+  describe('reorder', () => {
+    it('writes position by index for owned ids', async () => {
+      prisma.task.findMany.mockResolvedValue([{ id: 1 }, { id: 2 }]);
       prisma.task.update.mockResolvedValue({});
 
-      await service.reorder(7, { status: 'done', ordered_ids: [2, 1] });
+      await service.reorder(7, { ordered_ids: [2, 1] });
 
       const calls = prisma.task.update.mock.calls.map(
-        (
-          c: [
-            { where: { id: number }; data: { completed_at?: Date | null; kanban_order: number } },
-          ],
-        ) => c[0],
+        (c: [{ where: { id: number }; data: { position: number } }]) => c[0],
       );
       const forId1 = calls.find((c: { where: { id: number } }) => c.where.id === 1);
       const forId2 = calls.find((c: { where: { id: number } }) => c.where.id === 2);
-      // id=1 already had a completed_at → field omitted, preserving existing value.
-      expect(forId1?.data.completed_at).toBeUndefined();
-      // id=2 was null → stamped with current now().
-      expect(forId2?.data.completed_at).toBeInstanceOf(Date);
-      // kanban_order follows list position.
-      expect(forId2?.data.kanban_order).toBe(0);
-      expect(forId1?.data.kanban_order).toBe(1);
+      expect(forId2?.data.position).toBe(0);
+      expect(forId1?.data.position).toBe(1);
     });
 
-    it('clears completed_at when moving to a non-DONE column', async () => {
-      prisma.task.findMany.mockResolvedValue([
-        { id: 1, completed_at: new Date() },
-        { id: 2, completed_at: null },
-      ]);
+    it('skips foreign ids silently', async () => {
+      // Caller asks for [1, 2, 3] but only 1 belongs to the user.
+      prisma.task.findMany.mockResolvedValue([{ id: 1 }]);
       prisma.task.update.mockResolvedValue({});
 
-      await service.reorder(7, { status: 'todo', ordered_ids: [1, 2] });
+      await service.reorder(7, { ordered_ids: [1, 2, 3] });
 
-      for (const call of prisma.task.update.mock.calls) {
-        expect(call[0].data.completed_at).toBeNull();
-      }
+      expect(prisma.task.update).toHaveBeenCalledTimes(1);
+      expect(prisma.task.update.mock.calls[0][0].where.id).toBe(1);
     });
 
     it('no-ops on empty ordered_ids', async () => {
-      const result = await service.reorder(7, { status: 'todo', ordered_ids: [] });
+      const result = await service.reorder(7, { ordered_ids: [] });
       expect(result).toEqual({ ok: true });
       expect(prisma.task.findMany).not.toHaveBeenCalled();
     });
@@ -401,15 +385,25 @@ describe('TasksService', () => {
   });
 
   describe('serialize parity', () => {
-    it('lowers Prisma UPPERCASE enums to Python wire format', async () => {
+    it('lowers Prisma UPPERCASE priority to lowercase wire format', async () => {
       prisma.task.findFirst.mockResolvedValue({
-        ...makeTask({ status: 'IN_PROGRESS', priority: 'URGENT' }),
+        ...makeTask({ priority: 'URGENT' }),
         task_tags: [],
         subtasks: [],
       });
       const result = await service.get(1, 1);
-      expect(result.status).toBe('in_progress');
       expect(result.priority).toBe('urgent');
+    });
+
+    it('passes done and position through verbatim', async () => {
+      prisma.task.findFirst.mockResolvedValue({
+        ...makeTask({ done: true, position: 7 }),
+        task_tags: [],
+        subtasks: [],
+      });
+      const result = await service.get(1, 1);
+      expect(result.done).toBe(true);
+      expect(result.position).toBe(7);
     });
 
     it('collapses empty repeat_days to null on the wire', async () => {

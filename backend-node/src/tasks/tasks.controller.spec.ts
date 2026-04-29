@@ -37,7 +37,7 @@ describe('TasksController', () => {
   it('list threads user.id + filters', async () => {
     await controller.list(
       user,
-      'todo',
+      'true',
       'high',
       'work',
       undefined,
@@ -51,7 +51,7 @@ describe('TasksController', () => {
     expect(service.list).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
-        status: 'todo',
+        done: true,
         priority: 'high',
         tag: 'work',
         search: 'foo',
@@ -62,10 +62,10 @@ describe('TasksController', () => {
     );
   });
 
-  it('list silently drops unknown status/priority enum values', async () => {
+  it('list silently drops unknown done/priority values', async () => {
     await controller.list(user, 'nope', 'nah');
     const filters = service.list.mock.calls[0][1];
-    expect(filters.status).toBeUndefined();
+    expect(filters.done).toBeUndefined();
     expect(filters.priority).toBeUndefined();
   });
 
@@ -75,8 +75,8 @@ describe('TasksController', () => {
   });
 
   it('reorder forwards user.id + body', async () => {
-    await controller.reorder(user, { status: 'done', ordered_ids: [1, 2] });
-    expect(service.reorder).toHaveBeenCalledWith(42, { status: 'done', ordered_ids: [1, 2] });
+    await controller.reorder(user, { ordered_ids: [1, 2] });
+    expect(service.reorder).toHaveBeenCalledWith(42, { ordered_ids: [1, 2] });
   });
 
   it('create forwards user.id + body', async () => {
