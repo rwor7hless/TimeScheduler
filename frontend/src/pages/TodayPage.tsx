@@ -1,10 +1,11 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useTasks, usePatchTask, useCreateTask, useReorderTasks } from '@/hooks/useTasks'
+import { useTasks, usePatchTask, useCreateTask, useReorderTasks, useBoards } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
+import ProjectChip from '@/components/tasks/ProjectChip'
 import AsciiPet from '@/components/today/AsciiPet'
 import PersonaPicker from '@/components/today/PersonaPicker'
 import Spinner from '@/components/ui/Spinner'
@@ -140,6 +141,7 @@ function TodayTaskRow({
   task,
   type,
   todayStr,
+  boardName,
   onToggle,
   onRemove,
   onClick,
@@ -147,6 +149,7 @@ function TodayTaskRow({
   task: Task
   type: TodayTaskType
   todayStr: string
+  boardName: string | null
   onToggle: () => void
   onRemove?: () => void
   onClick: () => void
@@ -237,6 +240,16 @@ function TodayTaskRow({
         <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
       )}
 
+      {/* Project badge (faded, right-aligned) */}
+      {!done && boardName && (
+        <span
+          className="text-[10px] font-medium text-gray-400 dark:text-gray-500 max-w-[80px] truncate flex-shrink-0"
+          title={boardName}
+        >
+          {boardName}
+        </span>
+      )}
+
       {/* Date badge (shows "завтра" in amber or formatted date) */}
       {!done && dateLabel && (
         <span
@@ -281,12 +294,14 @@ function TodayTaskRow({
 function BacklogTaskRow({
   task,
   todayStr,
+  boardName,
   onToggle,
   onAddToMyDay,
   onClick,
 }: {
   task: Task
   todayStr: string
+  boardName: string | null
   onToggle: () => void
   onAddToMyDay?: () => void
   onClick: () => void
@@ -348,6 +363,14 @@ function BacklogTaskRow({
       </button>
       {!done && task.tags && task.tags.length > 0 && (
         <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
+      )}
+      {!done && boardName && (
+        <span
+          className="text-[10px] font-medium text-gray-400 dark:text-gray-500 max-w-[80px] truncate flex-shrink-0"
+          title={boardName}
+        >
+          {boardName}
+        </span>
       )}
       {!done && dateLabel && (
         <span
@@ -448,10 +471,17 @@ export default function TodayPage() {
 
   const { data: allTasks, isLoading: tasksLoading } = useTasks()
   const { data: habits, isLoading: habitsLoading } = useHabits()
+  const { data: boards = [] } = useBoards()
   const patchTask = usePatchTask()
   const createTask = useCreateTask()
   const reorderTasks = useReorderTasks()
   const toggleLog = useToggleHabitLog()
+
+  const boardsById = useMemo(() => {
+    const m = new Map<number, string>()
+    for (const b of boards) m.set(b.id, b.name)
+    return m
+  }, [boards])
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
@@ -469,6 +499,7 @@ export default function TodayPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
+  const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null)
   const [topTab, setTopTab] = useState<'today' | 'overdue'>('today')
   const [sectionOverrides, setSectionOverrides] = useState<Map<string, boolean>>(new Map())
   const quickAddInputRef = useRef<HTMLInputElement>(null)
@@ -671,8 +702,11 @@ export default function TodayPage() {
         taskData.deadline = new Date(`${parsed.deadline}T23:59:00`).toISOString()
       }
 
+      taskData.board_id = selectedBoardId
+
       await createTask.mutateAsync(taskData)
       setQuickAdd('')
+      setSelectedBoardId(null)
     } catch {
       toast.error('Не удалось создать задачу')
     }
@@ -799,6 +833,11 @@ export default function TodayPage() {
                   className="quick-add relative w-full text-sm px-3 py-2 rounded-xl bg-transparent border-0 text-transparent caret-gray-900 dark:caret-gray-100 focus:outline-none"
                 />
               </div>
+              <ProjectChip
+                boards={boards}
+                selectedId={selectedBoardId}
+                onSelect={setSelectedBoardId}
+              />
               <button
                 type="button"
                 onClick={handleQuickAdd}
@@ -878,6 +917,7 @@ export default function TodayPage() {
                         <BacklogTaskRow
                           task={task}
                           todayStr={todayStr}
+                          boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
                           onToggle={() => handleTaskToggle(task)}
                           onAddToMyDay={() => handleAddToMyDay(task)}
                           onClick={() => openEdit(task)}
@@ -910,6 +950,7 @@ export default function TodayPage() {
                           task={task}
                           type={type}
                           todayStr={todayStr}
+                          boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
                           onToggle={() => handleTaskToggle(task)}
                           onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
                           onClick={() => openEdit(task)}
@@ -962,6 +1003,7 @@ export default function TodayPage() {
                               <BacklogTaskRow
                                 task={task}
                                 todayStr={todayStr}
+                                boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
                                 onToggle={() => handleTaskToggle(task)}
                                 onAddToMyDay={() => handleAddToMyDay(task)}
                                 onClick={() => openEdit(task)}
