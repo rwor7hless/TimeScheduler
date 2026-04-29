@@ -28,11 +28,16 @@ import {
   useSortable,
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
 
 // ─── Sortable wrapper ────────────────────────────────────────────────────────
+// dnd-kit's `useSortable` already returns a `transition` value that the
+// browser uses to animate siblings sliding into place when an item is
+// dragged. We do NOT wrap this in framer-motion's `layout` — `layout`
+// fights with dnd-kit's inline transform (each layout-change tick triggers
+// a re-translate, which framer-motion then tries to animate back), which
+// looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
@@ -44,16 +49,9 @@ function SortableRow({ id, children }: { id: number; children: React.ReactNode }
     cursor: 'grab',
   }
   return (
-    <motion.div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      layout
-      transition={{ duration: 0.2, ease: 'easeOut' }}
-    >
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
-    </motion.div>
+    </div>
   )
 }
 
@@ -911,20 +909,18 @@ export default function TodayPage() {
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-1.5">
-                  <AnimatePresence>
-                    {overdueTasks.map((task) => (
-                      <SortableRow key={task.id} id={task.id}>
-                        <BacklogTaskRow
-                          task={task}
-                          todayStr={todayStr}
-                          boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
-                          onToggle={() => handleTaskToggle(task)}
-                          onAddToMyDay={() => handleAddToMyDay(task)}
-                          onClick={() => openEdit(task)}
-                        />
-                      </SortableRow>
-                    ))}
-                  </AnimatePresence>
+                  {overdueTasks.map((task) => (
+                    <SortableRow key={task.id} id={task.id}>
+                      <BacklogTaskRow
+                        task={task}
+                        todayStr={todayStr}
+                        boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
+                        onToggle={() => handleTaskToggle(task)}
+                        onAddToMyDay={() => handleAddToMyDay(task)}
+                        onClick={() => openEdit(task)}
+                      />
+                    </SortableRow>
+                  ))}
                 </div>
               </SortableContext>
             </DndContext>
@@ -943,21 +939,19 @@ export default function TodayPage() {
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-1.5">
-                  <AnimatePresence>
-                    {todayUnified.map(({ task, type }) => (
-                      <SortableRow key={task.id} id={task.id}>
-                        <TodayTaskRow
-                          task={task}
-                          type={type}
-                          todayStr={todayStr}
-                          boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
-                          onToggle={() => handleTaskToggle(task)}
-                          onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
-                          onClick={() => openEdit(task)}
-                        />
-                      </SortableRow>
-                    ))}
-                  </AnimatePresence>
+                  {todayUnified.map(({ task, type }) => (
+                    <SortableRow key={task.id} id={task.id}>
+                      <TodayTaskRow
+                        task={task}
+                        type={type}
+                        todayStr={todayStr}
+                        boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
+                        onToggle={() => handleTaskToggle(task)}
+                        onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
+                        onClick={() => openEdit(task)}
+                      />
+                    </SortableRow>
+                  ))}
                 </div>
               </SortableContext>
             </DndContext>
@@ -997,20 +991,18 @@ export default function TodayPage() {
                       strategy={verticalListSortingStrategy}
                     >
                       <div className="mt-2 space-y-1.5">
-                        <AnimatePresence>
-                          {section.tasks.map((task) => (
-                            <SortableRow key={task.id} id={task.id}>
-                              <BacklogTaskRow
-                                task={task}
-                                todayStr={todayStr}
-                                boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
-                                onToggle={() => handleTaskToggle(task)}
-                                onAddToMyDay={() => handleAddToMyDay(task)}
-                                onClick={() => openEdit(task)}
-                              />
-                            </SortableRow>
-                          ))}
-                        </AnimatePresence>
+                        {section.tasks.map((task) => (
+                          <SortableRow key={task.id} id={task.id}>
+                            <BacklogTaskRow
+                              task={task}
+                              todayStr={todayStr}
+                              boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
+                              onToggle={() => handleTaskToggle(task)}
+                              onAddToMyDay={() => handleAddToMyDay(task)}
+                              onClick={() => openEdit(task)}
+                            />
+                          </SortableRow>
+                        ))}
                       </div>
                     </SortableContext>
                   </DndContext>
