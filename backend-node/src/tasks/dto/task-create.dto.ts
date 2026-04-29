@@ -14,26 +14,18 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { KanbanStatus, Priority } from '@prisma/client';
+import { Priority } from '@prisma/client';
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
 /**
- * Body of POST /api/tasks and PUT /api/tasks/:id. Mirrors Python's
- * `TaskCreate` in `backend/app/schemas/task.py` (lines 23-49).
+ * Body of POST /api/tasks and PUT /api/tasks/:id.
  *
- * Python's enum values are lowercase strings (`low`/`medium`/..., `todo`
- * /`in_progress`/`done`), while Prisma's enum type exposes UPPERCASE member
- * names (`LOW`, `TODO`, ...). The wire format from the frontend is the
- * lowercase Python form — we accept both via a lowercase-only enum check
- * plus a transformer that uppercases before Prisma sees it. Here we only
- * validate that the wire value matches one of the lowercase members; the
- * service uppercases before hitting Prisma.
+ * Wire enum format is lowercase (`low`/`medium`/...), Prisma exposes
+ * UPPERCASE member names. The service uppercases before hitting Prisma.
  */
 export const PRIORITY_VALUES = ['low', 'medium', 'high', 'urgent'] as const;
-export const KANBAN_STATUS_VALUES = ['todo', 'in_progress', 'done'] as const;
 export type PriorityWire = (typeof PRIORITY_VALUES)[number];
-export type KanbanStatusWire = (typeof KANBAN_STATUS_VALUES)[number];
 
 export const PRIORITY_TO_PRISMA: Record<PriorityWire, Priority> = {
   low: 'LOW',
@@ -46,16 +38,6 @@ export const PRIORITY_FROM_PRISMA: Record<Priority, PriorityWire> = {
   MEDIUM: 'medium',
   HIGH: 'high',
   URGENT: 'urgent',
-};
-export const KANBAN_TO_PRISMA: Record<KanbanStatusWire, KanbanStatus> = {
-  todo: 'TODO',
-  in_progress: 'IN_PROGRESS',
-  done: 'DONE',
-};
-export const KANBAN_FROM_PRISMA: Record<KanbanStatus, KanbanStatusWire> = {
-  TODO: 'todo',
-  IN_PROGRESS: 'in_progress',
-  DONE: 'done',
 };
 
 export class TaskCreateDto {
@@ -79,8 +61,8 @@ export class TaskCreateDto {
   priority?: PriorityWire;
 
   @IsOptional()
-  @IsEnum(KANBAN_STATUS_VALUES)
-  status?: KanbanStatusWire;
+  @IsBoolean()
+  done?: boolean;
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)

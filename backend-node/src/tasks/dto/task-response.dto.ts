@@ -1,5 +1,5 @@
 import { TagResponseDto } from '../../tags/dto/tag-response.dto';
-import { KanbanStatusWire, PriorityWire } from './task-create.dto';
+import { PriorityWire } from './task-create.dto';
 
 /**
  * Response DTO for all task endpoints. Mirrors Python's `TaskResponse` in
@@ -25,8 +25,8 @@ export class TaskResponseDto {
   color!: string;
   description!: string | null;
   priority!: PriorityWire;
-  status!: KanbanStatusWire;
-  kanban_order!: number;
+  done!: boolean;
+  position!: number;
   scheduled_start!: string | null;
   scheduled_end!: string | null;
   deadline!: string | null;

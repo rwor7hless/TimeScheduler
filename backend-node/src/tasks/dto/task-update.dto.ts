@@ -14,12 +14,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import {
-  KANBAN_STATUS_VALUES,
-  KanbanStatusWire,
-  PRIORITY_VALUES,
-  PriorityWire,
-} from './task-create.dto';
+import { PRIORITY_VALUES, PriorityWire } from './task-create.dto';
 
 const HEX_COLOR = /^#[0-9A-Fa-f]{6}$/;
 
@@ -57,8 +52,9 @@ export class TaskUpdateDto {
   priority?: PriorityWire;
 
   @IsOptional()
-  @IsEnum(KANBAN_STATUS_VALUES)
-  status?: KanbanStatusWire;
+  @ValidateIf((_, v) => v !== null)
+  @IsBoolean()
+  done?: boolean | null;
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
