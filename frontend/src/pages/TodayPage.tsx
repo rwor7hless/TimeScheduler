@@ -21,6 +21,7 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
+  type Modifier,
 } from '@dnd-kit/core'
 import {
   SortableContext,
@@ -31,6 +32,16 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
+
+// ─── DnD modifier ────────────────────────────────────────────────────────────
+// Locks horizontal movement during drag — vertical list, no reason for the
+// row to wobble sideways. Eliminates the diagonal jitter where every tiny
+// horizontal twitch makes `closestCenter` reconsider neighbors.
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({
+  ...transform,
+  x: 0,
+})
 
 // ─── Sortable wrapper ────────────────────────────────────────────────────────
 // dnd-kit's `useSortable` already returns a `transition` value that the
@@ -910,6 +921,7 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
             >
               <SortableContext
@@ -940,6 +952,7 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
             >
               <SortableContext
@@ -992,6 +1005,7 @@ export default function TodayPage() {
                   <DndContext
                     sensors={sensors}
                     collisionDetection={closestCenter}
+                    modifiers={[restrictToVerticalAxis]}
                     onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
                   >
                     <SortableContext
