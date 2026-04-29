@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
-import { useTasks, usePatchTask, useCreateTask } from '@/hooks/useTasks'
+import { useTasks, usePatchTask, useCreateTask, useReorderTasks } from '@/hooks/useTasks'
 import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
@@ -12,8 +12,49 @@ import { useDailyTip } from '@/hooks/useDailyTip'
 import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
 import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
+import {
+  DndContext,
+  PointerSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import { motion, AnimatePresence } from 'framer-motion'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
+
+// ─── Sortable wrapper ────────────────────────────────────────────────────────
+
+function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({ id })
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    cursor: 'grab',
+  }
+  return (
+    <motion.div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      layout
+      transition={{ duration: 0.2, ease: 'easeOut' }}
+    >
+      {children}
+    </motion.div>
+  )
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -409,7 +450,19 @@ export default function TodayPage() {
   const { data: habits, isLoading: habitsLoading } = useHabits()
   const patchTask = usePatchTask()
   const createTask = useCreateTask()
+  const reorderTasks = useReorderTasks()
   const toggleLog = useToggleHabitLog()
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
+
+  const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = currentIds.indexOf(Number(active.id))
+    const newIndex = currentIds.indexOf(Number(over.id))
+    if (oldIndex === -1 || newIndex === -1) return
+    const next = arrayMove(currentIds, oldIndex, newIndex)
+    reorderTasks.mutate({ ordered_ids: next })
+  }
 
   const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
 
@@ -435,7 +488,10 @@ export default function TodayPage() {
         if (t.repeat_days?.length) return t.repeat_days.includes(wd)
         return isSameDay(parseISO(t.scheduled_start), today)
       })
-      .sort((a, b) => new Date(a.scheduled_start!).getTime() - new Date(b.scheduled_start!).getTime())
+      .sort((a, b) => {
+        if (a.position !== b.position) return a.position - b.position
+        return new Date(a.scheduled_start!).getTime() - new Date(b.scheduled_start!).getTime()
+      })
       .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'scheduled' }) })
 
     // 2. Deadline today (not already shown)
@@ -472,7 +528,10 @@ export default function TodayPage() {
           t.deadline != null &&
           t.deadline.slice(0, 10) < todayStr,
       )
-      .sort((a, b) => a.deadline!.localeCompare(b.deadline!))
+      .sort((a, b) => {
+        if (a.position !== b.position) return a.position - b.position
+        return a.deadline!.localeCompare(b.deadline!)
+      })
   }, [allTasks, todayUnified, todayStr])
 
   // ── Date sections (нижняя часть: Завтра / Послезавтра / Через 3 дня /
@@ -498,6 +557,7 @@ export default function TodayPage() {
 
     for (const arr of buckets.values()) {
       arr.sort((a, b) => {
+        if (a.position !== b.position) return a.position - b.position
         const aD = getTaskDateOnly(a) ?? ''
         const bD = getTaskDateOnly(b) ?? ''
         if (aD !== bD) return aD < bD ? -1 : 1
@@ -802,36 +862,64 @@ export default function TodayPage() {
 
           {/* Top section: today list или overdue list */}
           {topTab === 'overdue' && overdueTasks.length > 0 ? (
-            <div className="space-y-1.5">
-              {overdueTasks.map((task) => (
-                <BacklogTaskRow
-                  key={task.id}
-                  task={task}
-                  todayStr={todayStr}
-                  onToggle={() => handleTaskToggle(task)}
-                  onAddToMyDay={() => handleAddToMyDay(task)}
-                  onClick={() => openEdit(task)}
-                />
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
+            >
+              <SortableContext
+                items={overdueTasks.map((t) => t.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1.5">
+                  <AnimatePresence>
+                    {overdueTasks.map((task) => (
+                      <SortableRow key={task.id} id={task.id}>
+                        <BacklogTaskRow
+                          task={task}
+                          todayStr={todayStr}
+                          onToggle={() => handleTaskToggle(task)}
+                          onAddToMyDay={() => handleAddToMyDay(task)}
+                          onClick={() => openEdit(task)}
+                        />
+                      </SortableRow>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </SortableContext>
+            </DndContext>
           ) : todayUnified.length === 0 ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
               Нет задач на сегодня — добавь или назначь дедлайн
             </p>
           ) : (
-            <div className="space-y-1.5">
-              {todayUnified.map(({ task, type }) => (
-                <TodayTaskRow
-                  key={task.id}
-                  task={task}
-                  type={type}
-                  todayStr={todayStr}
-                  onToggle={() => handleTaskToggle(task)}
-                  onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
-                  onClick={() => openEdit(task)}
-                />
-              ))}
-            </div>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
+            >
+              <SortableContext
+                items={todayUnified.map((e) => e.task.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div className="space-y-1.5">
+                  <AnimatePresence>
+                    {todayUnified.map(({ task, type }) => (
+                      <SortableRow key={task.id} id={task.id}>
+                        <TodayTaskRow
+                          task={task}
+                          type={type}
+                          todayStr={todayStr}
+                          onToggle={() => handleTaskToggle(task)}
+                          onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
+                          onClick={() => openEdit(task)}
+                        />
+                      </SortableRow>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </SortableContext>
+            </DndContext>
           )}
 
           {/* Секции по дате: Завтра / Послезавтра / Через 3 дня / 5 мая / ... / Позднее / Отложенное */}
@@ -858,18 +946,32 @@ export default function TodayPage() {
                   </span>
                 </button>
                 {open && (
-                  <div className="mt-2 space-y-1.5">
-                    {section.tasks.map((task) => (
-                      <BacklogTaskRow
-                        key={task.id}
-                        task={task}
-                        todayStr={todayStr}
-                        onToggle={() => handleTaskToggle(task)}
-                        onAddToMyDay={() => handleAddToMyDay(task)}
-                        onClick={() => openEdit(task)}
-                      />
-                    ))}
-                  </div>
+                  <DndContext
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
+                  >
+                    <SortableContext
+                      items={section.tasks.map((t) => t.id)}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      <div className="mt-2 space-y-1.5">
+                        <AnimatePresence>
+                          {section.tasks.map((task) => (
+                            <SortableRow key={task.id} id={task.id}>
+                              <BacklogTaskRow
+                                task={task}
+                                todayStr={todayStr}
+                                onToggle={() => handleTaskToggle(task)}
+                                onAddToMyDay={() => handleAddToMyDay(task)}
+                                onClick={() => openEdit(task)}
+                              />
+                            </SortableRow>
+                          ))}
+                        </AnimatePresence>
+                      </div>
+                    </SortableContext>
+                  </DndContext>
                 )}
               </section>
             )
