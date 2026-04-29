@@ -86,8 +86,8 @@ model Task {
   title           String       @db.VarChar(255)
   description     String?
   priority        Priority
-  status          KanbanStatus
-  kanban_order    Int
+  done            Boolean      @default(false)
+  position        Int          @default(0)
   scheduled_start DateTime?    @db.Timestamptz(6)
   scheduled_end   DateTime?    @db.Timestamptz(6)
   completed_at    DateTime?    @db.Timestamptz(6)
@@ -116,7 +116,7 @@ model Task {
   @@index([board_id], map: "ix_tasks_board_id")
   @@index([deleted_at], map: "ix_tasks_deleted_at")
   @@index([parent_id], map: "ix_tasks_parent_id")
-  @@index([user_id, board_id, status], map: "ix_tasks_user_board_status")
+  @@index([user_id, board_id, position], map: "ix_tasks_user_board_position")
   @@index([user_id], map: "ix_tasks_user_id")
   @@map("tasks")
 }
@@ -357,11 +357,10 @@ model WeeklyReport {
 
 // ── Enums ─────────────────────────────────────────────────────────────────────
 //
-// The Postgres enum TYPE names are lowercase (`priority`, `kanbanstatus`) because
-// SQLAlchemy derived them from the Python class names via the default naming policy.
-// Variant names are UPPERCASE because SQLAlchemy's `Enum(PyEnum)` stores the Python
-// *member name* by default, not the member `str` value. Keep both exactly as the DB
-// has them or `prisma migrate diff` will want to drop-and-recreate the type.
+// The Postgres enum TYPE name `priority` is lowercase because SQLAlchemy
+// derived it from the Python class name via the default naming policy.
+// Variant names are UPPERCASE because SQLAlchemy's `Enum(PyEnum)` stores
+// the Python *member name* by default, not the member `str` value.
 
 enum Priority {
   LOW
@@ -370,12 +369,4 @@ enum Priority {
   URGENT
 
   @@map("priority")
-}
-
-enum KanbanStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-
-  @@map("kanbanstatus")
 }
