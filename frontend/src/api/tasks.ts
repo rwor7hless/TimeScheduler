@@ -1,5 +1,5 @@
 import api from './client'
-import type { Task, TaskCreate, TaskUpdate, KanbanReorder, Tag, TagCreate } from '@/types/task'
+import type { Task, TaskCreate, TaskUpdate, ReorderPayload, Tag, TagCreate } from '@/types/task'
 
 export const tasksApi = {
   list: (params?: Record<string, string>) =>
@@ -29,7 +29,7 @@ export const tasksApi = {
   unarchive: (id: number) =>
     api.post<Task>(`/tasks/${id}/unarchive`).then((r) => r.data),
 
-  reorder: (data: KanbanReorder) =>
+  reorder: (data: ReorderPayload) =>
     api.patch('/tasks/reorder', data),
 }
 
