@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Habit, KanbanStatus, Prisma } from '@prisma/client';
+import { Habit, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { PRIORITY_FROM_PRISMA } from '../tasks/dto/task-create.dto';
 import { BreakdownItemDto } from './dto/breakdown-item.dto';
@@ -80,14 +80,14 @@ export class StatsService {
 
     // Active tasks (not done, not archived) — running total, not window-scoped.
     const activeTasks = await this.prisma.task.count({
-      where: { ...taskFilter, status: { not: KanbanStatus.DONE }, is_archived: false },
+      where: { ...taskFilter, done: false, is_archived: false },
     });
 
     // Completed in window
     const completedLastMonth = await this.prisma.task.count({
       where: {
         ...taskFilter,
-        status: KanbanStatus.DONE,
+        done: true,
         completed_at: { gte: win.start, lt: win.end },
       },
     });
@@ -97,7 +97,7 @@ export class StatsService {
     const overdueCount = await this.prisma.task.count({
       where: {
         ...taskFilter,
-        status: { not: KanbanStatus.DONE },
+        done: false,
         is_archived: false,
         deadline: { lt: now, not: null },
       },
@@ -316,7 +316,7 @@ export class StatsService {
     const completed = await this.prisma.task.count({
       where: {
         ...taskFilter,
-        status: KanbanStatus.DONE,
+        done: true,
         completed_at: { gte: win.start, lt: win.end },
       },
     });

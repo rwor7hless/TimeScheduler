@@ -132,7 +132,7 @@ export class WeeklyDataService {
       const doneRows = (await this.prisma.task.findMany({
         where: {
           ...base,
-          status: 'DONE',
+          done: true,
           completed_at: { gte: ws, lte: we },
         },
         select: { id: true, title: true, priority: true, deadline: true },
@@ -141,27 +141,23 @@ export class WeeklyDataService {
       const overdueRows = (await this.prisma.task.findMany({
         where: {
           ...base,
-          status: { not: 'DONE' },
+          done: false,
           deadline: { lt: we, not: null },
         },
         select: { id: true, title: true, priority: true, deadline: true },
       })) as TaskRow[];
 
-      const inProgressRows = (await this.prisma.task.findMany({
-        where: { ...base, status: 'IN_PROGRESS' },
-        select: { id: true, title: true, priority: true, deadline: true },
-      })) as TaskRow[];
-
+      // Open (not done, not overdue) — replaces the old IN_PROGRESS+TODO split
+      // since `done` is now binary.
       const todoCount = await this.prisma.task.count({
-        where: { ...base, status: 'TODO' },
+        where: {
+          ...base,
+          done: false,
+          OR: [{ deadline: null }, { deadline: { gte: we } }],
+        },
       });
 
-      if (
-        doneRows.length === 0 &&
-        overdueRows.length === 0 &&
-        inProgressRows.length === 0 &&
-        todoCount === 0
-      ) {
+      if (doneRows.length === 0 && overdueRows.length === 0 && todoCount === 0) {
         continue;
       }
 
@@ -169,7 +165,6 @@ export class WeeklyDataService {
         name: slot.name,
         done_tasks: this.sortByPriority(doneRows).map((t) => this.fmtTaskEntry(t)),
         overdue_tasks: this.sortByPriority(overdueRows).map((t) => this.fmtTaskEntry(t)),
-        in_progress_tasks: this.sortByPriority(inProgressRows).map((t) => this.fmtTaskEntry(t)),
         todo_count: todoCount,
       });
     }

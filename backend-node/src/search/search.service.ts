@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { KANBAN_FROM_PRISMA, PRIORITY_FROM_PRISMA } from '../tasks/dto/task-create.dto';
+import { PRIORITY_FROM_PRISMA } from '../tasks/dto/task-create.dto';
 
 export interface SearchTaskItem {
   id: number;
   title: string;
-  status: string;
+  done: boolean;
   priority: string;
   color: string | null;
   board_id: number | null;
@@ -64,7 +64,7 @@ export class SearchService {
     const tasks: SearchTaskItem[] = taskRows.map((t) => ({
       id: t.id,
       title: t.title,
-      status: KANBAN_FROM_PRISMA[t.status],
+      done: t.done,
       priority: PRIORITY_FROM_PRISMA[t.priority],
       color: t.color ?? null,
       board_id: t.board_id,

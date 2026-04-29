@@ -1,10 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { KanbanStatus, Prisma, Priority, Tag, Task, TaskTag } from '@prisma/client';
+import { Prisma, Priority, Tag, Task, TaskTag } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import {
-  KANBAN_FROM_PRISMA,
-  KANBAN_TO_PRISMA,
-  KanbanStatusWire,
   PRIORITY_FROM_PRISMA,
   PRIORITY_TO_PRISMA,
   PriorityWire,
@@ -12,7 +9,7 @@ import {
 } from './dto/task-create.dto';
 import { TaskUpdateDto } from './dto/task-update.dto';
 import { TaskResponseDto } from './dto/task-response.dto';
-import { KanbanReorderDto } from './dto/kanban-reorder.dto';
+import { ReorderDto } from './dto/reorder.dto';
 import { escapeLikePattern, pickRandomTaskColor } from './tasks.constants';
 
 type TaskTagWithTag = TaskTag & { tags: Tag };
@@ -22,7 +19,7 @@ type TaskWithRelations = Task & {
 };
 
 export interface ListFilters {
-  status?: KanbanStatusWire;
+  done?: boolean;
   priority?: PriorityWire;
   tag?: string;
   date_from?: string;
@@ -86,8 +83,8 @@ export class TasksService {
       color: t.color ?? '#6B7280',
       description: t.description,
       priority: PRIORITY_FROM_PRISMA[t.priority],
-      status: KANBAN_FROM_PRISMA[t.status],
-      kanban_order: t.kanban_order,
+      done: t.done,
+      position: t.position,
       scheduled_start: this.toIso(t.scheduled_start),
       scheduled_end: this.toIso(t.scheduled_end),
       deadline: this.toIso(t.deadline),
@@ -195,8 +192,8 @@ export class TasksService {
     if (filters.scope === 'calendar') {
       where.scheduled_start = { not: null };
     }
-    if (filters.status) {
-      where.status = KANBAN_TO_PRISMA[filters.status];
+    if (filters.done !== undefined) {
+      where.done = filters.done;
     }
     if (filters.priority) {
       where.priority = PRIORITY_TO_PRISMA[filters.priority];
@@ -236,7 +233,7 @@ export class TasksService {
     const tasks = await this.prisma.task.findMany({
       where: this.buildListWhere(userId, filters),
       include: this.loadOpts,
-      orderBy: { kanban_order: 'asc' },
+      orderBy: { position: 'asc' },
     });
     return tasks.map((t) => this.serialize(t as TaskWithRelations));
   }
@@ -274,16 +271,16 @@ export class TasksService {
     }
 
     const priority: Priority = PRIORITY_TO_PRISMA[data.priority ?? 'medium'];
-    const status: KanbanStatus = KANBAN_TO_PRISMA[data.status ?? 'todo'];
+    const done = data.done ?? false;
 
-    // kanban_order = max(kanban_order) + 1 for this column. Scoped to
-    // user_id + status, matching tasks.py line 161.
+    // position scoped to the user only — the new task lands at the bottom of
+    // the user's task list. DnD reorder rewrites positions per-section after.
     const maxRow = await this.prisma.task.findFirst({
-      where: { user_id: userId, status },
-      orderBy: { kanban_order: 'desc' },
-      select: { kanban_order: true },
+      where: { user_id: userId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
     });
-    const kanbanOrder = (maxRow?.kanban_order ?? 0) + 1;
+    const position = (maxRow?.position ?? 0) + 1;
 
     const repeatDays = data.repeat_days && data.repeat_days.length > 0 ? data.repeat_days : [];
 
@@ -296,8 +293,9 @@ export class TasksService {
           description: data.description ?? null,
           color: data.color || pickRandomTaskColor(),
           priority,
-          status,
-          kanban_order: kanbanOrder,
+          done,
+          position,
+          completed_at: done ? new Date() : null,
           scheduled_start: this.parseDate(data.scheduled_start) ?? null,
           scheduled_end: this.parseDate(data.scheduled_end) ?? null,
           deadline: this.parseDate(data.deadline) ?? null,
@@ -333,7 +331,7 @@ export class TasksService {
         scheduled_start: true,
         deadline: true,
         tg_remind_at: true,
-        status: true,
+        done: true,
       },
     });
     if (!existing) throw new NotFoundException('Task not found');
@@ -356,17 +354,16 @@ export class TasksService {
       (existing.tg_remind_at?.getTime() ?? null) !== (newRemindAt?.getTime() ?? null);
 
     const priority = PRIORITY_TO_PRISMA[data.priority ?? 'medium'];
-    const status = KANBAN_TO_PRISMA[data.status ?? 'todo'];
+    const done = data.done ?? false;
     const repeatDays = data.repeat_days && data.repeat_days.length > 0 ? data.repeat_days : [];
 
-    // completed_at transitions: PUT carries a full status, so we know the
-    // target state. If moving *into* DONE from non-DONE, stamp now. If
-    // moving *out of* DONE, clear. Otherwise leave as-is.
+    // completed_at transitions: PUT carries a full state, so we know the
+    // target. Going false → true stamps now; going to false clears.
     const updates: Prisma.TaskUpdateInput = {
       title: data.title,
       description: data.description ?? null,
       priority,
-      status,
+      done,
       scheduled_start: newStart,
       scheduled_end: this.parseDate(data.scheduled_end) ?? null,
       deadline: newDeadline,
@@ -384,9 +381,9 @@ export class TasksService {
     if (scheduleChanged) {
       updates.tg_reminded = false;
     }
-    if (status === 'DONE' && existing.status !== 'DONE') {
+    if (done && !existing.done) {
       updates.completed_at = new Date();
-    } else if (status !== 'DONE') {
+    } else if (!done) {
       updates.completed_at = null;
     }
 
@@ -403,7 +400,7 @@ export class TasksService {
   async patch(userId: number, id: number, raw: TaskUpdateDto): Promise<TaskResponseDto> {
     const existing = await this.prisma.task.findFirst({
       where: { id, user_id: userId },
-      select: { id: true, parent_id: true, status: true, completed_at: true },
+      select: { id: true, parent_id: true, done: true, completed_at: true },
     });
     if (!existing) throw new NotFoundException('Task not found');
 
@@ -463,16 +460,13 @@ export class TasksService {
       updates.repeat_days = { set: next };
     }
 
-    let newStatus: KanbanStatus | undefined;
-    if (present.has('status') && raw.status) {
-      newStatus = KANBAN_TO_PRISMA[raw.status];
-      updates.status = newStatus;
-      // completed_at transitions, mirroring tasks.py line 328-332. Python
-      // stamps now only if `completed_at IS NULL` at the time of the PATCH
-      // (i.e. preserves existing DONE timestamps; a re-DONE doesn't reset).
-      if (newStatus === 'DONE' && existing.completed_at === null) {
+    if (present.has('done') && raw.done !== null && raw.done !== undefined) {
+      updates.done = raw.done;
+      // Stamp `completed_at` only on the false → true transition; preserve
+      // the original "first marked done" timestamp across re-toggles.
+      if (raw.done && existing.completed_at === null) {
         updates.completed_at = new Date();
-      } else if (newStatus !== 'DONE') {
+      } else if (!raw.done) {
         updates.completed_at = null;
       }
     }
@@ -487,49 +481,29 @@ export class TasksService {
     return this.get(userId, id);
   }
 
-  // ─── Kanban reorder ─────────────────────────────────────────────────────
+  // ─── Reorder ────────────────────────────────────────────────────────────
 
-  async reorder(userId: number, data: KanbanReorderDto): Promise<{ ok: true }> {
+  async reorder(userId: number, data: ReorderDto): Promise<{ ok: true }> {
     if (!data.ordered_ids || data.ordered_ids.length === 0) {
       return { ok: true };
     }
-    const status = KANBAN_TO_PRISMA[data.status];
     const now = new Date();
 
-    // Two-pass for DONE: pre-fetch which ids already carry a
-    // `completed_at`, then stamp the rest with `now`. This preserves the
-    // "when the user first moved it to DONE" timestamp across re-orderings
-    // inside the DONE column (tasks.py lines 275-285). `updateMany` can't
-    // per-row branch, so we do N parallel updates — small N (≤ a column's
-    // worth of tasks), so the cost is fine.
     await this.prisma.$transaction(async (tx) => {
-      // Scope the whole operation to this user: any id the caller doesn't
-      // own silently no-ops (the `updateMany` WHERE excludes it). Matches
-      // Python's `Task.user_id == current_user.id` guard.
+      // Scope to the caller's tasks only — silent no-op for foreign ids.
       const owned = await tx.task.findMany({
         where: { id: { in: data.ordered_ids }, user_id: userId },
-        select: { id: true, completed_at: true },
+        select: { id: true },
       });
-      const ownedMap = new Map(owned.map((t) => [t.id, t]));
+      const ownedIds = new Set(owned.map((t) => t.id));
 
       await Promise.all(
         data.ordered_ids.map((id, idx) => {
-          if (!ownedMap.has(id)) return Promise.resolve();
-          const row = ownedMap.get(id)!;
-          const updates: Prisma.TaskUpdateInput = {
-            status,
-            kanban_order: idx,
-            updated_at: now,
-          };
-          if (status === 'DONE') {
-            if (row.completed_at === null) {
-              updates.completed_at = now;
-            }
-            // else: preserve existing timestamp
-          } else {
-            updates.completed_at = null;
-          }
-          return tx.task.update({ where: { id }, data: updates });
+          if (!ownedIds.has(id)) return Promise.resolve();
+          return tx.task.update({
+            where: { id },
+            data: { position: idx, updated_at: now },
+          });
         }),
       );
     });

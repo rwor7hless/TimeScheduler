@@ -172,7 +172,6 @@ export interface ProjectStatsInput {
   name: string;
   done_tasks: TaskEntryInput[];
   overdue_tasks: TaskEntryInput[];
-  in_progress_tasks: TaskEntryInput[];
   todo_count: number;
 }
 
@@ -218,11 +217,8 @@ function doneCount(p: ProjectStatsInput): number {
 function overdueCount(p: ProjectStatsInput): number {
   return p.overdue_tasks.length;
 }
-function inProgressCount(p: ProjectStatsInput): number {
-  return p.in_progress_tasks.length;
-}
 function activeTotal(p: ProjectStatsInput): number {
-  return doneCount(p) + overdueCount(p) + inProgressCount(p) + p.todo_count;
+  return doneCount(p) + overdueCount(p) + p.todo_count;
 }
 function completionRate(p: ProjectStatsInput): number {
   const total = activeTotal(p);
@@ -249,9 +245,6 @@ export function totalDone(data: WeeklyDataInput): number {
 }
 export function totalOverdue(data: WeeklyDataInput): number {
   return data.projects.reduce((s, p) => s + overdueCount(p), 0);
-}
-export function totalInProgress(data: WeeklyDataInput): number {
-  return data.projects.reduce((s, p) => s + inProgressCount(p), 0);
 }
 export function totalActive(data: WeeklyDataInput): number {
   return data.projects.reduce((s, p) => s + activeTotal(p), 0);
@@ -282,7 +275,6 @@ export function formatDataBlock(data: WeeklyDataInput): string {
     '▸ СВОДКА:',
     `  Выполнено задач: ${totalDone(data)}`,
     `  Просрочено: ${totalOverdue(data)}`,
-    `  В работе (незакрытые): ${totalInProgress(data)}`,
     `  Общий процент выполнения: ${overallRate(data)}%`,
     '',
     '▸ ПРОЕКТЫ (1 канбан-доска = 1 проект):',
@@ -296,9 +288,8 @@ export function formatDataBlock(data: WeeklyDataInput): string {
     lines.push(
       '',
       header,
-      `  Выполнено: ${doneCount(p)} | В работе: ${inProgressCount(p)} | ` +
-        `Очередь: ${p.todo_count} | Просрочено: ${overdueCount(p)} | ` +
-        `Процент выполнения: ${completionRate(p)}%`,
+      `  Выполнено: ${doneCount(p)} | Очередь: ${p.todo_count} | ` +
+        `Просрочено: ${overdueCount(p)} | Процент выполнения: ${completionRate(p)}%`,
     );
     if (p.done_tasks.length > 0) {
       lines.push('  Выполненные задачи:');
@@ -309,12 +300,6 @@ export function formatDataBlock(data: WeeklyDataInput): string {
     if (p.overdue_tasks.length > 0) {
       lines.push('  Просроченные задачи:');
       for (const t of p.overdue_tasks) {
-        lines.push(`    • ${fmtTask(t)}`);
-      }
-    }
-    if (p.in_progress_tasks.length > 0) {
-      lines.push('  В процессе (незакрытые):');
-      for (const t of p.in_progress_tasks) {
         lines.push(`    • ${fmtTask(t)}`);
       }
     }

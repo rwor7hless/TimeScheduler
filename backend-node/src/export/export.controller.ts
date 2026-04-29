@@ -1,19 +1,15 @@
 import { Controller, Get, Query, Res, UseGuards } from '@nestjs/common';
-import { KanbanStatus, Priority, User } from '@prisma/client';
+import { Priority, User } from '@prisma/client';
 import { Response } from 'express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PrismaService } from '../prisma/prisma.service';
 import { StatsService } from '../stats/stats.service';
 import {
-  KANBAN_STATUS_VALUES,
-  KANBAN_TO_PRISMA,
-  KanbanStatusWire,
   PRIORITY_FROM_PRISMA,
   PRIORITY_VALUES,
   PRIORITY_TO_PRISMA,
   PriorityWire,
-  KANBAN_FROM_PRISMA,
 } from '../tasks/dto/task-create.dto';
 
 /**
@@ -22,9 +18,8 @@ import {
  * `Content-Disposition: attachment`.
  *
  * The task export supports the same filter surface as the list endpoint:
- * `priority`, `status`, `board_id`, `tag`, `include_archived`. Rows are
- * serialized as a flat shape (tags joined by `, `) matching Python so
- * existing exports are diff-clean.
+ * `priority`, `done`, `board_id`, `tag`, `include_archived`. Rows are
+ * serialized as a flat shape (tags joined by `, `).
  */
 @Controller('export')
 @UseGuards(JwtAuthGuard)
@@ -40,7 +35,7 @@ export class ExportController {
     @Res() res: Response,
     @Query('format') formatRaw?: string,
     @Query('priority') priorityRaw?: string,
-    @Query('status') statusRaw?: string,
+    @Query('done') doneRaw?: string,
     @Query('board_id') boardIdRaw?: string,
     @Query('tag') tag?: string,
     @Query('include_archived') includeArchivedRaw?: string,
@@ -57,9 +52,8 @@ export class ExportController {
     if (priorityRaw && (PRIORITY_VALUES as readonly string[]).includes(priorityRaw)) {
       where.priority = PRIORITY_TO_PRISMA[priorityRaw as PriorityWire] as Priority;
     }
-    if (statusRaw && (KANBAN_STATUS_VALUES as readonly string[]).includes(statusRaw)) {
-      where.status = KANBAN_TO_PRISMA[statusRaw as KanbanStatusWire] as KanbanStatus;
-    }
+    if (doneRaw === 'true') where.done = true;
+    else if (doneRaw === 'false') where.done = false;
     if (boardIdRaw !== undefined) {
       const n = Number.parseInt(boardIdRaw, 10);
       if (Number.isFinite(n)) where.board_id = n;
@@ -79,7 +73,7 @@ export class ExportController {
       title: t.title,
       description: t.description ?? '',
       priority: PRIORITY_FROM_PRISMA[t.priority],
-      status: KANBAN_FROM_PRISMA[t.status],
+      done: t.done,
       board_id: t.board_id,
       scheduled_start: t.scheduled_start ? t.scheduled_start.toISOString() : '',
       scheduled_end: t.scheduled_end ? t.scheduled_end.toISOString() : '',
@@ -105,7 +99,7 @@ export class ExportController {
       'title',
       'description',
       'priority',
-      'status',
+      'done',
       'board_id',
       'scheduled_start',
       'scheduled_end',
