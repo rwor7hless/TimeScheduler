@@ -1,5 +1,4 @@
 export type Priority = 'low' | 'medium' | 'high' | 'urgent'
-export type KanbanStatus = 'todo' | 'in_progress' | 'done'
 
 export interface Tag {
   id: number
@@ -18,8 +17,8 @@ export interface Task {
   color: string
   description: string | null
   priority: Priority
-  status: KanbanStatus
-  kanban_order: number
+  done: boolean
+  position: number
   scheduled_start: string | null
   scheduled_end: string | null
   deadline: string | null
@@ -43,7 +42,7 @@ export interface TaskCreate {
   description?: string | null
   color?: string | null
   priority?: Priority
-  status?: KanbanStatus
+  done?: boolean
   scheduled_start?: string | null
   scheduled_end?: string | null
   deadline?: string | null
@@ -61,7 +60,7 @@ export interface TaskUpdate {
   description?: string | null
   color?: string | null
   priority?: Priority
-  status?: KanbanStatus
+  done?: boolean | null
   scheduled_start?: string | null
   scheduled_end?: string | null
   deadline?: string | null
@@ -73,10 +72,7 @@ export interface TaskUpdate {
   my_day?: boolean | null
 }
 
-export const WEEKDAY_LABELS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'] as const
-
-export interface KanbanReorder {
-  status: KanbanStatus
+export interface ReorderPayload {
   ordered_ids: number[]
 }
 
@@ -84,3 +80,5 @@ export interface TagCreate {
   name: string
   color?: string
 }
+
+export const WEEKDAY_LABELS = ['ПН', 'ВТ', 'СР', 'ЧТ', 'ПТ', 'СБ', 'ВС'] as const
