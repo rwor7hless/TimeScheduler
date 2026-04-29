@@ -67,7 +67,7 @@ maybeDescribe('tasks e2e (real DB)', () => {
         id: expect.any(Number),
         title: 'E2E Task',
         priority: 'high',
-        status: 'todo',
+        done: false,
         subtasks: [],
       }),
     );
@@ -76,7 +76,7 @@ maybeDescribe('tasks e2e (real DB)', () => {
     const id: number = created.body.id;
 
     const listed = await request(app.getHttpServer())
-      .get('/api/tasks?status=todo')
+      .get('/api/tasks?done=false')
       .set('Authorization', auth());
     expect(listed.status).toBe(200);
     expect(listed.body.some((t: { id: number }) => t.id === id)).toBe(true);
@@ -84,23 +84,23 @@ maybeDescribe('tasks e2e (real DB)', () => {
     const patched = await request(app.getHttpServer())
       .patch(`/api/tasks/${id}`)
       .set('Authorization', auth())
-      .send({ title: 'E2E Renamed', status: 'in_progress' });
+      .send({ title: 'E2E Renamed', done: true });
     expect(patched.status).toBe(200);
     expect(patched.body.title).toBe('E2E Renamed');
-    expect(patched.body.status).toBe('in_progress');
+    expect(patched.body.done).toBe(true);
+    expect(patched.body.completed_at).not.toBeNull();
 
     const reordered = await request(app.getHttpServer())
       .patch('/api/tasks/reorder')
       .set('Authorization', auth())
-      .send({ status: 'done', ordered_ids: [id] });
+      .send({ ordered_ids: [id] });
     expect(reordered.status).toBe(200);
     expect(reordered.body).toEqual({ ok: true });
 
     const afterReorder = await request(app.getHttpServer())
       .get(`/api/tasks/${id}`)
       .set('Authorization', auth());
-    expect(afterReorder.body.status).toBe('done');
-    expect(afterReorder.body.completed_at).not.toBeNull();
+    expect(afterReorder.body.position).toBe(0);
 
     const archived = await request(app.getHttpServer())
       .post(`/api/tasks/${id}/archive`)
