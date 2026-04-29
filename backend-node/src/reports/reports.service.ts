@@ -222,7 +222,7 @@ export class ReportsService {
     const base = {
       user_id: user.id,
       deleted_at: null,
-      status: { not: 'DONE' as const },
+      done: false,
     };
 
     const [myDayRows, schedRows, deadlineRows, overdueRows, habitNames] = await Promise.all([

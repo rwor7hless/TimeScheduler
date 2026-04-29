@@ -65,7 +65,7 @@ describe('ExportController', () => {
         title: 'has, comma and "quote"',
         description: null,
         priority: 'HIGH',
-        status: 'DONE',
+        done: true,
         board_id: null,
         scheduled_start: null,
         scheduled_end: null,
