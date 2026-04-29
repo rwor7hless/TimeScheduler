@@ -3,7 +3,7 @@ import { tasksApi, tagsApi } from '@/api/tasks'
 import { boardsApi } from '@/api/boards'
 import type { Board } from '@/types/board'
 import { useAuth } from '@/context/AuthContext'
-import type { Task, TaskCreate, TaskUpdate, KanbanReorder, TagCreate } from '@/types/task'
+import type { Task, TaskCreate, TaskUpdate, ReorderPayload, TagCreate } from '@/types/task'
 
 export function useTasks(params?: Record<string, string>) {
   const { user } = useAuth()
@@ -195,8 +195,29 @@ export function useUnarchiveTask() {
 export function useReorderTasks() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: KanbanReorder) => tasksApi.reorder(data),
-    onSuccess: () => {
+    mutationFn: (data: ReorderPayload) => tasksApi.reorder(data),
+    onMutate: async ({ ordered_ids }) => {
+      await qc.cancelQueries({ queryKey: ['tasks'] })
+      const previous = qc.getQueriesData<Task[]>({ queryKey: ['tasks'] })
+      const positionById = new Map<number, number>()
+      ordered_ids.forEach((id, idx) => positionById.set(id, idx))
+      qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) => {
+        if (!Array.isArray(old)) return old
+        return old.map((task) =>
+          positionById.has(task.id)
+            ? ({ ...task, position: positionById.get(task.id)! } as Task)
+            : task,
+        )
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (!ctx?.previous) return
+      for (const [key, data] of ctx.previous) {
+        qc.setQueryData(key, data)
+      }
+    },
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['tasks'] })
       qc.invalidateQueries({ queryKey: ['stats'] })
     },

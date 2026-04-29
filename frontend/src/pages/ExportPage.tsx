@@ -30,7 +30,7 @@ const ChartIcon = () => (
 export default function ExportPage() {
   const [loading, setLoading] = useState(false)
   const [priority, setPriority] = useState('')
-  const [status, setStatus] = useState('')
+  const [done, setDone] = useState('')
   const [boardId, setBoardId] = useState('')
   const [tag, setTag] = useState('')
   const [includeArchived, setIncludeArchived] = useState(false)
@@ -48,7 +48,7 @@ export default function ExportPage() {
       if (type === 'tasks') {
         const params: Record<string, string> = { format }
         if (priority) params.priority = priority
-        if (status) params.status = status
+        if (done) params.done = done
         if (boardId) params.board_id = boardId
         if (tag) params.tag = tag
         if (includeArchived) params.include_archived = 'true'
@@ -99,14 +99,13 @@ export default function ExportPage() {
               <option value="urgent">Срочный</option>
             </select>
             <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
+              value={done}
+              onChange={(e) => setDone(e.target.value)}
               className="px-2 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-700"
             >
-              <option value="">Все статусы</option>
-              <option value="todo">К выполнению</option>
-              <option value="in_progress">В работе</option>
-              <option value="done">Готово</option>
+              <option value="">Все задачи</option>
+              <option value="false">Не выполнены</option>
+              <option value="true">Выполнены</option>
             </select>
             <select
               value={boardId}

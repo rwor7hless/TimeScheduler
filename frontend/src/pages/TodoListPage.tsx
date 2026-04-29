@@ -79,7 +79,7 @@ function TaskRow({
   onToggle: () => void
   onClick: () => void
 }) {
-  const done = task.status === 'done'
+  const done = task.done
   const today = getToday()
   const isOverdue =
     !done && task.deadline != null && task.deadline.slice(0, 10) < today
@@ -148,7 +148,7 @@ function TaskRow({
       {/* Subtasks count */}
       {(task.subtasks?.length ?? 0) > 0 && (
         <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
-          {task.subtasks.filter((s) => s.status === 'done').length}/{task.subtasks.length}
+          {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}
         </span>
       )}
 
@@ -306,7 +306,7 @@ export default function TodoListPage() {
   }, [tasks, selectedBoardId])
 
   const activeTasks = useMemo(() => {
-    const filtered = visibleTasks.filter((t) => t.status !== 'done' && !t.is_archived)
+    const filtered = visibleTasks.filter((t) => !t.done && !t.is_archived)
     return [...filtered].sort((a, b) => {
       const pa = getDeadlinePriority(a, today)
       const pb = getDeadlinePriority(b, today)
@@ -317,14 +317,14 @@ export default function TodoListPage() {
   }, [visibleTasks, today])
 
   const doneTasks = useMemo(
-    () => visibleTasks.filter((t) => t.status === 'done' && !t.is_archived),
+    () => visibleTasks.filter((t) => t.done && !t.is_archived),
     [visibleTasks]
   )
 
   const handleToggle = async (task: Task) => {
-    const newStatus = task.status === 'done' ? 'todo' : 'done'
+    const newDone = !task.done
     try {
-      await patchTask.mutateAsync({ id: task.id, data: { status: newStatus } })
+      await patchTask.mutateAsync({ id: task.id, data: { done: newDone } })
     } catch {
       toast.error('Не удалось обновить задачу')
     }

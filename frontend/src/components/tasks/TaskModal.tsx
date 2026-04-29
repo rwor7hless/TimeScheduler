@@ -3,7 +3,7 @@ import Modal from '@/components/ui/Modal'
 import ConfirmModal from '@/components/ui/ConfirmModal'
 import TimeField from '@/components/ui/TimeField'
 import { useCreateTask, useUpdateTask, useDeleteTask, usePatchTask, useTags } from '@/hooks/useTasks'
-import type { Task, TaskCreate, Priority, KanbanStatus } from '@/types/task'
+import type { Task, TaskCreate, Priority } from '@/types/task'
 import { TASK_COLOR_PALETTE, WEEKDAY_LABELS } from '@/types/task'
 import { parseTaskInput, friendlyDate } from '@/utils/parseTask'
 import toast from 'react-hot-toast'
@@ -14,7 +14,7 @@ interface TaskModalProps {
   onClose: () => void
   task?: Task | null
   defaultDate?: string
-  defaultStatus?: KanbanStatus
+  defaultDone?: boolean
   boardId?: number | null
 }
 
@@ -63,12 +63,12 @@ function formatWhen(date: string, start: string, end: string, todayStr: string):
   return dateLabel
 }
 
-export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultStatus, boardId }: TaskModalProps) {
+export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultDone, boardId }: TaskModalProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [showDescription, setShowDescription] = useState(false)
   const [priority, setPriority] = useState<Priority>('medium')
-  const [status, setStatus] = useState<KanbanStatus>('todo')
+  const [done, setDone] = useState<boolean>(false)
   const [scheduledDate, setScheduledDate] = useState('')
   const [startTime, setStartTime] = useState('')
   const [endTime, setEndTime] = useState('')
@@ -119,7 +119,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setDescription(task.description || '')
       setShowDescription(!!task.description)
       setPriority(task.priority)
-      setStatus(task.status)
+      setDone(task.done)
       if (task.scheduled_start && task.scheduled_end) {
         const s = parseDatetime(task.scheduled_start)
         const e = parseDatetime(task.scheduled_end)
@@ -142,7 +142,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       setDescription('')
       setShowDescription(false)
       setPriority('medium')
-      setStatus(defaultStatus ?? 'todo')
+      setDone(defaultDone ?? false)
       setRepeatDays([])
       setSelectedTagIds([])
       setDeadlineDate(''); setDeadlineTime(''); setShowDeadline(false)
@@ -162,7 +162,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
         setScheduledDate(''); setStartTime(''); setEndTime('')
       }
     }
-  }, [task, isOpen, defaultDate, defaultStatus])
+  }, [task, isOpen, defaultDate, defaultDone])
 
   // Quick-input парсер: срабатывает только при создании новой задачи,
   // не перезатирает поля, уже заполненные руками.
@@ -222,7 +222,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       description: description || null,
       color: task ? task.color : randomColor(),
       priority,
-      status,
+      done,
       scheduled_start,
       scheduled_end,
       deadline,
@@ -274,7 +274,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
       const created = await createTask.mutateAsync({
         title: newSubtaskTitle.trim(),
         priority: 'medium',
-        status: 'todo',
+        done: false,
         board_id: task.board_id,
         parent_id: task.id,
       })
@@ -379,28 +379,17 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
               </div>
             )}
 
-            {/* Status (edit only) */}
+            {/* Done (edit only) */}
             {task && (
-              <div>
-                <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Статус</div>
-                <div className="flex gap-1">
-                  {(['todo', 'in_progress', 'done'] as KanbanStatus[]).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setStatus(s)}
-                      className={clsx(
-                        'flex-1 py-1 rounded-lg text-[11px] font-medium transition-all',
-                        status === s
-                          ? 'bg-indigo-500 text-white'
-                          : 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-600 dark:text-gray-400 hover:border-indigo-300'
-                      )}
-                    >
-                      {s === 'todo' ? 'Ожидает' : s === 'in_progress' ? 'В работе' : 'Готово'}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={done}
+                  onChange={(e) => setDone(e.target.checked)}
+                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
+                />
+                Выполнено
+              </label>
             )}
           </section>
 
@@ -576,7 +565,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                 Подзадачи
                 {localSubtasks.length > 0 && (
                   <span className="ml-1.5 text-gray-400 font-normal normal-case tracking-normal">
-                    {localSubtasks.filter((s) => s.status === 'done').length}/{localSubtasks.length}
+                    {localSubtasks.filter((s) => s.done).length}/{localSubtasks.length}
                   </span>
                 )}
               </span>
@@ -599,14 +588,14 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                       disabled={pendingSubtaskIds.has(sub.id)}
                       onClick={async () => {
                         if (pendingSubtaskIds.has(sub.id)) return
-                        const newStatus = sub.status === 'done' ? 'todo' : 'done'
-                        const prevStatus = sub.status
+                        const newDone = !sub.done
+                        const prevDone = sub.done
                         setPendingSubtaskIds((s) => { const n = new Set(s); n.add(sub.id); return n })
-                        setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, status: newStatus } : s))
+                        setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, done: newDone } : s))
                         try {
-                          await patchTask.mutateAsync({ id: sub.id, data: { status: newStatus } })
+                          await patchTask.mutateAsync({ id: sub.id, data: { done: newDone } })
                         } catch (err) {
-                          setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, status: prevStatus } : s))
+                          setLocalSubtasks((prev) => prev.map((s) => s.id === sub.id ? { ...s, done: prevDone } : s))
                           toast.error(describeApiError(err, 'Не удалось обновить подзадачу'))
                         } finally {
                           setPendingSubtaskIds((s) => { const n = new Set(s); n.delete(sub.id); return n })
@@ -614,10 +603,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultS
                       }}
                       className={clsx(
                         'w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-wait',
-                        sub.status === 'done' ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'
+                        sub.done ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'
                       )}
                     />
-                    <span className={clsx('flex-1', sub.status === 'done' && 'line-through text-gray-400')}>{sub.title}</span>
+                    <span className={clsx('flex-1', sub.done && 'line-through text-gray-400')}>{sub.title}</span>
                     <button
                       type="button"
                       onClick={async () => {

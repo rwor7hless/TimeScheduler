@@ -41,10 +41,10 @@ function getDeadlineStatus(deadline: string | null): 'overdue' | 'soon' | null {
 export default function TaskCard({ task, onClick, compact = false, className, overlapping = false }: TaskCardProps) {
   const color = task.color || '#6B7280'
   const prio = PRIORITY_CONFIG[task.priority]
-  const isCancelled = task.status === 'done'
+  const isCancelled = task.done
   const deadlineStatus = !isCancelled ? getDeadlineStatus(task.deadline) : null
 
-  const subtasksDone = task.subtasks?.filter(s => s.status === 'done').length ?? 0
+  const subtasksDone = task.subtasks?.filter(s => s.done).length ?? 0
   const subtasksTotal = task.subtasks?.length ?? 0
 
   return (
@@ -139,8 +139,8 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
             <div className="mt-1.5 space-y-0.5">
               {task.subtasks.map((sub) => (
                 <div key={sub.id} className="flex items-center gap-1.5">
-                  <div className={`w-2.5 h-2.5 rounded-full border flex-shrink-0 ${sub.status === 'done' ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`} />
-                  <span className={`text-[11px] truncate ${sub.status === 'done' ? 'line-through text-gray-400' : 'text-gray-600'}`}>
+                  <div className={`w-2.5 h-2.5 rounded-full border flex-shrink-0 ${sub.done ? 'bg-emerald-500 border-emerald-500' : 'border-gray-300'}`} />
+                  <span className={`text-[11px] truncate ${sub.done ? 'line-through text-gray-400' : 'text-gray-600'}`}>
                     {sub.title}
                   </span>
                 </div>
