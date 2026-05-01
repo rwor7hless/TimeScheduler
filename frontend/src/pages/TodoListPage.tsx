@@ -3,6 +3,23 @@ import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type Modifier,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
   useTasks,
   useBoards,
   useCreateTask,
@@ -11,12 +28,40 @@ import {
   useArchivedTasks,
   useUnarchiveTask,
   useDeleteTask,
+  useReorderTasks,
 } from '@/hooks/useTasks'
 import TaskModal from '@/components/tasks/TaskModal'
 import ConfirmModal from '@/components/ui/ConfirmModal'
 import Spinner from '@/components/ui/Spinner'
 import type { Task } from '@/types/task'
 import toast from 'react-hot-toast'
+
+const restrictToVerticalAxis: Modifier = ({ transform }) => ({ ...transform, x: 0 })
+
+function SortableTaskRow({
+  id,
+  children,
+}: {
+  id: number
+  children: React.ReactNode
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id,
+      transition: { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    })
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.6 : 1,
+    cursor: 'grab',
+  }
+  return (
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+      {children}
+    </div>
+  )
+}
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -287,6 +332,12 @@ export default function TodoListPage() {
   const createTask = useCreateTask()
   const patchTask = usePatchTask()
   const archiveTask = useArchiveTask()
+  const reorderTasks = useReorderTasks()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+  )
 
   const [quickAdd, setQuickAdd] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
@@ -308,6 +359,10 @@ export default function TodoListPage() {
   const activeTasks = useMemo(() => {
     const filtered = visibleTasks.filter((t) => !t.done && !t.is_archived)
     return [...filtered].sort((a, b) => {
+      // Position is the user-controlled order (set by drag-and-drop). Most
+      // tasks default to position=0 until reordered, so we fall back to the
+      // existing deadline-priority sort for ties.
+      if (a.position !== b.position) return a.position - b.position
       const pa = getDeadlinePriority(a, today)
       const pb = getDeadlinePriority(b, today)
       if (pa !== pb) return pa - pb
@@ -455,16 +510,37 @@ export default function TodoListPage() {
           <p className="text-sm">Все задачи выполнены</p>
         </div>
       ) : (
-        <div className="space-y-1.5">
-          {activeTasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              onToggle={() => handleToggle(task)}
-              onClick={() => openEdit(task)}
-            />
-          ))}
-        </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          modifiers={[restrictToVerticalAxis]}
+          onDragEnd={(e: DragEndEvent) => {
+            const { active, over } = e
+            if (!over || active.id === over.id) return
+            const oldIdx = activeTasks.findIndex((t) => t.id === active.id)
+            const newIdx = activeTasks.findIndex((t) => t.id === over.id)
+            if (oldIdx === -1 || newIdx === -1) return
+            const reordered = arrayMove(activeTasks, oldIdx, newIdx)
+            reorderTasks.mutate({ ordered_ids: reordered.map((t) => t.id) })
+          }}
+        >
+          <SortableContext
+            items={activeTasks.map((t) => t.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-1.5">
+              {activeTasks.map((task) => (
+                <SortableTaskRow key={task.id} id={task.id}>
+                  <TaskRow
+                    task={task}
+                    onToggle={() => handleToggle(task)}
+                    onClick={() => openEdit(task)}
+                  />
+                </SortableTaskRow>
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Done tasks (collapsible) */}

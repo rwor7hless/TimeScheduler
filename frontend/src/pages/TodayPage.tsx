@@ -53,7 +53,12 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id })
+    useSortable({
+      id,
+      // Soft ease-out replaces dnd-kit's default 200ms ease — siblings glide
+      // into place without the residual snap that reads as "jerky".
+      transition: { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+    })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
