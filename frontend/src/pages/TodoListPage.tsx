@@ -6,7 +6,7 @@ import {
   DndContext,
   PointerSensor,
   TouchSensor,
-  closestCenter,
+  closestCorners,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -512,9 +512,12 @@ export default function TodoListPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCenter}
+          collisionDetection={closestCorners}
           modifiers={[restrictToVerticalAxis]}
+          onDragStart={() => document.body.classList.add('ts-dnd-active')}
+          onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
           onDragEnd={(e: DragEndEvent) => {
+            document.body.classList.remove('ts-dnd-active')
             const { active, over } = e
             if (!over || active.id === over.id) return
             const oldIdx = activeTasks.findIndex((t) => t.id === active.id)

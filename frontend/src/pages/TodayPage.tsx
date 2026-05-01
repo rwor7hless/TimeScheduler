@@ -17,7 +17,7 @@ import {
   DndContext,
   PointerSensor,
   TouchSensor,
-  closestCenter,
+  closestCorners,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -507,6 +507,7 @@ export default function TodayPage() {
   )
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
+    document.body.classList.remove('ts-dnd-active')
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = currentIds.indexOf(Number(active.id))
@@ -925,7 +926,9 @@ export default function TodayPage() {
           {topTab === 'overdue' && overdueTasks.length > 0 ? (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={closestCorners}
+              onDragStart={() => document.body.classList.add('ts-dnd-active')}
+              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
             >
@@ -956,7 +959,9 @@ export default function TodayPage() {
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCenter}
+              collisionDetection={closestCorners}
+              onDragStart={() => document.body.classList.add('ts-dnd-active')}
+              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
             >
@@ -1009,7 +1014,9 @@ export default function TodayPage() {
                 {open && (
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCenter}
+                    collisionDetection={closestCorners}
+              onDragStart={() => document.body.classList.add('ts-dnd-active')}
+              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
                     modifiers={[restrictToVerticalAxis]}
                     onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
                   >
