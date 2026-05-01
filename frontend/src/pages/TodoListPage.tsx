@@ -368,8 +368,8 @@ export default function TodoListPage() {
       <div className="space-y-4">
         <p className="text-gray-600 dark:text-gray-400">
           Проект не найден.{' '}
-          <Link to="/projects" className="text-amber-600 hover:underline">
-            Назад к проектам
+          <Link to="/tasks" className="text-amber-600 hover:underline">
+            К задачам
           </Link>
         </p>
       </div>
@@ -382,10 +382,10 @@ export default function TodoListPage() {
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Link
-            to="/projects"
+            to="/tasks"
             className="text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
           >
-            ← Проекты
+            ← Задачи
           </Link>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{projectName}</h2>
         </div>

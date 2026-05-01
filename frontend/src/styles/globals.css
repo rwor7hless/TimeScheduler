@@ -11,6 +11,12 @@
    ============================================================================ */
 
 :root {
+  /* Tells the browser to render native form widgets (date/time pickers, select
+     dropdowns, scrollbars) using the matching palette. Critical for the
+     `<input type=date>`/`<input type=time>` calendar pop-ups and `<select>`
+     option lists, which we can't style in CSS. */
+  color-scheme: light;
+
   /* Light theme (default) */
   --ink:          #1d1d1b;
   --ink-2:        #4b4a47;
@@ -48,6 +54,7 @@
 }
 
 .dark {
+  color-scheme: dark;
   --ink:          #f5f4f1;
   --ink-2:        #d2d0cb;
   --ink-3:        #9f9d98;
@@ -375,6 +382,27 @@ html.dark body {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+.ts-side__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  .ts-side__scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    margin-right: -4px;
+  }
+}
+.ts-side__link--compact {
+  padding: 4px 10px;
+  font-size: 13px;
+  min-height: 0;
 }
 .ts-side__link {
   display: flex;
@@ -1192,14 +1220,40 @@ input.quick-add {
    ============================================================================ */
 
 .modal-glass {
-  background: var(--glass-2) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  background: var(--glass-solid) !important;
+  backdrop-filter: blur(12px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(140%) !important;
   border: 1px solid var(--line-strong) !important;
   color: var(--ink);
   box-shadow: var(--shadow-deep);
 }
-.dark .modal-glass { background: var(--glass-2) !important; }
+.dark .modal-glass { background: var(--glass-solid) !important; }
+
+/* Popovers (RowMenu, QuickAddIcons date/repeat pickers, etc.) — same opaque
+   surface as modals so they don't bleed into whatever's behind them. The
+   global .bg-white / .bg-gray-800 overrides above force translucency, hence
+   this class wins via !important. */
+.popover-glass {
+  background: var(--glass-solid) !important;
+  backdrop-filter: blur(10px) saturate(140%);
+  -webkit-backdrop-filter: blur(10px) saturate(140%);
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  box-shadow: var(--shadow-deep);
+}
+.dark .popover-glass { background: var(--glass-solid) !important; }
+
+/* Form controls inside popovers/modals — bump up the contrast so a plain
+   `<select>` / `<input type=date>` / `<input type=time>` doesn't blend into
+   the popover surface in dark mode (where --glass-2 is ~11% white). */
+.popover-glass select,
+.popover-glass input,
+.modal-glass select,
+.modal-glass input:not([type="checkbox"]):not([type="radio"]) {
+  background-color: var(--glass-3) !important;
+  color: var(--ink);
+  border-color: var(--line-strong) !important;
+}
 
 /* ============================================================================
    ANIMATIONS

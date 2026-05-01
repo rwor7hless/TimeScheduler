@@ -179,6 +179,21 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
     return map
   }, [tasksByDay, days])
 
+  // Tasks with deadline on a given day, NOT already shown on that day's timeline.
+  // Excludes done/archived. Shown as compact pills above the timeline grid.
+  const deadlinesByDay = useMemo(() => {
+    const map = new Map<string, Task[]>()
+    days.forEach((d) => map.set(format(d, 'yyyy-MM-dd'), []))
+    tasks.forEach((task) => {
+      if (!task.deadline) return
+      if (task.is_archived || task.done) return
+      const dKey = task.deadline.slice(0, 10)
+      if (task.scheduled_start && task.scheduled_start.slice(0, 10) === dKey) return
+      if (map.has(dKey)) map.get(dKey)!.push(task)
+    })
+    return map
+  }, [tasks, days]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const getTargetDayIdx = useCallback((clientX: number): number => {
     for (let i = 0; i < dayColRefs.current.length; i++) {
       const col = dayColRefs.current[i]
@@ -318,6 +333,55 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
           )
         })}
       </div>
+
+      {/* Deadlines row — pills for tasks whose deadline falls on this day
+           and that aren't already laid out on the timeline. Only renders when
+           at least one day in the visible week has a deadline. */}
+      {(() => {
+        const anyDeadlines = days.some((d) => (deadlinesByDay.get(format(d, 'yyyy-MM-dd')) ?? []).length > 0)
+        if (!anyDeadlines) return null
+        return (
+          <div className="flex border-b border-gray-200 dark:border-gray-700 bg-orange-50/40 dark:bg-orange-900/10 flex-shrink-0">
+            <div className="w-10 sm:w-14 flex-shrink-0 flex items-center justify-end pr-1.5 text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 opacity-70">
+              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M4 21V4l16 0-3 5 3 5H4" />
+              </svg>
+            </div>
+            {days.map((day) => {
+              const key = format(day, 'yyyy-MM-dd')
+              const items = deadlinesByDay.get(key) ?? []
+              return (
+                <div
+                  key={`dl-${key}`}
+                  className="flex-1 min-w-0 border-l border-gray-100 dark:border-gray-700 px-1 py-1 space-y-0.5"
+                >
+                  {items.slice(0, 3).map((task) => (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); onTaskClick(task) }}
+                      title={task.title}
+                      className="block w-full truncate text-left text-[10px] px-1.5 py-0.5 rounded font-medium border-l-2"
+                      style={{
+                        backgroundColor: `${task.color}18`,
+                        borderLeftColor: task.color,
+                        color: task.color,
+                      }}
+                    >
+                      {task.title}
+                    </button>
+                  ))}
+                  {items.length > 3 && (
+                    <div className="text-[10px] text-gray-400 dark:text-gray-500 px-1">
+                      +{items.length - 3} ещё
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
 
       {/* Scrollable grid */}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">

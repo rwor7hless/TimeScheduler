@@ -57,6 +57,20 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
     return map
   }, [tasks, days])
 
+  // Deadlines per day, excluding tasks already laid out on the same day's timeline.
+  const deadlinesByDay = useMemo(() => {
+    const map = new Map<string, Task[]>()
+    days.forEach((d) => map.set(format(d, 'yyyy-MM-dd'), []))
+    tasks.forEach((task) => {
+      if (!task.deadline) return
+      if (task.is_archived || task.done) return
+      const dKey = task.deadline.slice(0, 10)
+      if (task.scheduled_start && task.scheduled_start.slice(0, 10) === dKey) return
+      if (map.has(dKey)) map.get(dKey)!.push(task)
+    })
+    return map
+  }, [tasks, days])
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Weekday headers */}
@@ -96,32 +110,64 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                 {format(day, 'd')}
               </div>
               <div className="space-y-0.5">
-                {dayTasks.slice(0, 3).map((task) => {
-                  const time = task.scheduled_start
-                    ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
-                    : null
+                {(() => {
+                  const dayDeadlines = deadlinesByDay.get(key) || []
+                  // Cap visible items so cells don't blow out vertically. Show
+                  // up to 3 scheduled, then up to 2 deadlines, then "+N ещё".
+                  const visibleScheduled = dayTasks.slice(0, 3)
+                  const remainingSlots = Math.max(0, 5 - visibleScheduled.length)
+                  const visibleDeadlines = dayDeadlines.slice(0, remainingSlots)
+                  const hidden =
+                    dayTasks.length - visibleScheduled.length +
+                    dayDeadlines.length - visibleDeadlines.length
+
                   return (
-                    <div
-                      key={task.id}
-                      className="text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate font-medium"
-                      style={{
-                        backgroundColor: `${task.color}18`,
-                        borderLeft: `2px solid ${task.color}`,
-                        color: task.color,
-                      }}
-                    >
-                      {time && (
-                        <span className="hidden sm:inline opacity-60 mr-1 font-normal text-[10px]">{time}</span>
+                    <>
+                      {visibleScheduled.map((task) => {
+                        const time = task.scheduled_start
+                          ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+                          : null
+                        return (
+                          <div
+                            key={task.id}
+                            className="text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate font-medium"
+                            style={{
+                              backgroundColor: `${task.color}18`,
+                              borderLeft: `2px solid ${task.color}`,
+                              color: task.color,
+                            }}
+                          >
+                            {time && (
+                              <span className="hidden sm:inline opacity-60 mr-1 font-normal text-[10px]">{time}</span>
+                            )}
+                            {task.title}
+                          </div>
+                        )
+                      })}
+                      {visibleDeadlines.map((task) => (
+                        <div
+                          key={`dl-${task.id}`}
+                          className="text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate font-medium border border-dashed flex items-center gap-1"
+                          style={{
+                            borderColor: `${task.color}66`,
+                            color: task.color,
+                          }}
+                          title={`Дедлайн: ${task.title}`}
+                        >
+                          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="flex-shrink-0">
+                            <path d="M4 21V4l16 0-3 5 3 5H4" />
+                          </svg>
+                          <span className="truncate">{task.title}</span>
+                        </div>
+                      ))}
+                      {hidden > 0 && (
+                        <div className="text-[11px] text-gray-400 px-1.5 font-medium">
+                          +{hidden} ещё
+                        </div>
                       )}
-                      {task.title}
-                    </div>
+                    </>
                   )
-                })}
-                {dayTasks.length > 3 && (
-                  <div className="text-[11px] text-gray-400 px-1.5 font-medium">
-                    +{dayTasks.length - 3} ещё
-                  </div>
-                )}
+                })()}
               </div>
             </div>
           )

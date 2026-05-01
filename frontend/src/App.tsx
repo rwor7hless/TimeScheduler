@@ -8,18 +8,18 @@ import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import LoginPage from '@/pages/LoginPage'
 import AdminPage from '@/pages/AdminPage'
 import CalendarPage from '@/pages/CalendarPage'
-import BoardsPage from '@/pages/BoardsPage'
 import TodoListPage from '@/pages/TodoListPage'
 import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import TodayPage from '@/pages/TodayPage'
+import TasksPage from '@/pages/TasksPage'
 import BudgetPage from '@/pages/BudgetPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import { queryClient } from '@/lib/queryClient'
 
-function KanbanRedirect() {
+function ListPageRedirect() {
   const { boardId } = useParams<{ boardId: string }>()
-  return <Navigate to={`/project/${boardId}`} replace />
+  return <Navigate to={`/list/${boardId}`} replace />
 }
 
 function ProtectedRoute() {
@@ -48,16 +48,20 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route path="/" element={<Navigate to="/today" replace />} />
                 <Route path="/today" element={<TodayPage />} />
+                <Route path="/tasks" element={<TasksPage />} />
                 <Route path="/calendar" element={<Navigate to="/calendar/day" replace />} />
                 <Route path="/calendar/day" element={<CalendarPage />} />
                 <Route path="/calendar/week" element={<CalendarPage />} />
                 <Route path="/calendar/month" element={<CalendarPage />} />
-                <Route path="/boards" element={<Navigate to="/projects" replace />} />
-                <Route path="/kanban" element={<Navigate to="/project" replace />} />
-                <Route path="/kanban/:boardId" element={<KanbanRedirect />} />
-                <Route path="/projects" element={<BoardsPage />} />
-                <Route path="/project" element={<TodoListPage />} />
-                <Route path="/project/:boardId" element={<TodoListPage />} />
+                {/* legacy redirects */}
+                <Route path="/boards" element={<Navigate to="/today" replace />} />
+                <Route path="/projects" element={<Navigate to="/today" replace />} />
+                <Route path="/project" element={<Navigate to="/tasks" replace />} />
+                <Route path="/project/:boardId" element={<ListPageRedirect />} />
+                <Route path="/kanban" element={<Navigate to="/tasks" replace />} />
+                <Route path="/kanban/:boardId" element={<ListPageRedirect />} />
+                {/* new list route */}
+                <Route path="/list/:boardId" element={<TodoListPage />} />
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
                 <Route path="/budget" element={<BudgetPage />} />

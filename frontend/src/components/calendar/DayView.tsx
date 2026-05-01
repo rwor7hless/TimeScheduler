@@ -154,6 +154,18 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
 
   const overlapLayout = useMemo(() => computeOverlapLayout(dayTasks), [dayTasks])
 
+  // Tasks whose deadline lands on this day and that aren't already on the timeline.
+  const dayDeadlines = useMemo(() => {
+    const dKey = format(date, 'yyyy-MM-dd')
+    return tasks.filter((t) => {
+      if (!t.deadline) return false
+      if (t.is_archived || t.done) return false
+      if (t.deadline.slice(0, 10) !== dKey) return false
+      if (t.scheduled_start && t.scheduled_start.slice(0, 10) === dKey) return false
+      return true
+    })
+  }, [tasks, date])
+
   const minutesFromY = useCallback((clientY: number) => {
     if (!gridRef.current) return 0
     const r = gridRef.current.getBoundingClientRect()
@@ -236,6 +248,32 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col min-h-0">
+      {dayDeadlines.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-orange-50/40 dark:bg-orange-900/10 flex-shrink-0">
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 opacity-80">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 21V4l16 0-3 5 3 5H4" />
+            </svg>
+            Дедлайны
+          </div>
+          {dayDeadlines.map((task) => (
+            <button
+              key={task.id}
+              type="button"
+              onClick={() => onTaskClick(task)}
+              title={task.title}
+              className="text-[11px] px-2 py-0.5 rounded font-medium border-l-2 truncate max-w-[180px]"
+              style={{
+                backgroundColor: `${task.color}18`,
+                borderLeftColor: task.color,
+                color: task.color,
+              }}
+            >
+              {task.title}
+            </button>
+          ))}
+        </div>
+      )}
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}

@@ -1,11 +1,13 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import clsx from 'clsx'
 import { useAuth } from '@/context/AuthContext'
 import { useTheme } from '@/context/ThemeContext'
 import { useUnreadReportsCount } from '@/hooks/useReports'
+import { useTasks } from '@/hooks/useTasks'
 import { searchApi, type SearchResult } from '@/api/search'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
+import SidebarBoardTree from './SidebarBoardTree'
 
 type Item = {
   to: string
@@ -128,9 +130,9 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
 
   function navigateToResult(type: string, id: number, boardId?: number | null) {
     if (type === 'task') {
-      navigate(boardId ? `/project/${boardId}` : '/project')
+      navigate(boardId ? `/list/${boardId}` : '/tasks')
     } else if (type === 'habit') navigate('/habits')
-    else if (type === 'board') navigate(`/project/${id}`)
+    else if (type === 'board') navigate(`/list/${id}`)
     setQuery('')
     setResults(null)
     setShowResults(false)
@@ -150,10 +152,30 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
     return () => document.removeEventListener('mousedown', onClick)
   }, [inputRef])
 
+  const { data: allTasks } = useTasks()
+  const todayStr = new Date().toISOString().slice(0, 10)
+  const taskCountsByBoard = useMemo(() => {
+    const m = new Map<number, number>()
+    for (const t of allTasks ?? []) {
+      if (t.is_archived || t.done || t.board_id == null) continue
+      m.set(t.board_id, (m.get(t.board_id) ?? 0) + 1)
+    }
+    return m
+  }, [allTasks])
+
+  const myDayCount = useMemo(() => (allTasks ?? []).filter((t) => {
+    if (t.is_archived || t.done) return false
+    return t.my_day || t.scheduled_start?.slice(0, 10) === todayStr || t.deadline?.slice(0, 10) === todayStr
+  }).length, [allTasks, todayStr])
+
+  const tasksCount = useMemo(() => (allTasks ?? []).filter((t) => !t.is_archived && !t.done).length, [allTasks])
+
+  const myDay: Item[] = [
+    { to: '/today', label: 'Мой день', count: myDayCount > 0 ? myDayCount : undefined, icon: <ClockIcon /> },
+  ]
   const planning: Item[] = [
-    { to: '/today', label: 'Сегодня', icon: <ClockIcon /> },
+    { to: '/tasks', label: 'Задачи', count: tasksCount > 0 ? tasksCount : undefined, match: (p) => p === '/tasks', icon: <BoardsIcon /> },
     { to: '/calendar/day', label: 'Календарь', match: (p) => p.startsWith('/calendar'), icon: <CalIcon /> },
-    { to: '/projects', label: 'Проекты', match: (p) => p.startsWith('/projects') || p.startsWith('/project'), icon: <BoardsIcon /> },
   ]
   const tracking: Item[] = [
     { to: '/habits', label: 'Привычки', icon: <HabitIcon /> },
@@ -198,19 +220,25 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
         </div>
       </div>
 
-      <div>
-        <div className="ts-side__group-title">Планирование</div>
-        <nav className="ts-side__nav">{planning.map(renderLink)}</nav>
-      </div>
+      <div className="ts-side__scroll">
+        <nav className="ts-side__nav">{myDay.map(renderLink)}</nav>
 
-      <div>
-        <div className="ts-side__group-title">Трекинг</div>
-        <nav className="ts-side__nav">{tracking.map(renderLink)}</nav>
-      </div>
+        <div>
+          <div className="ts-side__group-title">Планирование</div>
+          <nav className="ts-side__nav">{planning.map(renderLink)}</nav>
+        </div>
 
-      <div>
-        <div className="ts-side__group-title">Архив</div>
-        <nav className="ts-side__nav">{history.map(renderLink)}</nav>
+        <div>
+          <div className="ts-side__group-title">Трекинг</div>
+          <nav className="ts-side__nav">{tracking.map(renderLink)}</nav>
+        </div>
+
+        <div>
+          <div className="ts-side__group-title">Архив</div>
+          <nav className="ts-side__nav">{history.map(renderLink)}</nav>
+        </div>
+
+        <SidebarBoardTree onClose={onClose} taskCounts={taskCountsByBoard} />
       </div>
 
       {/* Bottom: search + theme + logout */}
@@ -226,7 +254,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
               value={query}
               onChange={(e) => onSearchChange(e.target.value)}
               onFocus={() => results && setShowResults(true)}
-              placeholder="Задачи, привычки, доски"
+              placeholder="Задачи, привычки, проекты"
             />
           </div>
 
@@ -298,7 +326,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
                   )}
                   {results!.boards.length > 0 && (
                     <div style={{ borderTop: '1px solid var(--line)', marginTop: 6, paddingTop: 6 }}>
-                      <div className="ts-side__group-title">Доски</div>
+                      <div className="ts-side__group-title">Проекты</div>
                       {results!.boards.map((b) => (
                         <button
                           key={b.id}
