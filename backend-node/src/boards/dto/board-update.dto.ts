@@ -1,13 +1,20 @@
-import { IsString, Length } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsInt, IsOptional, IsString, Length, Min } from 'class-validator';
 
-/**
- * Body of PATCH /api/boards/:id. Python's `BoardUpdate` treats `name` as
- * optional, but the frontend always sends it (see
- * `frontend/src/api/boards.ts`). Keep it required at the DTO level so an
- * empty PATCH is rejected as 422 rather than silently succeeding.
- */
 export class BoardUpdateDto {
+  @IsOptional()
   @IsString()
   @Length(1, 100)
-  name!: string;
+  name?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Type(() => Number)
+  group_id?: number | null;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  @Type(() => Number)
+  sort_order?: number;
 }

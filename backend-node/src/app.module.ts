@@ -6,6 +6,7 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { AdminModule } from './admin/admin.module';
 import { AuthModule } from './auth/auth.module';
 import { BackupModule } from './backup/backup.module';
+import { BoardGroupsModule } from './board-groups/board-groups.module';
 import { BoardsModule } from './boards/boards.module';
 import { BootstrapModule } from './bootstrap/bootstrap.module';
 import { BudgetModule } from './budget/budget.module';
@@ -34,6 +35,7 @@ import { TelegramModule } from './telegram/telegram.module';
     AuthModule,
     AdminModule,
     BoardsModule,
+    BoardGroupsModule,
     TagsModule,
     TasksModule,
     HabitsModule,

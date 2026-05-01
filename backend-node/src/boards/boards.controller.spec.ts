@@ -15,6 +15,7 @@ describe('BoardsController', () => {
     create: jest.Mock;
     update: jest.Mock;
     delete: jest.Mock;
+    reorder: jest.Mock;
   };
 
   const user: Partial<User> = { id: 42 };
@@ -22,9 +23,10 @@ describe('BoardsController', () => {
   beforeEach(async () => {
     service = {
       list: jest.fn().mockResolvedValue([]),
-      create: jest.fn().mockResolvedValue({ id: 1, name: 'x', created_at: '', updated_at: '' }),
-      update: jest.fn().mockResolvedValue({ id: 1, name: 'y', created_at: '', updated_at: '' }),
+      create: jest.fn().mockResolvedValue({ id: 1, name: 'x', group_id: null, sort_order: 0, created_at: '', updated_at: '' }),
+      update: jest.fn().mockResolvedValue({ id: 1, name: 'y', group_id: null, sort_order: 0, created_at: '', updated_at: '' }),
       delete: jest.fn().mockResolvedValue(undefined),
+      reorder: jest.fn().mockResolvedValue({ ok: true }),
     };
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BoardsController],
@@ -51,5 +53,10 @@ describe('BoardsController', () => {
   it('delete forwards user.id + id', async () => {
     await controller.delete(user as User, 7);
     expect(service.delete).toHaveBeenCalledWith(42, 7);
+  });
+
+  it('reorder forwards user.id + body', async () => {
+    await controller.reorder(user as User, { group_id: 3, ordered_ids: [1, 2] });
+    expect(service.reorder).toHaveBeenCalledWith(42, { group_id: 3, ordered_ids: [1, 2] });
   });
 });

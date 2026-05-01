@@ -16,6 +16,7 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BoardsService } from './boards.service';
 import { BoardCreateDto } from './dto/board-create.dto';
+import { BoardReorderDto } from './dto/board-reorder.dto';
 import { BoardResponseDto } from './dto/board-response.dto';
 import { BoardUpdateDto } from './dto/board-update.dto';
 
@@ -37,6 +38,12 @@ export class BoardsController {
   @HttpCode(HttpStatus.CREATED)
   create(@CurrentUser() user: User, @Body() body: BoardCreateDto): Promise<BoardResponseDto> {
     return this.boards.create(user.id, body);
+  }
+
+  // `reorder` MUST come before `:id` so Nest's path-router doesn't shadow it.
+  @Patch('reorder')
+  reorder(@CurrentUser() user: User, @Body() body: BoardReorderDto): Promise<{ ok: true }> {
+    return this.boards.reorder(user.id, body);
   }
 
   @Patch(':id')
