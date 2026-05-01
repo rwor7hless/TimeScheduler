@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi, tagsApi } from '@/api/tasks'
 import { boardsApi } from '@/api/boards'
 import type { Board } from '@/types/board'
+import type { BoardReorder } from '@/types/boardGroup'
 import { useAuth } from '@/context/AuthContext'
 import type { Task, TaskCreate, TaskUpdate, ReorderPayload, TagCreate } from '@/types/task'
 
@@ -26,7 +27,23 @@ export function useBoards() {
 export function useCreateBoard() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (name: string) => boardsApi.create(name),
+    mutationFn: (data: { name: string; group_id?: number | null }) => boardsApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['boards'] })
+    },
+  })
+}
+
+export function useUpdateBoard() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number
+      data: { name?: string; group_id?: number | null; sort_order?: number }
+    }) => boardsApi.update(id, data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['boards'] })
     },
@@ -40,6 +57,38 @@ export function useDeleteBoard() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['boards'] })
       qc.invalidateQueries({ queryKey: ['tasks'] })
+    },
+  })
+}
+
+export function useReorderBoards() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (data: BoardReorder) => boardsApi.reorder(data),
+    onMutate: async (data) => {
+      await qc.cancelQueries({ queryKey: ['boards'] })
+      const snapshots = qc.getQueriesData<Board[]>({ queryKey: ['boards'] })
+      const ord = new Map(data.ordered_ids.map((id, i) => [id, i]))
+      for (const [key, list] of snapshots) {
+        if (!list) continue
+        const next = list.map((b) =>
+          b.group_id === data.group_id && ord.has(b.id)
+            ? { ...b, sort_order: ord.get(b.id)! }
+            : b,
+        )
+        qc.setQueryData<Board[]>(key, next)
+      }
+      return { snapshots }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.snapshots) {
+        for (const [key, list] of ctx.snapshots) {
+          qc.setQueryData(key, list)
+        }
+      }
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['boards'] })
     },
   })
 }
