@@ -19,8 +19,6 @@ import {
   PointerSensor,
   TouchSensor,
   closestCenter,
-  pointerWithin,
-  rectIntersection,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -50,17 +48,13 @@ const animateLayoutChanges: AnimateLayoutChanges = (args) => {
   return defaultAnimateLayoutChanges(args)
 }
 
-// Three-tier collision: pointerWithin → rectIntersection → closestCenter.
-// The closestCenter fallback guarantees `event.over` is never null at
-// drop; otherwise dnd-kit plays its default cancel-animation back to the
-// source, which the user sees as "animation at source instead of dest".
-const hybridCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args)
-  if (pointer.length > 0) return pointer
-  const intersect = rectIntersection(args)
-  if (intersect.length > 0) return intersect
-  return closestCenter(args)
-}
+// closestCenter is the most stable strategy for evenly-spaced vertical
+// lists: the over-target switches decisively at each row's vertical
+// midpoint, no oscillation when the cursor sits in a gap (which made
+// neighbors twitch in/out of their displaced positions). With
+// restrictToVerticalAxis modifier, X is locked, so collision is purely
+// 1D — closestCenter is essentially "find the nearest row center on Y".
+const hybridCollision: CollisionDetection = (args) => closestCenter(args)
 
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
@@ -87,19 +81,13 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // Active row stays at its source DOM slot with opacity 0.55 (visual
-  // "lifted" hint). NO transform applied while dragging — dnd-kit knows
-  // cursor position independently from cursor events; the transform was
-  // just a cosmetic "follows cursor" effect that compounds with the
-  // post-drop transition reset and produces the FLIP jump (active appears
-  // N rows offset, then slides). With transform=0 during drag, on drop
-  // flushSync moves the row to its new DOM index and there's NO leftover
-  // transform value to interpolate — row appears at destination cleanly.
-  // Siblings still get their normal transform (they shift to show the
-  // drop target slot).
+  // Active row applies its cursor-follow transform (visible feedback that
+  // it's being dragged) with opacity 0.55 hint. animateLayoutChanges
+  // (defined above) skips the post-drop FLIP for the dropped row so it
+  // doesn't 'jump N positions above destination'.
   const style: React.CSSProperties = {
-    transform: isDragging ? undefined : CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
+    transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',

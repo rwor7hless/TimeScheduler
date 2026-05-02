@@ -8,8 +8,6 @@ import {
   PointerSensor,
   TouchSensor,
   closestCenter,
-  pointerWithin,
-  rectIntersection,
   useSensor,
   useSensors,
   type CollisionDetection,
@@ -33,19 +31,9 @@ const animateLayoutChanges: AnimateLayoutChanges = (args) => {
   return defaultAnimateLayoutChanges(args)
 }
 
-// Three-tier collision: pointerWithin (decisive when cursor is INSIDE a row)
-// → rectIntersection (overlap-based, catches "between rows" cases) →
-// closestCenter (always returns the nearest droppable). The ultimate
-// fallback guarantees `event.over` is never null at drop, otherwise dnd-kit
-// plays its default cancel-animation which sends the overlay back to the
-// source position — visually "animation at source instead of destination".
-const hybridCollision: CollisionDetection = (args) => {
-  const pointer = pointerWithin(args)
-  if (pointer.length > 0) return pointer
-  const intersect = rectIntersection(args)
-  if (intersect.length > 0) return intersect
-  return closestCenter(args)
-}
+// See TodayPage rationale: closestCenter alone is the most stable
+// collision strategy for evenly-spaced vertical lists.
+const hybridCollision: CollisionDetection = (args) => closestCenter(args)
 
 import { CSS } from '@dnd-kit/utilities'
 import {
@@ -76,13 +64,9 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // See TodayPage rationale: active stays at source DOM with opacity-
-  // 0.55 hint, no transform/transition applied during drag. flushSync
-  // moves DOM to destination on drop with nothing to interpolate ->
-  // clean appearance at destination, no FLIP jump.
   const style: React.CSSProperties = {
-    transform: isDragging ? undefined : CSS.Transform.toString(transform),
-    transition: isDragging ? undefined : transition,
+    transform: CSS.Transform.toString(transform),
+    transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',
