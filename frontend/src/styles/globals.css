@@ -1243,20 +1243,6 @@ input.quick-add {
 }
 .dark .popover-glass { background: var(--glass-solid) !important; }
 
-/* While dnd-kit is reordering rows, suppress hover-driven color/border/shadow
-   transitions on every node. dnd-kit overrides `transition` inline to
-   animate just `transform`; without this rule the cursor passing over a
-   sibling fires a snap (no transition) on its hover styles, which reads as
-   a "twitch" overlaid on the otherwise-smooth slide. */
-body.ts-dnd-active * {
-  transition-property: transform !important;
-}
-body.ts-dnd-active *:hover {
-  background-color: inherit !important;
-  border-color: inherit !important;
-  box-shadow: none !important;
-}
-
 /* Form controls inside popovers/modals — bump up the contrast so a plain
    `<select>` / `<input type=date>` / `<input type=time>` doesn't blend into
    the popover surface in dark mode (where --glass-2 is ~11% white). */

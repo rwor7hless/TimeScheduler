@@ -18,6 +18,7 @@ import {
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  closestCenter,
   pointerWithin,
   rectIntersection,
   useSensor,
@@ -34,12 +35,16 @@ import {
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
-// Hybrid collision: pointer-inside is decisive, fall back to rect-intersect
-// at the boundaries. Plain pointerWithin can lose the target between rows.
+// Three-tier collision: pointerWithin → rectIntersection → closestCenter.
+// The closestCenter fallback guarantees `event.over` is never null at
+// drop; otherwise dnd-kit plays its default cancel-animation back to the
+// source, which the user sees as "animation at source instead of dest".
 const hybridCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args)
   if (pointer.length > 0) return pointer
-  return rectIntersection(args)
+  const intersect = rectIntersection(args)
+  if (intersect.length > 0) return intersect
+  return closestCenter(args)
 }
 
 // Disable layout-change animations entirely. After a drop, useReorderTasks
@@ -528,7 +533,6 @@ export default function TodayPage() {
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
     setActiveDragId(null)
-    document.body.classList.remove('ts-dnd-active')
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = currentIds.indexOf(Number(active.id))
@@ -540,11 +544,9 @@ export default function TodayPage() {
 
   const handleDragStart = (e: { active: { id: string | number } }) => {
     setActiveDragId(Number(e.active.id))
-    document.body.classList.add('ts-dnd-active')
   }
   const handleDragCancel = () => {
     setActiveDragId(null)
-    document.body.classList.remove('ts-dnd-active')
   }
 
   const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()

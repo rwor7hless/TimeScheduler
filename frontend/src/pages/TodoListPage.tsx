@@ -7,6 +7,7 @@ import {
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  closestCenter,
   pointerWithin,
   rectIntersection,
   useSensor,
@@ -23,10 +24,18 @@ import {
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
+// Three-tier collision: pointerWithin (decisive when cursor is INSIDE a row)
+// → rectIntersection (overlap-based, catches "between rows" cases) →
+// closestCenter (always returns the nearest droppable). The ultimate
+// fallback guarantees `event.over` is never null at drop, otherwise dnd-kit
+// plays its default cancel-animation which sends the overlay back to the
+// source position — visually "animation at source instead of destination".
 const hybridCollision: CollisionDetection = (args) => {
   const pointer = pointerWithin(args)
   if (pointer.length > 0) return pointer
-  return rectIntersection(args)
+  const intersect = rectIntersection(args)
+  if (intersect.length > 0) return intersect
+  return closestCenter(args)
 }
 
 // See TodayPage for rationale: disabling layout-change animation on the
@@ -529,17 +538,10 @@ export default function TodoListPage() {
           sensors={sensors}
           collisionDetection={hybridCollision}
           modifiers={[restrictToVerticalAxis]}
-          onDragStart={(e) => {
-            setActiveId(Number(e.active.id))
-            document.body.classList.add('ts-dnd-active')
-          }}
-          onDragCancel={() => {
-            setActiveId(null)
-            document.body.classList.remove('ts-dnd-active')
-          }}
+          onDragStart={(e) => setActiveId(Number(e.active.id))}
+          onDragCancel={() => setActiveId(null)}
           onDragEnd={(e: DragEndEvent) => {
             setActiveId(null)
-            document.body.classList.remove('ts-dnd-active')
             const { active, over } = e
             if (!over || active.id === over.id) return
             const oldIdx = activeTasks.findIndex((t) => t.id === active.id)
