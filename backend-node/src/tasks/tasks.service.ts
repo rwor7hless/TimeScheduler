@@ -190,7 +190,15 @@ export class TasksService {
       where.parent_id = null;
     }
     if (filters.scope === 'calendar') {
-      where.scheduled_start = { not: null };
+      // Calendar surfaces both timeline tasks (scheduled_start set) and
+      // deadline-only tasks (scheduled_start null but deadline set) so the
+      // frontend can render the latter as a "deadlines" row above the
+      // timeline. Was previously `scheduled_start: { not: null }` which
+      // hid deadline-only tasks server-side.
+      where.OR = [
+        { scheduled_start: { not: null } },
+        { deadline: { not: null } },
+      ];
     }
     if (filters.done !== undefined) {
       where.done = filters.done;
