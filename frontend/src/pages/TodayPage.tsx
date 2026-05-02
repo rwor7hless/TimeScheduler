@@ -18,8 +18,10 @@ import {
   PointerSensor,
   TouchSensor,
   pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type Modifier,
 } from '@dnd-kit/core'
@@ -28,7 +30,25 @@ import {
   verticalListSortingStrategy,
   arrayMove,
   useSortable,
+  defaultAnimateLayoutChanges,
+  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
+
+// Hybrid collision: pointer-inside is decisive, fall back to rect-intersect
+// at the boundaries. Plain pointerWithin can lose the target between rows.
+const hybridCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args)
+  if (pointer.length > 0) return pointer
+  return rectIntersection(args)
+}
+
+// Suppress layout-change animations from non-drag sources (optimistic
+// position updates from useReorderTasks.onMutate). Only animate when the
+// item was actually being dragged. Without this, every cache update after
+// a drop fires a fresh "settle" animation on every row, layered on top of
+// dnd-kit's own slide — which reads as residual jitter.
+const animateOnDragOnly: AnimateLayoutChanges = (args) =>
+  defaultAnimateLayoutChanges({ ...args, wasDragging: true })
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -52,10 +72,8 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 // looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
-  // Default dnd-kit transition (200ms ease). Custom transitions can stack
-  // with dnd-kit's own state changes and produce extra ticks of motion.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id })
+    useSortable({ id, animateLayoutChanges: animateOnDragOnly })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -923,7 +941,7 @@ export default function TodayPage() {
           {topTab === 'overdue' && overdueTasks.length > 0 ? (
             <DndContext
               sensors={sensors}
-              collisionDetection={pointerWithin}
+              collisionDetection={hybridCollision}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
@@ -956,7 +974,7 @@ export default function TodayPage() {
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={pointerWithin}
+              collisionDetection={hybridCollision}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
@@ -1011,7 +1029,7 @@ export default function TodayPage() {
                 {open && (
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={pointerWithin}
+                    collisionDetection={hybridCollision}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
                     modifiers={[restrictToVerticalAxis]}

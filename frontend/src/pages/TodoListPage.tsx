@@ -7,8 +7,10 @@ import {
   PointerSensor,
   TouchSensor,
   pointerWithin,
+  rectIntersection,
   useSensor,
   useSensors,
+  type CollisionDetection,
   type DragEndEvent,
   type Modifier,
 } from '@dnd-kit/core'
@@ -17,7 +19,18 @@ import {
   verticalListSortingStrategy,
   useSortable,
   arrayMove,
+  defaultAnimateLayoutChanges,
+  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
+
+const hybridCollision: CollisionDetection = (args) => {
+  const pointer = pointerWithin(args)
+  if (pointer.length > 0) return pointer
+  return rectIntersection(args)
+}
+
+const animateOnDragOnly: AnimateLayoutChanges = (args) =>
+  defaultAnimateLayoutChanges({ ...args, wasDragging: true })
 import { CSS } from '@dnd-kit/utilities'
 import {
   useTasks,
@@ -45,9 +58,8 @@ function SortableTaskRow({
   id: number
   children: React.ReactNode
 }) {
-  // Default dnd-kit transition — custom curves can compound jitter.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id })
+    useSortable({ id, animateLayoutChanges: animateOnDragOnly })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -510,7 +522,7 @@ export default function TodoListPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={hybridCollision}
           modifiers={[restrictToVerticalAxis]}
           onDragStart={() => document.body.classList.add('ts-dnd-active')}
           onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
