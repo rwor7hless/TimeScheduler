@@ -1,11 +1,10 @@
 import { useState, useMemo } from 'react'
-import { createPortal, flushSync } from 'react-dom'
+import { flushSync } from 'react-dom'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import clsx from 'clsx'
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   TouchSensor,
   closestCenter,
@@ -71,18 +70,19 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  // Same reasoning as TodayPage's SortableRow: active row gets no
-  // transform/transition so dnd-kit's drop animation lands at the row's
-  // updated DOM position (after flushSync'd cache update) instead of
-  // animating the lingering drag-time transform back to 0 at the source.
-  const style: React.CSSProperties = isDragging
-    ? { opacity: 0, cursor: 'grab' }
-    : {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: 1,
-        cursor: 'grab',
-      }
+  // Native sortable pattern (no DragOverlay): the active row itself follows
+  // the cursor via transform. On drop the transform animates back to 0 via
+  // the transition while flushSync simultaneously updates DOM order, so the
+  // row visually glides FROM cursor TO its new DOM index. We slightly fade
+  // the active to hint that it's "lifted" without hiding it entirely.
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.55 : 1,
+    cursor: 'grab',
+    zIndex: isDragging ? 20 : undefined,
+    position: isDragging ? 'relative' : undefined,
+  }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
@@ -372,7 +372,6 @@ export default function TodoListPage() {
   const [doneOpen, setDoneOpen] = useState(false)
   const [archivedOpen, setArchivedOpen] = useState(false)
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
-  const [activeId, setActiveId] = useState<number | null>(null)
 
   const today = getToday()
 
@@ -542,20 +541,18 @@ export default function TodoListPage() {
           sensors={sensors}
           collisionDetection={hybridCollision}
           modifiers={[restrictToVerticalAxis]}
-          onDragStart={(e) => setActiveId(Number(e.active.id))}
-          onDragCancel={() => setActiveId(null)}
           onDragEnd={(e: DragEndEvent) => {
-            setActiveId(null)
             const { active, over } = e
             if (!over || active.id === over.id) return
             const oldIdx = activeTasks.findIndex((t) => t.id === active.id)
             const newIdx = activeTasks.findIndex((t) => t.id === over.id)
             if (oldIdx === -1 || newIdx === -1) return
             const reordered = arrayMove(activeTasks, oldIdx, newIdx)
-            // Force the optimistic cache update to commit synchronously so
-            // dnd-kit measures the active row at its NEW DOM position when
-            // it captures the rect for the drop animation. Otherwise the
-            // overlay flies back to source (visible 'animation at source').
+            // flushSync makes the cache update commit synchronously inside
+            // onDragEnd. The dnd-kit transform on the active row resets to
+            // 0 over its built-in transition; with DOM already updated to
+            // new order, the row glides FROM cursor TO new DOM index in
+            // one continuous motion (no second jump after).
             flushSync(() => {
               reorderTasks.mutate({ ordered_ids: reordered.map((t) => t.id) })
             })
@@ -577,22 +574,6 @@ export default function TodoListPage() {
               ))}
             </div>
           </SortableContext>
-          {createPortal(
-            <DragOverlay
-              dropAnimation={{
-                duration: 220,
-                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-              }}
-            >
-              {activeId !== null && (() => {
-                const t = activeTasks.find((x) => x.id === activeId)
-                return t ? (
-                  <TaskRow task={t} onToggle={() => {}} onClick={() => {}} />
-                ) : null
-              })()}
-            </DragOverlay>,
-            document.body,
-          )}
         </DndContext>
       )}
 

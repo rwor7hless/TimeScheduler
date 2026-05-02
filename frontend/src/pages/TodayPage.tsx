@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { createPortal, flushSync } from 'react-dom'
+import { flushSync } from 'react-dom'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask, useCreateTask, useReorderTasks, useBoards } from '@/hooks/useTasks'
@@ -16,7 +16,6 @@ import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
 import {
   DndContext,
-  DragOverlay,
   PointerSensor,
   TouchSensor,
   closestCenter,
@@ -81,20 +80,20 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  // The active (dragged) row gets NO transform/transition — the DragOverlay
-  // shows the visual ghost. The original stays at source DOM position
-  // throughout drag; flushSync inside onDragEnd moves it to new DOM index
-  // before dnd-kit measures activeRect for the drop animation, so the
-  // overlay glides to the destination instead of "falling back to source".
-  // Siblings still get their transform (they shift to make space mid-drag).
-  const style: React.CSSProperties = isDragging
-    ? { opacity: 0, cursor: 'grab' }
-    : {
-        transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: 1,
-        cursor: 'grab',
-      }
+  // Native sortable pattern (no DragOverlay): active row's transform follows
+  // the cursor mid-drag; on release dnd-kit transitions the transform back
+  // to 0, while flushSync simultaneously moves the row to its new DOM
+  // index — the row visually glides FROM cursor TO destination over the
+  // built-in transition. animateLayoutChanges: () => false suppresses
+  // post-render flicker on siblings.
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.55 : 1,
+    cursor: 'grab',
+    zIndex: isDragging ? 20 : undefined,
+    position: isDragging ? 'relative' : undefined,
+  }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
@@ -537,28 +536,19 @@ export default function TodayPage() {
   )
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
-    setActiveDragId(null)
     const { active, over } = event
     if (!over || active.id === over.id) return
     const oldIndex = currentIds.indexOf(Number(active.id))
     const newIndex = currentIds.indexOf(Number(over.id))
     if (oldIndex === -1 || newIndex === -1) return
     const next = arrayMove(currentIds, oldIndex, newIndex)
-    // flushSync forces React to commit the optimistic cache update from
-    // useReorderTasks.onMutate BEFORE dnd-kit measures the active row's
-    // bounding rect for the drop animation. Without this, dnd-kit grabs
-    // the rect from the OLD DOM position and animates the overlay back
-    // to the source — what the user sees as "animation at source".
+    // flushSync commits the cache update synchronously so the row's new
+    // DOM index is set BEFORE dnd-kit's transform-back-to-0 transition
+    // starts. Result: transform interpolates from cursor delta → 0 while
+    // DOM is already at destination → row glides cursor → destination.
     flushSync(() => {
       reorderTasks.mutate({ ordered_ids: next })
     })
-  }
-
-  const handleDragStart = (e: { active: { id: string | number } }) => {
-    setActiveDragId(Number(e.active.id))
-  }
-  const handleDragCancel = () => {
-    setActiveDragId(null)
   }
 
   const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
@@ -569,7 +559,6 @@ export default function TodayPage() {
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null)
   const [topTab, setTopTab] = useState<'today' | 'overdue'>('today')
   const [sectionOverrides, setSectionOverrides] = useState<Map<string, boolean>>(new Map())
-  const [activeDragId, setActiveDragId] = useState<number | null>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
 
@@ -972,8 +961,6 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={hybridCollision}
-              onDragStart={handleDragStart}
-              onDragCancel={handleDragCancel}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
             >
@@ -996,28 +983,6 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              {createPortal(
-                <DragOverlay
-                  dropAnimation={{
-                    duration: 220,
-                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                >
-                  {activeDragId !== null && (() => {
-                    const t = overdueTasks.find((x) => x.id === activeDragId)
-                    return t ? (
-                      <BacklogTaskRow
-                        task={t}
-                        todayStr={todayStr}
-                        boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
-                        onToggle={() => {}}
-                        onClick={() => {}}
-                      />
-                    ) : null
-                  })()}
-                </DragOverlay>,
-                document.body,
-              )}
             </DndContext>
           ) : todayUnified.length === 0 ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
@@ -1027,8 +992,6 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={hybridCollision}
-              onDragStart={handleDragStart}
-              onDragCancel={handleDragCancel}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
             >
@@ -1052,29 +1015,6 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              {createPortal(
-                <DragOverlay
-                  dropAnimation={{
-                    duration: 220,
-                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                  }}
-                >
-                  {activeDragId !== null && (() => {
-                    const entry = todayUnified.find((x) => x.task.id === activeDragId)
-                    return entry ? (
-                      <TodayTaskRow
-                        task={entry.task}
-                        type={entry.type}
-                        todayStr={todayStr}
-                        boardName={entry.task.board_id ? boardsById.get(entry.task.board_id) ?? null : null}
-                        onToggle={() => {}}
-                        onClick={() => {}}
-                      />
-                    ) : null
-                  })()}
-                </DragOverlay>,
-                document.body,
-              )}
             </DndContext>
           )}
 
@@ -1105,8 +1045,6 @@ export default function TodayPage() {
                   <DndContext
                     sensors={sensors}
                     collisionDetection={hybridCollision}
-                    onDragStart={handleDragStart}
-                    onDragCancel={handleDragCancel}
                     modifiers={[restrictToVerticalAxis]}
                     onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
                   >
@@ -1129,28 +1067,6 @@ export default function TodayPage() {
                         ))}
                       </div>
                     </SortableContext>
-                    {createPortal(
-                      <DragOverlay
-                        dropAnimation={{
-                          duration: 220,
-                          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                        }}
-                      >
-                        {activeDragId !== null && (() => {
-                          const t = section.tasks.find((x) => x.id === activeDragId)
-                          return t ? (
-                            <BacklogTaskRow
-                              task={t}
-                              todayStr={todayStr}
-                              boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
-                              onToggle={() => {}}
-                              onClick={() => {}}
-                            />
-                          ) : null
-                        })()}
-                      </DragOverlay>,
-                      document.body,
-                    )}
                   </DndContext>
                 )}
               </section>
