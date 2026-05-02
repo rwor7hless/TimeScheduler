@@ -565,7 +565,12 @@ export default function TodoListPage() {
               ))}
             </div>
           </SortableContext>
-          <DragOverlay dropAnimation={null}>
+          <DragOverlay
+            dropAnimation={{
+              duration: 220,
+              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          >
             {activeId !== null && (() => {
               const t = activeTasks.find((x) => x.id === activeId)
               return t ? (

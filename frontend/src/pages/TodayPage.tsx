@@ -982,7 +982,12 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay dropAnimation={null}>
+              <DragOverlay
+                dropAnimation={{
+                  duration: 220,
+                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              >
                 {activeDragId !== null && (() => {
                   const t = overdueTasks.find((x) => x.id === activeDragId)
                   return t ? (
@@ -1030,7 +1035,12 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay dropAnimation={null}>
+              <DragOverlay
+                dropAnimation={{
+                  duration: 220,
+                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              >
                 {activeDragId !== null && (() => {
                   const entry = todayUnified.find((x) => x.task.id === activeDragId)
                   return entry ? (
@@ -1099,7 +1109,12 @@ export default function TodayPage() {
                         ))}
                       </div>
                     </SortableContext>
-                    <DragOverlay dropAnimation={null}>
+                    <DragOverlay
+                dropAnimation={{
+                  duration: 220,
+                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                }}
+              >
                       {activeDragId !== null && (() => {
                         const t = section.tasks.find((x) => x.id === activeDragId)
                         return t ? (
