@@ -17,7 +17,7 @@ import {
   DndContext,
   PointerSensor,
   TouchSensor,
-  closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -52,13 +52,10 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 // looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
+  // Default dnd-kit transition (200ms ease). Custom transitions can stack
+  // with dnd-kit's own state changes and produce extra ticks of motion.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id,
-      // Soft ease-out replaces dnd-kit's default 200ms ease — siblings glide
-      // into place without the residual snap that reads as "jerky".
-      transition: { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-    })
+    useSortable({ id })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -926,7 +923,7 @@ export default function TodayPage() {
           {topTab === 'overdue' && overdueTasks.length > 0 ? (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCorners}
+              collisionDetection={pointerWithin}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
@@ -959,7 +956,7 @@ export default function TodayPage() {
           ) : (
             <DndContext
               sensors={sensors}
-              collisionDetection={closestCorners}
+              collisionDetection={pointerWithin}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
               modifiers={[restrictToVerticalAxis]}
@@ -1014,7 +1011,7 @@ export default function TodayPage() {
                 {open && (
                   <DndContext
                     sensors={sensors}
-                    collisionDetection={closestCorners}
+                    collisionDetection={pointerWithin}
               onDragStart={() => document.body.classList.add('ts-dnd-active')}
               onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
                     modifiers={[restrictToVerticalAxis]}

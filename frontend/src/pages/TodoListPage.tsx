@@ -6,7 +6,7 @@ import {
   DndContext,
   PointerSensor,
   TouchSensor,
-  closestCorners,
+  pointerWithin,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -45,11 +45,9 @@ function SortableTaskRow({
   id: number
   children: React.ReactNode
 }) {
+  // Default dnd-kit transition — custom curves can compound jitter.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({
-      id,
-      transition: { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
-    })
+    useSortable({ id })
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -512,7 +510,7 @@ export default function TodoListPage() {
       ) : (
         <DndContext
           sensors={sensors}
-          collisionDetection={closestCorners}
+          collisionDetection={pointerWithin}
           modifiers={[restrictToVerticalAxis]}
           onDragStart={() => document.body.classList.add('ts-dnd-active')}
           onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
