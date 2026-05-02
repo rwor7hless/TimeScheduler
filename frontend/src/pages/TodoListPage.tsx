@@ -71,15 +71,18 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    // The overlay (rendered inside DndContext) shows the visual ghost of
-    // the dragged row; hide the original so the user only sees one copy
-    // and the row keeps occupying space (siblings stay put = no jitter).
-    opacity: isDragging ? 0 : 1,
-    cursor: 'grab',
-  }
+  // Same reasoning as TodayPage's SortableRow: active row gets no
+  // transform/transition so dnd-kit's drop animation lands at the row's
+  // updated DOM position (after flushSync'd cache update) instead of
+  // animating the lingering drag-time transform back to 0 at the source.
+  const style: React.CSSProperties = isDragging
+    ? { opacity: 0, cursor: 'grab' }
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: 1,
+        cursor: 'grab',
+      }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}

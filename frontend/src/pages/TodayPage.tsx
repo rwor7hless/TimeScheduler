@@ -81,16 +81,20 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  // The DragOverlay (sibling of SortableContext) shows the visual ghost
-  // while dragging; hide the original so siblings don't shift, eliminating
-  // post-drop FLIP-style "appearing N rows above final" jitter.
-  void isDragging
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0 : 1,
-    cursor: 'grab',
-  }
+  // The active (dragged) row gets NO transform/transition — the DragOverlay
+  // shows the visual ghost. The original stays at source DOM position
+  // throughout drag; flushSync inside onDragEnd moves it to new DOM index
+  // before dnd-kit measures activeRect for the drop animation, so the
+  // overlay glides to the destination instead of "falling back to source".
+  // Siblings still get their transform (they shift to make space mid-drag).
+  const style: React.CSSProperties = isDragging
+    ? { opacity: 0, cursor: 'grab' }
+    : {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: 1,
+        cursor: 'grab',
+      }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
