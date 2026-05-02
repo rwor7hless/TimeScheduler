@@ -15,6 +15,7 @@ import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   TouchSensor,
   pointerWithin,
@@ -74,10 +75,14 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
+  // The DragOverlay (sibling of SortableContext) shows the visual ghost
+  // while dragging; hide the original so siblings don't shift, eliminating
+  // post-drop FLIP-style "appearing N rows above final" jitter.
+  void isDragging
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : 1,
+    opacity: isDragging ? 0 : 1,
     cursor: 'grab',
   }
   return (
@@ -522,6 +527,7 @@ export default function TodayPage() {
   )
 
   const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
+    setActiveDragId(null)
     document.body.classList.remove('ts-dnd-active')
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -532,6 +538,15 @@ export default function TodayPage() {
     reorderTasks.mutate({ ordered_ids: next })
   }
 
+  const handleDragStart = (e: { active: { id: string | number } }) => {
+    setActiveDragId(Number(e.active.id))
+    document.body.classList.add('ts-dnd-active')
+  }
+  const handleDragCancel = () => {
+    setActiveDragId(null)
+    document.body.classList.remove('ts-dnd-active')
+  }
+
   const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
 
   const [editingTask, setEditingTask] = useState<Task | null>(null)
@@ -540,6 +555,7 @@ export default function TodayPage() {
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null)
   const [topTab, setTopTab] = useState<'today' | 'overdue'>('today')
   const [sectionOverrides, setSectionOverrides] = useState<Map<string, boolean>>(new Map())
+  const [activeDragId, setActiveDragId] = useState<number | null>(null)
   const quickAddInputRef = useRef<HTMLInputElement>(null)
   const quickAddBackdropRef = useRef<HTMLDivElement>(null)
 
@@ -942,8 +958,8 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={hybridCollision}
-              onDragStart={() => document.body.classList.add('ts-dnd-active')}
-              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
+              onDragStart={handleDragStart}
+              onDragCancel={handleDragCancel}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
             >
@@ -966,6 +982,20 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
+              <DragOverlay dropAnimation={null}>
+                {activeDragId !== null && (() => {
+                  const t = overdueTasks.find((x) => x.id === activeDragId)
+                  return t ? (
+                    <BacklogTaskRow
+                      task={t}
+                      todayStr={todayStr}
+                      boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
+                      onToggle={() => {}}
+                      onClick={() => {}}
+                    />
+                  ) : null
+                })()}
+              </DragOverlay>
             </DndContext>
           ) : todayUnified.length === 0 ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
@@ -975,8 +1005,8 @@ export default function TodayPage() {
             <DndContext
               sensors={sensors}
               collisionDetection={hybridCollision}
-              onDragStart={() => document.body.classList.add('ts-dnd-active')}
-              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
+              onDragStart={handleDragStart}
+              onDragCancel={handleDragCancel}
               modifiers={[restrictToVerticalAxis]}
               onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
             >
@@ -1000,6 +1030,21 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
+              <DragOverlay dropAnimation={null}>
+                {activeDragId !== null && (() => {
+                  const entry = todayUnified.find((x) => x.task.id === activeDragId)
+                  return entry ? (
+                    <TodayTaskRow
+                      task={entry.task}
+                      type={entry.type}
+                      todayStr={todayStr}
+                      boardName={entry.task.board_id ? boardsById.get(entry.task.board_id) ?? null : null}
+                      onToggle={() => {}}
+                      onClick={() => {}}
+                    />
+                  ) : null
+                })()}
+              </DragOverlay>
             </DndContext>
           )}
 
@@ -1030,8 +1075,8 @@ export default function TodayPage() {
                   <DndContext
                     sensors={sensors}
                     collisionDetection={hybridCollision}
-              onDragStart={() => document.body.classList.add('ts-dnd-active')}
-              onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
+                    onDragStart={handleDragStart}
+                    onDragCancel={handleDragCancel}
                     modifiers={[restrictToVerticalAxis]}
                     onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
                   >
@@ -1054,6 +1099,20 @@ export default function TodayPage() {
                         ))}
                       </div>
                     </SortableContext>
+                    <DragOverlay dropAnimation={null}>
+                      {activeDragId !== null && (() => {
+                        const t = section.tasks.find((x) => x.id === activeDragId)
+                        return t ? (
+                          <BacklogTaskRow
+                            task={t}
+                            todayStr={todayStr}
+                            boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
+                            onToggle={() => {}}
+                            onClick={() => {}}
+                          />
+                        ) : null
+                      })()}
+                    </DragOverlay>
                   </DndContext>
                 )}
               </section>

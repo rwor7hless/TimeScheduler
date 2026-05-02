@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import clsx from 'clsx'
 import {
   DndContext,
+  DragOverlay,
   PointerSensor,
   TouchSensor,
   pointerWithin,
@@ -63,7 +64,10 @@ function SortableTaskRow({
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.6 : 1,
+    // The overlay (rendered inside DndContext) shows the visual ghost of
+    // the dragged row; hide the original so the user only sees one copy
+    // and the row keeps occupying space (siblings stay put = no jitter).
+    opacity: isDragging ? 0 : 1,
     cursor: 'grab',
   }
   return (
@@ -355,6 +359,7 @@ export default function TodoListPage() {
   const [doneOpen, setDoneOpen] = useState(false)
   const [archivedOpen, setArchivedOpen] = useState(false)
   const [archiveConfirmOpen, setArchiveConfirmOpen] = useState(false)
+  const [activeId, setActiveId] = useState<number | null>(null)
 
   const today = getToday()
 
@@ -524,9 +529,16 @@ export default function TodoListPage() {
           sensors={sensors}
           collisionDetection={hybridCollision}
           modifiers={[restrictToVerticalAxis]}
-          onDragStart={() => document.body.classList.add('ts-dnd-active')}
-          onDragCancel={() => document.body.classList.remove('ts-dnd-active')}
+          onDragStart={(e) => {
+            setActiveId(Number(e.active.id))
+            document.body.classList.add('ts-dnd-active')
+          }}
+          onDragCancel={() => {
+            setActiveId(null)
+            document.body.classList.remove('ts-dnd-active')
+          }}
           onDragEnd={(e: DragEndEvent) => {
+            setActiveId(null)
             document.body.classList.remove('ts-dnd-active')
             const { active, over } = e
             if (!over || active.id === over.id) return
@@ -553,6 +565,14 @@ export default function TodoListPage() {
               ))}
             </div>
           </SortableContext>
+          <DragOverlay dropAnimation={null}>
+            {activeId !== null && (() => {
+              const t = activeTasks.find((x) => x.id === activeId)
+              return t ? (
+                <TaskRow task={t} onToggle={() => {}} onClick={() => {}} />
+              ) : null
+            })()}
+          </DragOverlay>
         </DndContext>
       )}
 
