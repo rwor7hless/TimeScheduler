@@ -85,26 +85,25 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 // looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
-  // animateLayoutChanges suppresses FLIP-animation only for the just-
-  // dropped row (wasDragging:true on that tick). The dropped row snaps
-  // to its new DOM position which flushSync already put there; siblings
-  // still get the smooth default settle.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // position:relative + zIndex stay ALWAYS (not toggled) — the static↔
-  // relative flip on isDragging end was causing a 1-frame paint glitch
-  // where the previous row's text briefly stayed at the old DOM slot.
-  // willChange:transform pushes the interpolation to the GPU layer
-  // (separate compositor pass, no reflow). The result is no residual
-  // ghosting between old and new DOM positions.
+  // Active row stays at its source DOM slot with opacity 0.55 (visual
+  // "lifted" hint). NO transform applied while dragging — dnd-kit knows
+  // cursor position independently from cursor events; the transform was
+  // just a cosmetic "follows cursor" effect that compounds with the
+  // post-drop transition reset and produces the FLIP jump (active appears
+  // N rows offset, then slides). With transform=0 during drag, on drop
+  // flushSync moves the row to its new DOM index and there's NO leftover
+  // transform value to interpolate — row appears at destination cleanly.
+  // Siblings still get their normal transform (they shift to show the
+  // drop target slot).
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: isDragging ? undefined : CSS.Transform.toString(transform),
+    transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
-    willChange: 'transform',
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>

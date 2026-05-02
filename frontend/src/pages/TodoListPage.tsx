@@ -74,24 +74,19 @@ function SortableTaskRow({
   id: number
   children: React.ReactNode
 }) {
-  // animateLayoutChanges (defined above) skips FLIP for the just-
-  // dropped row so it snaps to its flushSync'd DOM position. Siblings
-  // get the default smooth settle.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // Native sortable pattern. position:relative + zIndex stay ALWAYS
-  // (zIndex toggles 20→0 on dragend, but the row stays positioned, so
-  // no static↔relative reflow). willChange:transform pushes the row
-  // onto its own GPU compositor layer so transform interpolation runs
-  // off the main paint thread and doesn't leave residual text ghosts.
+  // See TodayPage rationale: active stays at source DOM with opacity-
+  // 0.55 hint, no transform/transition applied during drag. flushSync
+  // moves DOM to destination on drop with nothing to interpolate ->
+  // clean appearance at destination, no FLIP jump.
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
+    transform: isDragging ? undefined : CSS.Transform.toString(transform),
+    transition: isDragging ? undefined : transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
-    willChange: 'transform',
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
