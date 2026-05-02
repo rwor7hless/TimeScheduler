@@ -70,18 +70,19 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  // Native sortable pattern (no DragOverlay): the active row itself follows
-  // the cursor via transform. On drop the transform animates back to 0 via
-  // the transition while flushSync simultaneously updates DOM order, so the
-  // row visually glides FROM cursor TO its new DOM index. We slightly fade
-  // the active to hint that it's "lifted" without hiding it entirely.
+  // Native sortable pattern. position:relative + zIndex stay ALWAYS
+  // (zIndex toggles 20→0 on dragend, but the row stays positioned, so
+  // no static↔relative reflow). willChange:transform pushes the row
+  // onto its own GPU compositor layer so transform interpolation runs
+  // off the main paint thread and doesn't leave residual text ghosts.
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
-    zIndex: isDragging ? 20 : undefined,
-    position: isDragging ? 'relative' : undefined,
+    position: 'relative',
+    zIndex: isDragging ? 20 : 0,
+    willChange: 'transform',
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
