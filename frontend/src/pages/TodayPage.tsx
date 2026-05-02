@@ -1,5 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { flushSync } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask, useCreateTask, useReorderTasks, useBoards } from '@/hooks/useTasks'
@@ -992,25 +992,28 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay
-                dropAnimation={{
-                  duration: 220,
-                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                {activeDragId !== null && (() => {
-                  const t = overdueTasks.find((x) => x.id === activeDragId)
-                  return t ? (
-                    <BacklogTaskRow
-                      task={t}
-                      todayStr={todayStr}
-                      boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
-                      onToggle={() => {}}
-                      onClick={() => {}}
-                    />
-                  ) : null
-                })()}
-              </DragOverlay>
+              {createPortal(
+                <DragOverlay
+                  dropAnimation={{
+                    duration: 220,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                >
+                  {activeDragId !== null && (() => {
+                    const t = overdueTasks.find((x) => x.id === activeDragId)
+                    return t ? (
+                      <BacklogTaskRow
+                        task={t}
+                        todayStr={todayStr}
+                        boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
+                        onToggle={() => {}}
+                        onClick={() => {}}
+                      />
+                    ) : null
+                  })()}
+                </DragOverlay>,
+                document.body,
+              )}
             </DndContext>
           ) : todayUnified.length === 0 ? (
             <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
@@ -1045,26 +1048,29 @@ export default function TodayPage() {
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay
-                dropAnimation={{
-                  duration: 220,
-                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                {activeDragId !== null && (() => {
-                  const entry = todayUnified.find((x) => x.task.id === activeDragId)
-                  return entry ? (
-                    <TodayTaskRow
-                      task={entry.task}
-                      type={entry.type}
-                      todayStr={todayStr}
-                      boardName={entry.task.board_id ? boardsById.get(entry.task.board_id) ?? null : null}
-                      onToggle={() => {}}
-                      onClick={() => {}}
-                    />
-                  ) : null
-                })()}
-              </DragOverlay>
+              {createPortal(
+                <DragOverlay
+                  dropAnimation={{
+                    duration: 220,
+                    easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                  }}
+                >
+                  {activeDragId !== null && (() => {
+                    const entry = todayUnified.find((x) => x.task.id === activeDragId)
+                    return entry ? (
+                      <TodayTaskRow
+                        task={entry.task}
+                        type={entry.type}
+                        todayStr={todayStr}
+                        boardName={entry.task.board_id ? boardsById.get(entry.task.board_id) ?? null : null}
+                        onToggle={() => {}}
+                        onClick={() => {}}
+                      />
+                    ) : null
+                  })()}
+                </DragOverlay>,
+                document.body,
+              )}
             </DndContext>
           )}
 
@@ -1119,25 +1125,28 @@ export default function TodayPage() {
                         ))}
                       </div>
                     </SortableContext>
-                    <DragOverlay
-                dropAnimation={{
-                  duration: 220,
-                  easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-                }}
-              >
-                      {activeDragId !== null && (() => {
-                        const t = section.tasks.find((x) => x.id === activeDragId)
-                        return t ? (
-                          <BacklogTaskRow
-                            task={t}
-                            todayStr={todayStr}
-                            boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
-                            onToggle={() => {}}
-                            onClick={() => {}}
-                          />
-                        ) : null
-                      })()}
-                    </DragOverlay>
+                    {createPortal(
+                      <DragOverlay
+                        dropAnimation={{
+                          duration: 220,
+                          easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+                        }}
+                      >
+                        {activeDragId !== null && (() => {
+                          const t = section.tasks.find((x) => x.id === activeDragId)
+                          return t ? (
+                            <BacklogTaskRow
+                              task={t}
+                              todayStr={todayStr}
+                              boardName={t.board_id ? boardsById.get(t.board_id) ?? null : null}
+                              onToggle={() => {}}
+                              onClick={() => {}}
+                            />
+                          ) : null
+                        })()}
+                      </DragOverlay>,
+                      document.body,
+                    )}
                   </DndContext>
                 )}
               </section>

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { flushSync } from 'react-dom'
+import { createPortal, flushSync } from 'react-dom'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import clsx from 'clsx'
@@ -574,19 +574,22 @@ export default function TodoListPage() {
               ))}
             </div>
           </SortableContext>
-          <DragOverlay
-            dropAnimation={{
-              duration: 220,
-              easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
-            }}
-          >
-            {activeId !== null && (() => {
-              const t = activeTasks.find((x) => x.id === activeId)
-              return t ? (
-                <TaskRow task={t} onToggle={() => {}} onClick={() => {}} />
-              ) : null
-            })()}
-          </DragOverlay>
+          {createPortal(
+            <DragOverlay
+              dropAnimation={{
+                duration: 220,
+                easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+              }}
+            >
+              {activeId !== null && (() => {
+                const t = activeTasks.find((x) => x.id === activeId)
+                return t ? (
+                  <TaskRow task={t} onToggle={() => {}} onClick={() => {}} />
+                ) : null
+              })()}
+            </DragOverlay>,
+            document.body,
+          )}
         </DndContext>
       )}
 
