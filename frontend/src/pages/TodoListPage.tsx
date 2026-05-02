@@ -21,7 +21,6 @@ import {
   verticalListSortingStrategy,
   useSortable,
   arrayMove,
-  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
 // Three-tier collision: pointerWithin (decisive when cursor is INSIDE a row)
@@ -38,9 +37,6 @@ const hybridCollision: CollisionDetection = (args) => {
   return closestCenter(args)
 }
 
-// See TodayPage for rationale: disabling layout-change animation on the
-// post-drop re-render kills the "rows above appearing" effect.
-const animateOnDragOnly: AnimateLayoutChanges = () => false
 import { CSS } from '@dnd-kit/utilities'
 import {
   useTasks,
@@ -68,8 +64,15 @@ function SortableTaskRow({
   id: number
   children: React.ReactNode
 }) {
+  // Use dnd-kit's DEFAULT animateLayoutChanges. Earlier override to
+  // `() => false` killed the smooth settle animation siblings need
+  // when re-rendered into their new DOM index after the cache update —
+  // result was a one-frame snap that read as "previous position
+  // flicker". Default lets siblings glide smoothly into their new
+  // slots; the row that got moved also slides cleanly into its
+  // destination over the same transition.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id, animateLayoutChanges: animateOnDragOnly })
+    useSortable({ id })
   // Native sortable pattern. position:relative + zIndex stay ALWAYS
   // (zIndex toggles 20→0 on dragend, but the row stays positioned, so
   // no static↔relative reflow). willChange:transform pushes the row

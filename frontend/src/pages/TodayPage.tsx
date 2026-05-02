@@ -32,7 +32,6 @@ import {
   verticalListSortingStrategy,
   arrayMove,
   useSortable,
-  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
 // Three-tier collision: pointerWithin → rectIntersection → closestCenter.
@@ -47,14 +46,6 @@ const hybridCollision: CollisionDetection = (args) => {
   return closestCenter(args)
 }
 
-// Disable layout-change animations entirely. After a drop, useReorderTasks
-// optimistically writes new `position` values; the cache update reorders
-// the list and dnd-kit (by default) animates each row from its old DOM
-// slot to its new one, on top of the slide that already finished. That
-// double-animation reads as rows "appearing" / twitching after drop.
-// During the actual drag, the `transition` returned by useSortable still
-// animates the transform — that part stays smooth.
-const animateOnDragOnly: AnimateLayoutChanges = () => false
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
@@ -78,8 +69,13 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 // looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
+  // dnd-kit DEFAULT animateLayoutChanges — earlier suppression caused
+  // a one-frame snap on siblings post-drop instead of a smooth settle,
+  // which the user perceived as flicker. Default lets the moved row
+  // and its neighbors glide smoothly to their new DOM positions in
+  // the same transition.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id, animateLayoutChanges: animateOnDragOnly })
+    useSortable({ id })
   // position:relative + zIndex stay ALWAYS (not toggled) — the static↔
   // relative flip on isDragging end was causing a 1-frame paint glitch
   // where the previous row's text briefly stayed at the old DOM slot.
