@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -64,16 +64,43 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
+  // See TodayPage SortableRow rationale: opacity-0 on siblings while
+  // transform is mid-transition masks the visible intermediate state
+  // ('блик' the user kept seeing).
+  const localRef = useRef<HTMLDivElement | null>(null)
+  const [animating, setAnimating] = useState(false)
+  useEffect(() => {
+    const node = localRef.current
+    if (!node) return
+    const onRun = (e: TransitionEvent) => {
+      if (e.propertyName === 'transform') setAnimating(true)
+    }
+    const onEnd = (e: TransitionEvent) => {
+      if (e.propertyName === 'transform') setAnimating(false)
+    }
+    node.addEventListener('transitionrun', onRun)
+    node.addEventListener('transitionend', onEnd)
+    node.addEventListener('transitioncancel', onEnd)
+    return () => {
+      node.removeEventListener('transitionrun', onRun)
+      node.removeEventListener('transitionend', onEnd)
+      node.removeEventListener('transitioncancel', onEnd)
+    }
+  }, [])
+  const setRef = (node: HTMLDivElement | null) => {
+    localRef.current = node
+    setNodeRef(node)
+  }
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.55 : 1,
+    opacity: isDragging ? 0.55 : animating ? 0 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
   }
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setRef} style={style} {...attributes} {...listeners}>
       {children}
     </div>
   )

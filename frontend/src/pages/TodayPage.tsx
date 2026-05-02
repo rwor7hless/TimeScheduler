@@ -81,20 +81,46 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // Active row applies its cursor-follow transform (visible feedback that
-  // it's being dragged) with opacity 0.55 hint. animateLayoutChanges
-  // (defined above) skips the post-drop FLIP for the dropped row so it
-  // doesn't 'jump N positions above destination'.
+  // Hide siblings while their transform is mid-transition. The visible
+  // intermediate state of the transform (sibling at "halfway shifted"
+  // position) is what reads as 'блик' / flicker. Listen for the CSS
+  // transitionrun/transitionend events on the transform property and
+  // opacity-0 the row during the animation. Active row stays at 0.55
+  // (visible cursor-follow). User explicitly asked for this masking.
+  const localRef = useRef<HTMLDivElement | null>(null)
+  const [animating, setAnimating] = useState(false)
+  useEffect(() => {
+    const node = localRef.current
+    if (!node) return
+    const onRun = (e: TransitionEvent) => {
+      if (e.propertyName === 'transform') setAnimating(true)
+    }
+    const onEnd = (e: TransitionEvent) => {
+      if (e.propertyName === 'transform') setAnimating(false)
+    }
+    node.addEventListener('transitionrun', onRun)
+    node.addEventListener('transitionend', onEnd)
+    node.addEventListener('transitioncancel', onEnd)
+    return () => {
+      node.removeEventListener('transitionrun', onRun)
+      node.removeEventListener('transitionend', onEnd)
+      node.removeEventListener('transitioncancel', onEnd)
+    }
+  }, [])
+  const setRef = (node: HTMLDivElement | null) => {
+    localRef.current = node
+    setNodeRef(node)
+  }
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
-    opacity: isDragging ? 0.55 : 1,
+    opacity: isDragging ? 0.55 : animating ? 0 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
   }
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div ref={setRef} style={style} {...attributes} {...listeners}>
       {children}
     </div>
   )
