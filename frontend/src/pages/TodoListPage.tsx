@@ -19,7 +19,6 @@ import {
   verticalListSortingStrategy,
   useSortable,
   arrayMove,
-  defaultAnimateLayoutChanges,
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
@@ -29,8 +28,9 @@ const hybridCollision: CollisionDetection = (args) => {
   return rectIntersection(args)
 }
 
-const animateOnDragOnly: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges({ ...args, wasDragging: true })
+// See TodayPage for rationale: disabling layout-change animation on the
+// post-drop re-render kills the "rows above appearing" effect.
+const animateOnDragOnly: AnimateLayoutChanges = () => false
 import { CSS } from '@dnd-kit/utilities'
 import {
   useTasks,

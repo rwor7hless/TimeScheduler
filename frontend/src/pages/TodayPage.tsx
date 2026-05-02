@@ -30,7 +30,6 @@ import {
   verticalListSortingStrategy,
   arrayMove,
   useSortable,
-  defaultAnimateLayoutChanges,
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
@@ -42,13 +41,14 @@ const hybridCollision: CollisionDetection = (args) => {
   return rectIntersection(args)
 }
 
-// Suppress layout-change animations from non-drag sources (optimistic
-// position updates from useReorderTasks.onMutate). Only animate when the
-// item was actually being dragged. Without this, every cache update after
-// a drop fires a fresh "settle" animation on every row, layered on top of
-// dnd-kit's own slide — which reads as residual jitter.
-const animateOnDragOnly: AnimateLayoutChanges = (args) =>
-  defaultAnimateLayoutChanges({ ...args, wasDragging: true })
+// Disable layout-change animations entirely. After a drop, useReorderTasks
+// optimistically writes new `position` values; the cache update reorders
+// the list and dnd-kit (by default) animates each row from its old DOM
+// slot to its new one, on top of the slide that already finished. That
+// double-animation reads as rows "appearing" / twitching after drop.
+// During the actual drag, the `transition` returned by useSortable still
+// animates the transform — that part stays smooth.
+const animateOnDragOnly: AnimateLayoutChanges = () => false
 import { CSS } from '@dnd-kit/utilities'
 import clsx from 'clsx'
 import toast from 'react-hot-toast'
