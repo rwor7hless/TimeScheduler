@@ -80,19 +80,20 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges: animateOnDragOnly })
-  // Native sortable pattern (no DragOverlay): active row's transform follows
-  // the cursor mid-drag; on release dnd-kit transitions the transform back
-  // to 0, while flushSync simultaneously moves the row to its new DOM
-  // index — the row visually glides FROM cursor TO destination over the
-  // built-in transition. animateLayoutChanges: () => false suppresses
-  // post-render flicker on siblings.
+  // position:relative + zIndex stay ALWAYS (not toggled) — the static↔
+  // relative flip on isDragging end was causing a 1-frame paint glitch
+  // where the previous row's text briefly stayed at the old DOM slot.
+  // willChange:transform pushes the interpolation to the GPU layer
+  // (separate compositor pass, no reflow). The result is no residual
+  // ghosting between old and new DOM positions.
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
-    zIndex: isDragging ? 20 : undefined,
-    position: isDragging ? 'relative' : undefined,
+    position: 'relative',
+    zIndex: isDragging ? 20 : 0,
+    willChange: 'transform',
   }
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
