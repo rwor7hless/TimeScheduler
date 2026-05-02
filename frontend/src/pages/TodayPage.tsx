@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react'
+import { flushSync } from 'react-dom'
 import { addDays, differenceInCalendarDays, format, isSameDay, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask, useCreateTask, useReorderTasks, useBoards } from '@/hooks/useTasks'
@@ -539,7 +540,14 @@ export default function TodayPage() {
     const newIndex = currentIds.indexOf(Number(over.id))
     if (oldIndex === -1 || newIndex === -1) return
     const next = arrayMove(currentIds, oldIndex, newIndex)
-    reorderTasks.mutate({ ordered_ids: next })
+    // flushSync forces React to commit the optimistic cache update from
+    // useReorderTasks.onMutate BEFORE dnd-kit measures the active row's
+    // bounding rect for the drop animation. Without this, dnd-kit grabs
+    // the rect from the OLD DOM position and animates the overlay back
+    // to the source — what the user sees as "animation at source".
+    flushSync(() => {
+      reorderTasks.mutate({ ordered_ids: next })
+    })
   }
 
   const handleDragStart = (e: { active: { id: string | number } }) => {

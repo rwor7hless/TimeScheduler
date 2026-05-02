@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { flushSync } from 'react-dom'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
 import clsx from 'clsx'
@@ -548,7 +549,13 @@ export default function TodoListPage() {
             const newIdx = activeTasks.findIndex((t) => t.id === over.id)
             if (oldIdx === -1 || newIdx === -1) return
             const reordered = arrayMove(activeTasks, oldIdx, newIdx)
-            reorderTasks.mutate({ ordered_ids: reordered.map((t) => t.id) })
+            // Force the optimistic cache update to commit synchronously so
+            // dnd-kit measures the active row at its NEW DOM position when
+            // it captures the rect for the drop animation. Otherwise the
+            // overlay flies back to source (visible 'animation at source').
+            flushSync(() => {
+              reorderTasks.mutate({ ordered_ids: reordered.map((t) => t.id) })
+            })
           }}
         >
           <SortableContext
