@@ -21,7 +21,17 @@ import {
   verticalListSortingStrategy,
   useSortable,
   arrayMove,
+  defaultAnimateLayoutChanges,
+  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
+
+// See TodayPage for rationale: skip FLIP only for the just-dropped row
+// so it snaps to the flushSync'd new DOM position (no 'N rows above
+// destination' jump). Siblings keep smooth default settle.
+const animateLayoutChanges: AnimateLayoutChanges = (args) => {
+  if (args.wasDragging) return false
+  return defaultAnimateLayoutChanges(args)
+}
 
 // Three-tier collision: pointerWithin (decisive when cursor is INSIDE a row)
 // → rectIntersection (overlap-based, catches "between rows" cases) →
@@ -64,15 +74,11 @@ function SortableTaskRow({
   id: number
   children: React.ReactNode
 }) {
-  // Use dnd-kit's DEFAULT animateLayoutChanges. Earlier override to
-  // `() => false` killed the smooth settle animation siblings need
-  // when re-rendered into their new DOM index after the cache update —
-  // result was a one-frame snap that read as "previous position
-  // flicker". Default lets siblings glide smoothly into their new
-  // slots; the row that got moved also slides cleanly into its
-  // destination over the same transition.
+  // animateLayoutChanges (defined above) skips FLIP for the just-
+  // dropped row so it snaps to its flushSync'd DOM position. Siblings
+  // get the default smooth settle.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id })
+    useSortable({ id, animateLayoutChanges })
   // Native sortable pattern. position:relative + zIndex stay ALWAYS
   // (zIndex toggles 20→0 on dragend, but the row stays positioned, so
   // no static↔relative reflow). willChange:transform pushes the row

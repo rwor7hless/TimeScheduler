@@ -32,7 +32,23 @@ import {
   verticalListSortingStrategy,
   arrayMove,
   useSortable,
+  defaultAnimateLayoutChanges,
+  type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
+
+// The item that JUST DROPPED gets `wasDragging: true` for the layout-
+// change tick that reorders the array. Its DOM moved from old index to
+// new (cache update via flushSync), and dnd-kit's default would FLIP-
+// animate it from old DOM rect to new — but the transform-back-to-0
+// from drag compounds, so the visual lands `N rows above destination`,
+// then animates down. Suppressing animation specifically for the dropped
+// item makes it SNAP to the new DOM position (which is correct because
+// flushSync already put it there). Siblings keep default animation so
+// their settle is smooth.
+const animateLayoutChanges: AnimateLayoutChanges = (args) => {
+  if (args.wasDragging) return false
+  return defaultAnimateLayoutChanges(args)
+}
 
 // Three-tier collision: pointerWithin → rectIntersection → closestCenter.
 // The closestCenter fallback guarantees `event.over` is never null at
@@ -69,13 +85,12 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 // looks like a 10Hz jitter on the dragged row.
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
-  // dnd-kit DEFAULT animateLayoutChanges — earlier suppression caused
-  // a one-frame snap on siblings post-drop instead of a smooth settle,
-  // which the user perceived as flicker. Default lets the moved row
-  // and its neighbors glide smoothly to their new DOM positions in
-  // the same transition.
+  // animateLayoutChanges suppresses FLIP-animation only for the just-
+  // dropped row (wasDragging:true on that tick). The dropped row snaps
+  // to its new DOM position which flushSync already put there; siblings
+  // still get the smooth default settle.
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id })
+    useSortable({ id, animateLayoutChanges })
   // position:relative + zIndex stay ALWAYS (not toggled) — the static↔
   // relative flip on isDragging end was causing a 1-frame paint glitch
   // where the previous row's text briefly stayed at the old DOM slot.
