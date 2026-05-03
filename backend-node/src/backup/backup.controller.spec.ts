@@ -1,17 +1,21 @@
 import { InternalServerErrorException } from '@nestjs/common';
 import { BackupController } from './backup.controller';
 import { BackupService } from './backup.service';
+import { S3BackupService } from './s3-backup.service';
 
 describe('BackupController', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let svc: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let s3Svc: any;
   let controller: BackupController;
   beforeEach(() => {
     svc = {
       runBackup: jest.fn(),
       listBackups: jest.fn().mockReturnValue([]),
     };
-    controller = new BackupController(svc as BackupService);
+    s3Svc = { run: jest.fn() };
+    controller = new BackupController(svc as BackupService, s3Svc as S3BackupService);
   });
 
   it('trigger echoes the full filename on success', async () => {

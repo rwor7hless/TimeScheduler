@@ -11,6 +11,7 @@ import {
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BackupEntry, BackupService } from './backup.service';
+import { BackupResult, S3BackupService } from './s3-backup.service';
 
 /**
  * `/api/backup/*` — ports `backend/app/routers/backup.py`. Admin-only, both
@@ -20,7 +21,10 @@ import { BackupEntry, BackupService } from './backup.service';
 @Controller('backup')
 @UseGuards(JwtAuthGuard, AdminGuard)
 export class BackupController {
-  constructor(private readonly backup: BackupService) {}
+  constructor(
+    private readonly backup: BackupService,
+    private readonly s3Backup: S3BackupService,
+  ) {}
 
   @Post('trigger')
   @HttpCode(HttpStatus.OK)
@@ -30,6 +34,19 @@ export class BackupController {
       // Python returns the full path (os.path.join(backup_dir, ...)) from
       // run_backup and echoes it in the response. Match verbatim.
       return { status: 'ok', filename: fullPath };
+    } catch (err) {
+      if (err instanceof HttpException) throw err;
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new InternalServerErrorException(msg);
+    }
+  }
+
+  @Post('s3-trigger')
+  @HttpCode(HttpStatus.OK)
+  async triggerS3(): Promise<{ status: 'ok' } & BackupResult> {
+    try {
+      const result = await this.s3Backup.run();
+      return { status: 'ok', ...result };
     } catch (err) {
       if (err instanceof HttpException) throw err;
       const msg = err instanceof Error ? err.message : String(err);

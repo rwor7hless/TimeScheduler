@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { adminApi, type UserResponse, type UserUpdate } from '@/api/admin'
+import { backupApi } from '@/api/backup'
 import { useAuth } from '@/context/AuthContext'
 import Input from '@/components/ui/Input'
 import Button from '@/components/ui/Button'
@@ -47,6 +48,19 @@ export default function AdminPage() {
     onSettled: () => setTogglingId(null),
   })
 
+  const triggerS3Backup = useMutation({
+    mutationFn: () => backupApi.triggerS3(),
+    onSuccess: (res) => {
+      const mb = (res.size / (1024 * 1024)).toFixed(2)
+      toast.success(`Бэкап загружен: ${res.key} (${mb} MB, ${Math.round(res.durationMs / 1000)} с)`)
+    },
+    onError: (err: { response?: { data?: { detail?: string; message?: string } } }) => {
+      toast.error(
+        err.response?.data?.detail ?? err.response?.data?.message ?? 'Не удалось сделать бэкап',
+      )
+    },
+  })
+
   const deleteUser = useMutation({
     mutationFn: (userId: number) => adminApi.deleteUser(userId),
     onSuccess: () => {
@@ -70,6 +84,21 @@ export default function AdminPage() {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Admin Panel</h2>
+
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Бэкап БД → S3</h3>
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          Принудительный запуск pg_dump → Cloud.ru S3. Авто-крон работает ежедневно в 03:00 МСК.
+        </p>
+        <Button
+          type="button"
+          onClick={() => triggerS3Backup.mutate()}
+          disabled={triggerS3Backup.isPending}
+          className="min-h-[44px] sm:min-h-0 touch-manipulation"
+        >
+          {triggerS3Backup.isPending ? 'Бэкап выполняется…' : 'Сделать бэкап сейчас'}
+        </Button>
+      </div>
 
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Register User</h3>
