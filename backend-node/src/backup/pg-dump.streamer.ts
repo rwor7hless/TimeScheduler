@@ -1,6 +1,6 @@
 import { spawn } from 'node:child_process';
 import { Readable } from 'node:stream';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 
 interface PgConnection {
   host: string;
@@ -21,8 +21,14 @@ interface PgConnection {
  */
 @Injectable()
 export class PgDumpStreamer {
+  private readonly logger = new Logger(PgDumpStreamer.name);
+
   stream(databaseUrl: string): Readable {
     const conn = this.parseDatabaseUrl(databaseUrl);
+
+    this.logger.log(
+      `spawn pg_dump host=${conn.host} port=${conn.port} db=${conn.database} user=${conn.user}`,
+    );
 
     const child = spawn(
       'pg_dump',
@@ -38,6 +44,7 @@ export class PgDumpStreamer {
         '-Fc',
         '--no-owner',
         '--no-privileges',
+        '--verbose',
       ],
       {
         env: { ...process.env, PGPASSWORD: conn.password },
@@ -46,16 +53,27 @@ export class PgDumpStreamer {
     );
 
     const stderrChunks: Buffer[] = [];
-    child.stderr.on('data', (c: Buffer) => stderrChunks.push(c));
+    child.stderr.on('data', (c: Buffer) => {
+      stderrChunks.push(c);
+      // pg_dump --verbose writes progress to stderr; surface it so 0-byte
+      // dumps stop being silent. Trim trailing newline for log cleanliness.
+      this.logger.debug(`pg_dump: ${c.toString('utf8').trimEnd()}`);
+    });
 
-    child.on('error', (err) => child.stdout.destroy(err));
+    child.on('error', (err) => {
+      this.logger.error(`pg_dump spawn error: ${err.message}`);
+      child.stdout.destroy(err);
+    });
     child.on('close', (code) => {
+      const stderrText = Buffer.concat(stderrChunks).toString('utf8').trim();
       if (code !== 0) {
-        const stderrText = Buffer.concat(stderrChunks).toString('utf8').trim();
         const msg = stderrText
           ? `pg_dump exited with code ${code}: ${stderrText}`
           : `pg_dump exited with code ${code}`;
+        this.logger.error(msg);
         child.stdout.destroy(new Error(msg));
+      } else {
+        this.logger.log(`pg_dump exited 0 (stderr: ${stderrText || '<empty>'})`);
       }
     });
 

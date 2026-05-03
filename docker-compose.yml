@@ -22,6 +22,11 @@ services:
       network: host
     env_file: .env
     environment:
+      # Override .env's host=localhost (which is meant for bare-metal Node dev).
+      # Inside the compose network the Postgres service is reachable as `db`.
+      # Both vars must point at `db` — Prisma uses DATABASE_URL_PRISMA, while
+      # the S3 backup pipeline (pg_dump) reads DATABASE_URL.
+      DATABASE_URL: postgresql://ts_user:ts_secure_pass_2026@db:5432/timescheduler
       DATABASE_URL_PRISMA: postgresql://ts_user:ts_secure_pass_2026@db:5432/timescheduler
       PORT: 4000
     ports:
