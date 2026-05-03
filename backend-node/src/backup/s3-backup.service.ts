@@ -1,5 +1,6 @@
 import { Upload } from '@aws-sdk/lib-storage';
 import { Injectable, Logger } from '@nestjs/common';
+import { Transform } from 'node:stream';
 import { BackupNotifierService } from './backup-notifier.service';
 import { PgDumpStreamer } from './pg-dump.streamer';
 import { S3BackupConfigService } from './s3-backup.config';
@@ -37,10 +38,20 @@ export class S3BackupService {
 
     const dumpStream = this.pgDump.stream(this.config.databaseUrl);
 
+    // IMPORTANT: do NOT attach `dumpStream.on('data', ...)` directly — that
+    // flips the Readable into flowing mode immediately, and if pg_dump
+    // finishes before lib-storage's Upload subscribes its async iterator we
+    // lose every chunk and silently upload 0 bytes. Instead, pipe through a
+    // Transform that counts bytes while remaining paced by Upload's reads.
     let size = 0;
-    dumpStream.on('data', (chunk: Buffer) => {
-      size += chunk.length;
+    const counter = new Transform({
+      transform(chunk: Buffer, _enc, cb) {
+        size += chunk.length;
+        cb(null, chunk);
+      },
     });
+    dumpStream.on('error', (err) => counter.destroy(err));
+    dumpStream.pipe(counter);
 
     try {
       const upload = new Upload({
@@ -48,7 +59,7 @@ export class S3BackupService {
         params: {
           Bucket: this.config.bucket,
           Key: key,
-          Body: dumpStream,
+          Body: counter,
           ContentType: 'application/octet-stream',
         },
         queueSize: 4,
