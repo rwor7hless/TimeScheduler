@@ -16,16 +16,28 @@ export interface DailyTipResponse {
   long: string | null
 }
 
+// Backend сериализует Prisma Date как полный ISO ("2026-04-13T00:00:00.000Z").
+// Фронту удобнее иметь YYYY-MM-DD: это исключает (а) рассинхронизацию
+// при сравнении с локально-вычисленным `mondayOfTodayISO()` и (б) сдвиг
+// на ±1 день при `parseISO` в негативных часовых поясах.
+function normalizeWeekStart<T extends WeeklyReport>(rep: T): T {
+  return rep.week_start && rep.week_start.length > 10
+    ? { ...rep, week_start: rep.week_start.slice(0, 10) }
+    : rep
+}
+
 export const reportsApi = {
   list: (limit = 26): Promise<WeeklyReport[]> =>
-    client.get('/reports', { params: { limit } }).then((r) => r.data),
+    client
+      .get('/reports', { params: { limit } })
+      .then((r) => (r.data as WeeklyReport[]).map(normalizeWeekStart)),
 
   generate: (weekStart?: string): Promise<WeeklyReport> =>
     client
       .post('/reports/generate', null, {
         params: weekStart ? { week_start: weekStart } : undefined,
       })
-      .then((r) => r.data),
+      .then((r) => normalizeWeekStart(r.data as WeeklyReport)),
 
   getDailyTip: (forcePersona?: string, refresh = false): Promise<DailyTipResponse> => {
     const params: Record<string, string> = {}
@@ -39,7 +51,7 @@ export const reportsApi = {
   },
 
   requestSummary: (): Promise<WeeklyReport> =>
-    client.post('/reports/request-summary').then((r) => r.data),
+    client.post('/reports/request-summary').then((r) => normalizeWeekStart(r.data as WeeklyReport)),
 
   /**
    * Стримит генерацию отчёта через SSE (fetch + ReadableStream).

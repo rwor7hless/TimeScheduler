@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useState, useMemo } from 'react'
 import { flushSync } from 'react-dom'
 import { Link, useParams } from 'react-router-dom'
 import { format } from 'date-fns'
@@ -19,17 +19,13 @@ import {
   verticalListSortingStrategy,
   useSortable,
   arrayMove,
-  defaultAnimateLayoutChanges,
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
-// See TodayPage for rationale: skip FLIP only for the just-dropped row
-// so it snaps to the flushSync'd new DOM position (no 'N rows above
-// destination' jump). Siblings keep smooth default settle.
-const animateLayoutChanges: AnimateLayoutChanges = (args) => {
-  if (args.wasDragging) return false
-  return defaultAnimateLayoutChanges(args)
-}
+// FLIP полностью отключён — см. TodayPage: соседи в transition физически
+// перекрывали друг друга, и текст одной строки на кадр-два оказывался
+// над фоном другой. Снепаем строки в новые места без анимации.
+const animateLayoutChanges: AnimateLayoutChanges = () => false
 
 // See TodayPage rationale: closestCenter alone is the most stable
 // collision strategy for evenly-spaced vertical lists.
@@ -64,43 +60,22 @@ function SortableTaskRow({
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id, animateLayoutChanges })
-  // See TodayPage SortableRow rationale: opacity-0 on siblings while
-  // transform is mid-transition masks the visible intermediate state
-  // ('блик' the user kept seeing).
-  const localRef = useRef<HTMLDivElement | null>(null)
-  const [animating, setAnimating] = useState(false)
-  useEffect(() => {
-    const node = localRef.current
-    if (!node) return
-    const onRun = (e: TransitionEvent) => {
-      if (e.propertyName === 'transform') setAnimating(true)
-    }
-    const onEnd = (e: TransitionEvent) => {
-      if (e.propertyName === 'transform') setAnimating(false)
-    }
-    node.addEventListener('transitionrun', onRun)
-    node.addEventListener('transitionend', onEnd)
-    node.addEventListener('transitioncancel', onEnd)
-    return () => {
-      node.removeEventListener('transitionrun', onRun)
-      node.removeEventListener('transitionend', onEnd)
-      node.removeEventListener('transitioncancel', onEnd)
-    }
-  }, [])
-  const setRef = (node: HTMLDivElement | null) => {
-    localRef.current = node
-    setNodeRef(node)
-  }
+  // См. TodayPage SortableRow: отдельный composit-слой на строку убирает
+  // субпиксельный re-rasterize карточек во время FLIP-slide-анимации.
+  const baseTransform = CSS.Transform.toString(transform)
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    transform: baseTransform ? `${baseTransform} translateZ(0)` : 'translateZ(0)',
     transition,
-    opacity: isDragging ? 0.55 : animating ? 0 : 1,
+    opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
+    willChange: 'transform',
+    contain: 'paint',
+    backfaceVisibility: 'hidden',
   }
   return (
-    <div ref={setRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
     </div>
   )

@@ -84,9 +84,16 @@ export class ReportsService {
   }
 
   static mondayOf(d: Date): Date {
-    const jsDay = d.getUTCDay();
+    // День недели и сдвиг считаем по МСК (UTC+3, без DST). Возвращаем Date,
+    // у которого UTC-поля совпадают с КАЛЕНДАРНОЙ датой МСК-понедельника —
+    // ровно то, чего ждёт колонка `week_start @db.Date` в Prisma. Реальный
+    // момент времени MSK-понедельника-00:00 (UTC Sun 21:00) считается
+    // отдельно в WeeklyDataService при формировании временных границ.
+    const TZ_OFFSET_MS = 3 * 3600 * 1000;
+    const msk = new Date(d.getTime() + TZ_OFFSET_MS);
+    const jsDay = msk.getUTCDay();
     const weekdayPy = (jsDay + 6) % 7;
-    return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - weekdayPy));
+    return new Date(Date.UTC(msk.getUTCFullYear(), msk.getUTCMonth(), msk.getUTCDate() - weekdayPy));
   }
 
   static parseWeekStart(s: string): Date {
@@ -138,6 +145,11 @@ export class ReportsService {
         user_id: userId,
         week_start: ws,
         status: 'pending',
+        // В schema.prisma на колонке created_at стоит жёстко прибитый
+        // dbgenerated-дефолт ('2026-04-12 …') от старого `prisma db pull`.
+        // Если не выставить явно — Postgres подставит ту дату, и в UI
+        // окажется, что все отчёты «созданы 12 апреля». Выставляем сами.
+        created_at: new Date(),
         updated_at: new Date(),
       },
     });
@@ -163,6 +175,7 @@ export class ReportsService {
           user_id: user.id,
           week_start: ws,
           status: 'pending',
+          created_at: new Date(),
           updated_at: new Date(),
         },
       });
@@ -373,6 +386,7 @@ export class ReportsService {
           user_id: userId,
           week_start: weekStart,
           status: 'pending',
+          created_at: new Date(),
           updated_at: new Date(),
         },
       });

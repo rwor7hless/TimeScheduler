@@ -44,17 +44,17 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'h-9 px-2.5 rounded-xl text-xs font-medium border transition-colors max-w-[140px] truncate',
+          'h-9 px-2.5 rounded-xl text-xs font-semibold border transition-colors max-w-[140px] truncate',
           selected
-            ? 'border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700/60 dark:bg-amber-900/30 dark:text-amber-300'
-            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-600',
+            ? 'border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-900/50 dark:text-amber-200'
+            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-amber-400 dark:hover:border-amber-500',
         )}
         title={selected ? `Проект: ${label}` : 'Выбрать проект'}
       >
         {label}
       </button>
       {open && (
-        <div className="absolute right-0 z-20 mt-1 w-56 max-h-64 overflow-y-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-lg py-1">
+        <div className="popover-glass absolute right-0 z-40 mt-1 w-56 max-h-64 overflow-y-auto rounded-xl py-1">
           <button
             type="button"
             onClick={() => {

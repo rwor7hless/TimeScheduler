@@ -1255,6 +1255,15 @@ input.quick-add {
   border-color: var(--line-strong) !important;
 }
 
+/* Native <select> dropdown popup. Chromium on Windows doesn't always honour
+   `color-scheme: dark` for the option list, so the popup renders white-on-white
+   in dark themes. Force opaque dark surface + readable text on options. */
+.dark select option,
+.dark select optgroup {
+  background-color: var(--glass-solid);
+  color: var(--ink);
+}
+
 /* ============================================================================
    ANIMATIONS
    ============================================================================ */

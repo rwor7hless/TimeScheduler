@@ -1,0 +1,88 @@
+<h2>Без «Важно», «Запланированно»+«Задачи» = один пункт с датами</h2>
+<p class="subtitle">Слева — сайдбар после правок. Справа — что показывает кликнутый пункт «Задачи»: ВСЕ задачи (любых досок и без доски), разбитые по дате.</p>
+
+<style>
+  .wrap { display: flex; gap: 12px; align-items: stretch; }
+  .sb { width: 250px; font-size: 12px; line-height: 1.55; padding: 14px 8px 14px 12px; box-sizing: border-box; background: var(--surface, #fff); border: 1px solid rgba(128,128,128,.18); border-radius: 12px; }
+  .sb .head { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin: 14px 0 4px; }
+  .sb .head:first-child { margin-top: 0; }
+  .sb .row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; }
+  .sb .row .ico { width: 14px; opacity: .8; }
+  .sb .row .lbl { flex: 1; }
+  .sb .row .ct { font-size: 10px; opacity: .55; padding: 1px 6px; border-radius: 999px; background: rgba(120,120,120,.18); }
+  .sb .row.active { background: rgba(245,158,11,.18); color: #f59e0b; font-weight: 600; }
+  .sb .child { padding-left: 18px; }
+  .sb .group-hdr { display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 11px; opacity: .85; }
+  .sb .add { font-size: 11px; opacity: .55; padding: 4px 8px; }
+  .sb hr { border: 0; border-top: 1px solid rgba(128,128,128,.25); margin: 10px 0; }
+  .sb .search { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid rgba(128,128,128,.3); border-radius: 8px; opacity: .65; font-size: 11px; }
+  .sb .user { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
+  .sb .avatar { width: 28px; height: 28px; border-radius: 50%; background: #8b5cf6; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .sb .name { font-size: 12px; font-weight: 600; }
+
+  .preview { flex: 1; padding: 18px 22px; background: var(--surface, #fff); border: 1px solid rgba(128,128,128,.18); border-radius: 12px; font-size: 13px; }
+  .preview h3 { margin: 0 0 14px; }
+  .preview .section-hdr { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin: 18px 0 8px; }
+  .preview .task { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border: 1px solid rgba(128,128,128,.2); border-radius: 8px; margin-bottom: 4px; font-size: 12px; }
+  .preview .check { width: 14px; height: 14px; border: 2px solid rgba(128,128,128,.5); border-radius: 50%; flex-shrink: 0; }
+  .preview .dot { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; }
+  .preview .from { margin-left: auto; font-size: 10px; opacity: .55; padding: 1px 6px; border-radius: 4px; background: rgba(120,120,120,.15); }
+</style>
+
+<div class="wrap">
+  <div class="sb">
+    <div class="user"><div class="avatar">РБ</div><div class="name">Роман</div></div>
+    <div class="search">🔍 Поиск…</div>
+
+    <div class="head">Задачи</div>
+    <div class="row"><span class="ico">☀️</span><span class="lbl">Мой день</span><span class="ct">3</span></div>
+    <div class="row active"><span class="ico">📋</span><span class="lbl">Задачи</span><span class="ct">14</span></div>
+
+    <div class="head">Списки</div>
+    <div class="row"><span class="ico">📁</span><span class="lbl">Веселo</span><span class="ct">3</span></div>
+    <div class="group-hdr"><span>▼ Без названия</span></div>
+    <div class="row child"><span class="ico">📁</span><span class="lbl">Соси</span><span class="ct">2</span></div>
+    <div class="row child"><span class="ico">📁</span><span class="lbl">Шпрот</span><span class="ct">0</span></div>
+    <div class="add">+ Список   + Группа</div>
+
+    <div class="head">Планирование</div>
+    <div class="row"><span class="ico">📆</span><span class="lbl">Календарь</span></div>
+
+    <div class="head">Трекинг</div>
+    <div class="row"><span class="ico">✓</span><span class="lbl">Привычки</span></div>
+    <div class="row"><span class="ico">📊</span><span class="lbl">Статистика</span></div>
+    <div class="row"><span class="ico">💰</span><span class="lbl">Бюджет</span></div>
+
+    <div class="head">Архив</div>
+    <div class="row"><span class="ico">🔔</span><span class="lbl">История</span></div>
+  </div>
+
+  <div class="preview">
+    <h3>📋 Задачи</h3>
+
+    <div class="section-hdr">Просрочено (2)</div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#ef4444"></div><span>Отчёт за апрель</span><span class="from">из «Веселo»</span></div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#f59e0b"></div><span>Купить корм Шпроту</span><span class="from">без списка</span></div>
+
+    <div class="section-hdr">Сегодня (3)</div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#10b981"></div><span>Встреча 11:00</span><span class="from">«Соси»</span></div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#3b82f6"></div><span>Затереть BG</span><span class="from">без списка</span></div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#8b5cf6"></div><span>Дочитать главу</span><span class="from">«Веселo»</span></div>
+
+    <div class="section-hdr">Завтра (1)</div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#06b6d4"></div><span>Сдать налог</span><span class="from">без списка</span></div>
+
+    <div class="section-hdr">Через 3 дня (2)</div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#84cc16"></div><span>Митап</span><span class="from">«Соси»</span></div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#f97316"></div><span>Прививка</span><span class="from">без списка</span></div>
+
+    <div class="section-hdr">Позднее (4)</div>
+    <div style="opacity:.5; font-size:11px; padding-left:6px;">▶ свернуто</div>
+
+    <div class="section-hdr">Отложенное — без даты (2)</div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#6366f1"></div><span>Подумать про переезд</span><span class="from">без списка</span></div>
+    <div class="task"><div class="check"></div><div class="dot" style="background:#ec4899"></div><span>Выбрать гитару</span><span class="from">«Веселo»</span></div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 22px;">Этот «Задачи» = ВСЕ незавершённые задачи (любых списков и без), разбитые по дате. То же самое поведение, что сейчас на /today в нижней части, но как самостоятельный экран.</p>

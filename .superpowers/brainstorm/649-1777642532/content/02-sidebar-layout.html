@@ -1,0 +1,112 @@
+<h2>Раскладка сайдбара — два варианта</h2>
+<p class="subtitle">Оба сохраняют Привычки / Бюджет / Статистику. Различие — насколько строго делим разделы и где живёт «Календарь».</p>
+
+<style>
+  .sb { width: 250px; font-size: 12px; line-height: 1.55; padding: 14px 8px 14px 12px; min-height: 560px; box-sizing: border-box; }
+  .sb .head { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin: 14px 0 4px; }
+  .sb .head:first-child { margin-top: 0; }
+  .sb .row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; }
+  .sb .row .ico { width: 14px; opacity: .8; }
+  .sb .row .lbl { flex: 1; }
+  .sb .row .ct { font-size: 10px; opacity: .55; padding: 1px 6px; border-radius: 999px; background: rgba(120,120,120,.18); }
+  .sb .row.active { background: rgba(245,158,11,.18); color: #f59e0b; font-weight: 600; }
+  .sb .child { padding-left: 18px; }
+  .sb .group-hdr { display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 11px; opacity: .85; }
+  .sb .group-hdr .chev { font-size: 8px; }
+  .sb .add { font-size: 11px; opacity: .55; padding: 4px 8px; }
+  .sb hr { border: 0; border-top: 1px solid rgba(128,128,128,.25); margin: 10px 0; }
+  .sb .search { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid rgba(128,128,128,.3); border-radius: 8px; opacity: .65; font-size: 11px; }
+  .sb .user { display: flex; align-items: center; gap: 8px; padding-bottom: 12px; }
+  .sb .avatar { width: 28px; height: 28px; border-radius: 50%; background: #8b5cf6; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .sb .name { font-size: 12px; font-weight: 600; }
+</style>
+
+<div class="options" data-multiselect>
+
+  <div class="option" data-choice="layout-sectioned" onclick="toggleSelect(this)" style="padding: 0; overflow: hidden;">
+    <div class="letter" style="position: absolute; top: 8px; right: 8px;">A</div>
+    <div class="content" style="padding: 0; flex: 1;">
+      <div class="mockup" style="margin: 0; border-radius: 0;">
+        <div class="mockup-header">A · Sectioned — заголовки разделов как сейчас</div>
+        <div class="mockup-body" style="padding: 0;">
+          <div class="sb">
+            <div class="user"><div class="avatar">РБ</div><div class="name">Роман</div></div>
+            <div class="search">🔍 Поиск…</div>
+
+            <div class="head">Задачи</div>
+            <div class="row active"><span class="ico">☀️</span><span class="lbl">Мой день</span><span class="ct">3</span></div>
+            <div class="row"><span class="ico">⭐</span><span class="lbl">Важно</span><span class="ct">1</span></div>
+            <div class="row"><span class="ico">📅</span><span class="lbl">Запланировано</span><span class="ct">5</span></div>
+            <div class="row"><span class="ico">📋</span><span class="lbl">Задачи</span><span class="ct">8</span></div>
+
+            <div class="head">Списки</div>
+            <div class="row"><span class="ico">📁</span><span class="lbl">Веселo</span><span class="ct">3</span></div>
+            <div class="group-hdr"><span class="chev">▼</span><span>Без названия</span></div>
+            <div class="row child"><span class="ico">📁</span><span class="lbl">Соси</span><span class="ct">2</span></div>
+            <div class="row child"><span class="ico">📁</span><span class="lbl">Шпрот</span><span class="ct">0</span></div>
+            <div class="add">+ Список   + Группа</div>
+
+            <div class="head">Планирование</div>
+            <div class="row"><span class="ico">📆</span><span class="lbl">Календарь</span></div>
+
+            <div class="head">Трекинг</div>
+            <div class="row"><span class="ico">✓</span><span class="lbl">Привычки</span></div>
+            <div class="row"><span class="ico">📊</span><span class="lbl">Статистика</span></div>
+            <div class="row"><span class="ico">💰</span><span class="lbl">Бюджет</span></div>
+
+            <div class="head">Архив</div>
+            <div class="row"><span class="ico">🔔</span><span class="lbl">История</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px 14px;">
+        <p style="margin: 0 0 6px;"><strong>Что хорошо:</strong> очень похоже на текущую структуру TS, всё подписано — легко находить взглядом.</p>
+        <p style="margin: 0;"><strong>Что хуже:</strong> много заголовков → если будет 15 досок и 3 группы, прокрутка догружается.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="layout-flat" onclick="toggleSelect(this)" style="padding: 0; overflow: hidden;">
+    <div class="letter" style="position: absolute; top: 8px; right: 8px;">B</div>
+    <div class="content" style="padding: 0; flex: 1;">
+      <div class="mockup" style="margin: 0; border-radius: 0;">
+        <div class="mockup-header">B · MS-style flat — без заголовков сверху</div>
+        <div class="mockup-body" style="padding: 0;">
+          <div class="sb">
+            <div class="user"><div class="avatar">РБ</div><div class="name">Роман</div></div>
+            <div class="search">🔍 Поиск…</div>
+
+            <div class="row active" style="margin-top: 8px;"><span class="ico">☀️</span><span class="lbl">Мой день</span><span class="ct">3</span></div>
+            <div class="row"><span class="ico">⭐</span><span class="lbl">Важно</span><span class="ct">1</span></div>
+            <div class="row"><span class="ico">📅</span><span class="lbl">Запланировано</span><span class="ct">5</span></div>
+            <div class="row"><span class="ico">📋</span><span class="lbl">Задачи</span><span class="ct">8</span></div>
+            <div class="row"><span class="ico">📆</span><span class="lbl">Календарь</span></div>
+
+            <hr/>
+
+            <div class="row"><span class="ico">📁</span><span class="lbl">Веселo</span><span class="ct">3</span></div>
+            <div class="group-hdr"><span class="chev">▼</span><span>Без названия</span></div>
+            <div class="row child"><span class="ico">📁</span><span class="lbl">Соси</span><span class="ct">2</span></div>
+            <div class="row child"><span class="ico">📁</span><span class="lbl">Шпрот</span><span class="ct">0</span></div>
+            <div class="add">+ Список   + Группа</div>
+
+            <hr/>
+
+            <div class="head">Трекинг</div>
+            <div class="row"><span class="ico">✓</span><span class="lbl">Привычки</span></div>
+            <div class="row"><span class="ico">📊</span><span class="lbl">Статистика</span></div>
+            <div class="row"><span class="ico">💰</span><span class="lbl">Бюджет</span></div>
+            <div class="row"><span class="ico">🔔</span><span class="lbl">История</span></div>
+          </div>
+        </div>
+      </div>
+      <div style="padding: 12px 14px;">
+        <p style="margin: 0 0 6px;"><strong>Что хорошо:</strong> один к одному с MS To-Do, верх сайдбара без шума.</p>
+        <p style="margin: 0;"><strong>Что хуже:</strong> Календарь приклеен к task-views — может смущать (он же про время, не filter). Трекинг внизу как «второй сорт».</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top: 22px;">Кликни вариант (или сразу оба, если хочешь обсудить гибрид) и пиши в терминал, что нравится / не нравится / какие правки.</p>

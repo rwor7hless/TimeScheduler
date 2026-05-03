@@ -6,7 +6,7 @@ function makePrisma(): PrismaService {
     board: { findMany: jest.fn() },
     task: { findMany: jest.fn(), count: jest.fn() },
     habit: { findMany: jest.fn() },
-    habitLog: { count: jest.fn() },
+    habitLog: { groupBy: jest.fn() },
   } as unknown as PrismaService;
 }
 
@@ -31,7 +31,9 @@ describe('WeeklyDataService', () => {
     );
     (prisma.task.count as jest.Mock).mockResolvedValue(0);
     (prisma.habit.findMany as jest.Mock).mockResolvedValue([{ id: 1, name: 'бег' }]);
-    (prisma.habitLog.count as jest.Mock).mockResolvedValue(5);
+    (prisma.habitLog.groupBy as jest.Mock).mockResolvedValue([
+      { habit_id: 1, _count: { habit_id: 5 } },
+    ]);
 
     const svc = new WeeklyDataService(prisma);
     const data = await svc.buildWeeklyData(1, new Date('2026-04-13T00:00:00.000Z'));

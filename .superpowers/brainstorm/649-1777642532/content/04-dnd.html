@@ -1,0 +1,121 @@
+<h2>Drag-and-drop, создание, удаление</h2>
+<p class="subtitle">Что можно делать в новом сайдбаре. Кликни галочкой пункты, которые НЕ нужны (multi-select). По умолчанию беру всё — это базовый набор того, что обычно ожидаешь от такого сайдбара.</p>
+
+<style>
+  .demo-wrap { display: flex; gap: 18px; align-items: flex-start; margin-bottom: 28px; }
+  .demo-sb { width: 240px; font-size: 12px; line-height: 1.55; padding: 14px 8px 14px 12px; box-sizing: border-box; background: var(--surface, #fff); border: 1px solid rgba(128,128,128,.18); border-radius: 12px; flex-shrink: 0; }
+  .demo-sb .head { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; opacity: .55; margin: 14px 0 4px; }
+  .demo-sb .head:first-child { margin-top: 0; }
+  .demo-sb .row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 6px; }
+  .demo-sb .row .ico { width: 14px; opacity: .8; }
+  .demo-sb .row .lbl { flex: 1; }
+  .demo-sb .row .ct { font-size: 10px; opacity: .55; padding: 1px 6px; border-radius: 999px; background: rgba(120,120,120,.18); }
+  .demo-sb .child { padding-left: 18px; }
+  .demo-sb .group-hdr { display: flex; align-items: center; gap: 6px; padding: 4px 8px; font-size: 11px; opacity: .85; }
+  .demo-sb .add { font-size: 11px; opacity: .55; padding: 4px 8px; }
+  .ghost { opacity: .55; background: rgba(245,158,11,.18); border: 2px dashed #f59e0b; }
+  .drop-zone { border: 2px dashed #10b981; background: rgba(16,185,129,.08); padding: 6px 8px; border-radius: 6px; font-size: 10px; color: #10b981; text-align: center; margin: 4px 0; }
+  .annot { flex: 1; font-size: 13px; line-height: 1.6; padding-top: 8px; }
+  .annot ul { padding-left: 18px; margin: 8px 0; }
+  .annot li { margin-bottom: 4px; }
+</style>
+
+<h3 style="margin-top: 18px;">Сценарий: тащим список «Соси» из «Без названия» в «Веселo»</h3>
+<div class="demo-wrap">
+  <div class="demo-sb">
+    <div class="head">Задачи</div>
+    <div class="row"><span class="ico">☀️</span><span class="lbl">Мой день</span></div>
+    <div class="row"><span class="ico">📋</span><span class="lbl">Задачи</span></div>
+
+    <div class="head">Списки</div>
+    <div class="group-hdr"><span>▼ Веселo</span></div>
+    <div class="row child"><span class="ico">📁</span><span class="lbl">[существующий список]</span></div>
+    <div class="drop-zone">↳ бросить сюда</div>
+    <div class="group-hdr"><span>▼ Без названия</span></div>
+    <div class="row child ghost" style="cursor: grabbing;"><span class="ico">📁</span><span class="lbl"><strong>Соси</strong> ← drag</span></div>
+    <div class="row child"><span class="ico">📁</span><span class="lbl">Шпрот</span></div>
+    <div class="add">+ Список   + Группа</div>
+  </div>
+
+  <div class="annot">
+    <p><strong>Что поддерживаем (по умолчанию всё):</strong></p>
+    <div class="options" data-multiselect>
+      <div class="option" data-choice="drag-list-between-groups" onclick="toggleSelect(this)">
+        <div class="letter">1</div>
+        <div class="content">
+          <h3>Тащить список из одной группы в другую</h3>
+          <p>Drag handle на наведении / drag за всю строку. Drop-zone подсвечивается зелёным.</p>
+        </div>
+      </div>
+      <div class="option" data-choice="drag-list-out" onclick="toggleSelect(this)">
+        <div class="letter">2</div>
+        <div class="content">
+          <h3>Выбросить список из группы (на верхний уровень)</h3>
+          <p>Drag в зону между группами или в самый низ секции «Списки».</p>
+        </div>
+      </div>
+      <div class="option" data-choice="reorder-lists-in-group" onclick="toggleSelect(this)">
+        <div class="letter">3</div>
+        <div class="content">
+          <h3>Переставлять списки внутри группы</h3>
+          <p>Сортировка сохраняется на бэке (sort_order у Board).</p>
+        </div>
+      </div>
+      <div class="option" data-choice="reorder-groups" onclick="toggleSelect(this)">
+        <div class="letter">4</div>
+        <div class="content">
+          <h3>Переставлять группы между собой</h3>
+          <p>Drag за заголовок группы. Sort_order у Group.</p>
+        </div>
+      </div>
+      <div class="option" data-choice="drag-task-to-list" onclick="toggleSelect(this)">
+        <div class="letter">5</div>
+        <div class="content">
+          <h3>Тащить задачу из «Задачи»/«Мой день» в список (board)</h3>
+          <p>Сейчас этого нет вообще. Это уже сложнее — нужны DnD-сенсоры на двух разных компонентах. Можно отложить.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h3 style="margin-top: 18px;">Создание / удаление / переименование</h3>
+<div class="options" data-multiselect>
+  <div class="option" data-choice="create-list-modal" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>+ Список → модалка с именем и селектом группы</h3>
+      <p>Опционально можно выбрать группу при создании. Без группы = верхний уровень.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="create-group-inline" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>+ Группа → инлайн-инпут «Введи имя группы»</h3>
+      <p>Без модалки. Esc отменяет, Enter создаёт. Группа без имени запрещена (или дефолт «Новая группа»).</p>
+    </div>
+  </div>
+  <div class="option" data-choice="rename-inline" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Переименование — двойной клик или меню «...»</h3>
+      <p>Инлайн-инпут прямо в сайдбаре. Esc отменяет.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="delete-group-modal" onclick="toggleSelect(this)">
+    <div class="letter">D</div>
+    <div class="content">
+      <h3>Удаление группы → модалка «Куда деть списки?»</h3>
+      <p>Радио: «Перенести на верхний уровень» (дефолт) / «Удалить вместе со списками и задачами». Без подтверждения нельзя.</p>
+    </div>
+  </div>
+  <div class="option" data-choice="delete-list-confirm" onclick="toggleSelect(this)">
+    <div class="letter">E</div>
+    <div class="content">
+      <h3>Удаление списка — как сейчас</h3>
+      <p>Модалка с конфирмом. Задачи переезжают в no-list (board_id=null) → видны в «Задачи».</p>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 22px;">Кликни то, что НЕ нужно (или ничего, если всё ОК). По умолчанию беру весь список 1-4 + A-E. Пункт <strong>5</strong> (drag задачи в список) предлагаю отложить — он open большой банки червей.</p>

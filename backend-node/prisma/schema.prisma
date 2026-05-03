@@ -4,11 +4,12 @@
 // (keeping `prisma migrate diff` drift-free) but never exposes it on the client. Alembic
 // continues to own that table until we tear out the Python backend in Phase 11.
 //
-// The server-side default timestamps (`dbgenerated("'2026-...'::timestamp...")`) are frozen
-// literal values captured when Alembic originally ran each `server_default="now()"` column
-// — SQLAlchemy's `server_default` renders as a literal at migration generation time. These
-// are preserved verbatim so `prisma migrate diff` against the live DB yields zero drift.
-// Application-level inserts from SQLAlchemy and (soon) Prisma bypass them anyway.
+// Раньше server-side дефолты на created_at/updated_at стояли как `dbgenerated("'2026-...'")`
+// — это были замороженные литералы, захваченные при генерации Alembic-миграций (SQLAlchemy
+// рендерит `server_default=func.now()` как литерал на момент создания миграции). Из-за них
+// при INSERT-е без явного created_at Postgres подставлял ту самую старую дату — и в UI
+// все отчёты, например, оказывались «созданы 12 апреля». Заменено на `@default(now())`,
+// миграция `fix_default_timestamps` ALTER-ит дефолты колонок на CURRENT_TIMESTAMP.
 //
 // Enum member names are UPPERCASE because SQLAlchemy stores Python Enum member *names*
 // (not their `str` values) when using `Enum(Priority)` without `values_callable`. The
@@ -46,7 +47,7 @@ model User {
   username               String                 @unique(map: "ix_users_username") @db.VarChar(50)
   password_hash          String                 @db.VarChar(255)
   is_admin               Boolean
-  created_at             DateTime               @default(dbgenerated("'2026-02-23 11:36:45.220039+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at             DateTime               @default(now()) @db.Timestamptz(6)
   telegram_chat_id       String?                @db.VarChar(50)
   telegram_key           String?                @unique(map: "uq_users_telegram_key") @db.VarChar(64)
   can_request_summary    Boolean                @default(false)
@@ -73,8 +74,8 @@ model Board {
   id         Int         @id @default(autoincrement())
   user_id    Int
   name       String      @db.VarChar(100)
-  created_at DateTime    @default(dbgenerated("'2026-02-23 12:34:05.725675+00'::timestamp with time zone")) @db.Timestamptz(6)
-  updated_at DateTime    @default(dbgenerated("'2026-02-23 12:34:05.725675+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at DateTime    @default(now()) @db.Timestamptz(6)
+  updated_at DateTime    @default(now()) @db.Timestamptz(6)
   group_id   Int?
   sort_order Int         @default(0)
   users      User        @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -110,8 +111,8 @@ model Task {
   scheduled_start DateTime?    @db.Timestamptz(6)
   scheduled_end   DateTime?    @db.Timestamptz(6)
   completed_at    DateTime?    @db.Timestamptz(6)
-  created_at      DateTime     @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
-  updated_at      DateTime     @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at      DateTime     @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime     @default(now()) @db.Timestamptz(6)
   color           String?      @default("#6B7280") @db.VarChar(7)
   user_id         Int
   // NB: Prisma scalar lists can't be nullable — they treat NULL and [] as equivalent.
@@ -173,7 +174,7 @@ model Habit {
   description String?    @db.VarChar(500)
   color       String     @db.VarChar(7)
   is_active   Boolean
-  created_at  DateTime   @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at  DateTime   @default(now()) @db.Timestamptz(6)
   user_id     Int
   habit_logs  HabitLog[]
   users       User       @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_habits_user_id")
@@ -186,7 +187,7 @@ model HabitLog {
   id           Int      @id @default(autoincrement())
   habit_id     Int
   date         DateTime @db.Date
-  completed_at DateTime @default(dbgenerated("'2026-02-23 09:13:13.055616+00'::timestamp with time zone")) @db.Timestamptz(6)
+  completed_at DateTime @default(now()) @db.Timestamptz(6)
   habits       Habit    @relation(fields: [habit_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([habit_id, date], map: "uq_habit_date")
@@ -199,7 +200,7 @@ model TelegramKey {
   id         Int      @id @default(autoincrement())
   key        String   @unique(map: "ix_telegram_keys_key") @db.VarChar(64)
   chat_id    String   @db.VarChar(50)
-  created_at DateTime @default(dbgenerated("'2026-02-23 23:17:24.162234+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("telegram_keys")
 }
@@ -238,7 +239,7 @@ model BudgetCategory {
   color       String   @db.VarChar(7)
   sort_order  Int
   is_archived Boolean
-  created_at  DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
   users       User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, key], map: "uq_budget_category_user_key")
@@ -253,7 +254,7 @@ model BudgetAllocation {
   month        Int
   category     String   @db.VarChar(50)
   limit_amount Float
-  created_at   DateTime @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at   DateTime @default(now()) @db.Timestamptz(6)
   users        User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, year, month, category])
@@ -268,7 +269,7 @@ model BudgetAlertLog {
   month     Int
   category  String   @db.VarChar(50)
   threshold Int
-  sent_at   DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  sent_at   DateTime @default(now()) @db.Timestamptz(6)
   users     User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, year, month, category, threshold], map: "uq_alert_once")
@@ -284,7 +285,7 @@ model Transaction {
   category          String?          @db.VarChar(50)
   description       String           @db.VarChar(500)
   date              String           @db.VarChar(10)
-  created_at        DateTime         @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at        DateTime         @default(now()) @db.Timestamptz(6)
   source_planned_id Int?
   transaction_tags  TransactionTag[]
   users             User             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
@@ -302,7 +303,7 @@ model PlannedPurchase {
   category            String?      @db.VarChar(50)
   description         String       @db.VarChar(500)
   done                Boolean
-  created_at          DateTime     @default(dbgenerated("'2026-03-07 16:20:57.009122+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at          DateTime     @default(now()) @db.Timestamptz(6)
   source_recurring_id Int?
   users               User         @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
   planned_tags        PlannedTag[]
@@ -324,7 +325,7 @@ model RecurringTransaction {
   end_date            String?  @db.VarChar(10)
   last_generated_date String?  @db.VarChar(10)
   is_paused           Boolean
-  created_at          DateTime @default(dbgenerated("'2026-04-19 14:41:16.474209+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at          DateTime @default(now()) @db.Timestamptz(6)
   users               User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@index([user_id], map: "ix_recurring_transactions_user_id")
@@ -365,8 +366,8 @@ model WeeklyReport {
   status     String   @db.VarChar(20)
   content    String?
   error_msg  String?  @db.VarChar(500)
-  created_at DateTime @default(dbgenerated("'2026-04-12 14:16:40.225559+00'::timestamp with time zone")) @db.Timestamptz(6)
-  updated_at DateTime @default(dbgenerated("'2026-04-12 14:16:40.225559+00'::timestamp with time zone")) @db.Timestamptz(6)
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
   users      User     @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@unique([user_id, week_start], map: "uq_report_user_week")

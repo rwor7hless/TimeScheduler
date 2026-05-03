@@ -1,0 +1,47 @@
+<h2>Как хранить группы — три подхода</h2>
+<p class="subtitle">До сих пор обсуждали UX. Теперь нужно решить, как это всё держится в БД. Я кратко покажу три варианта и на каком остановлюсь.</p>
+
+<div class="options">
+
+  <div class="option" data-choice="approach-table" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>Отдельная таблица BoardGroup</h3>
+      <p>
+        <strong>Модель:</strong>
+        <code>BoardGroup(id, user_id, name, sort_order, created_at, updated_at)</code><br/>
+        <strong>Board:</strong> + <code>group_id Int? FK BoardGroup ON DELETE SET NULL</code> + <code>sort_order Int</code><br/>
+        <strong>Запросы:</strong> для сайдбара 2 запроса (group.findMany + board.findMany), мерджим в дереве на фронте.<br/>
+        <strong>Миграция:</strong> новая таблица + 2 колонки на boards, дефолт 0 для sort_order, NULL для group_id у существующих 3 досок.<br/>
+        <em>Это рекомендую. Чистая нормальная форма, drag-drop = простой UPDATE, ON DELETE SET NULL аккуратно покрывает удаление группы при выборе «отнести наверх».</em>
+      </p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="approach-self-ref" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Self-reference на Board (parent_id)</h3>
+      <p>
+        <strong>Модель:</strong> <code>Board.parent_id Int? FK Board</code>. Если у Board есть дети — это группа. Если нет — лист.<br/>
+        <strong>Минусы:</strong> «доска-группа» при этом имеет привязки к Task — что делать с задачами внутри Board, у которой стали дочерние Board? Пришлось бы запрещать. Получается, что у нас уже не Board — а гибрид. Семантика грязная, валидация сложнее.<br/>
+        <em>Не рекомендую.</em>
+      </p>
+    </div>
+  </div>
+
+  <div class="option" data-choice="approach-json" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Группы в JSON-поле на User</h3>
+      <p>
+        <strong>Модель:</strong> <code>User.sidebar_layout Json</code> = <code>[{name, board_ids:[…]}, …]</code><br/>
+        <strong>Минусы:</strong> атомарный drag-drop ломается (race на одном поле), нет FK на Board (если board удалён — призрак в JSON), невозможно расширить позже (счётчики, цвета группы и пр.). Самый «лёгкий» по миграции, но платим качеством каждый раз.<br/>
+        <em>Не рекомендую.</em>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top: 22px;">Если согласен с <strong>A</strong> — пиши «ок» в терминал, я перейду к презентации полного дизайна.</p>

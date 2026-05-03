@@ -39,7 +39,8 @@
       "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/services/__pycache__/)",
       "Bash(/bin/ls -A /home/wor7hless/Documents/Github/TimeScheduler/backend/app/__pycache__/)",
       "Bash(getfacl /home/wor7hless/Documents/Github/TimeScheduler/backend/app/routers/)",
-      "Bash(/bin/ls *)"
+      "Bash(/bin/ls *)",
+      "Bash(npx jest *)"
     ]
   }
 }

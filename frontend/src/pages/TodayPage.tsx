@@ -7,6 +7,7 @@ import { useHabits, useToggleHabitLog } from '@/hooks/useHabits'
 import TaskModal from '@/components/tasks/TaskModal'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import ProjectChip from '@/components/tasks/ProjectChip'
+import QuickAddIcons, { EMPTY_OVERRIDES, type QuickAddOverrides } from '@/components/today/QuickAddIcons'
 import AsciiPet from '@/components/today/AsciiPet'
 import PersonaPicker from '@/components/today/PersonaPicker'
 import Spinner from '@/components/ui/Spinner'
@@ -14,6 +15,7 @@ import { useDailyTip } from '@/hooks/useDailyTip'
 import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
 import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   DndContext,
   PointerSensor,
@@ -23,6 +25,7 @@ import {
   useSensors,
   type CollisionDetection,
   type DragEndEvent,
+  type DragOverEvent,
   type Modifier,
 } from '@dnd-kit/core'
 import {
@@ -34,19 +37,14 @@ import {
   type AnimateLayoutChanges,
 } from '@dnd-kit/sortable'
 
-// The item that JUST DROPPED gets `wasDragging: true` for the layout-
-// change tick that reorders the array. Its DOM moved from old index to
-// new (cache update via flushSync), and dnd-kit's default would FLIP-
-// animate it from old DOM rect to new — but the transform-back-to-0
-// from drag compounds, so the visual lands `N rows above destination`,
-// then animates down. Suppressing animation specifically for the dropped
-// item makes it SNAP to the new DOM position (which is correct because
-// flushSync already put it there). Siblings keep default animation so
-// their settle is smooth.
-const animateLayoutChanges: AnimateLayoutChanges = (args) => {
-  if (args.wasDragging) return false
-  return defaultAnimateLayoutChanges(args)
-}
+// FLIP включён для всех соседей. Это безопасно, потому что перестановка
+// теперь идёт live на onDragOver: за раз меняются позиции у одной пары
+// соседних строк, и FLIP анимирует только ту, мимо которой реально
+// проехала активная. Old-багу с overlap-ом текста взяться неоткуда —
+// больше нет «массового» FLIP-а на drop, когда сразу несколько строк
+// одновременно ехали через одну и ту же область.
+const animateLayoutChanges: AnimateLayoutChanges = (args) =>
+  defaultAnimateLayoutChanges(args)
 
 // closestCenter is the most stable strategy for evenly-spaced vertical
 // lists: the over-target switches decisively at each row's vertical
@@ -80,47 +78,38 @@ const restrictToVerticalAxis: Modifier = ({ transform }) => ({
 
 function SortableRow({ id, children }: { id: number; children: React.ReactNode }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id, animateLayoutChanges })
-  // Hide siblings while their transform is mid-transition. The visible
-  // intermediate state of the transform (sibling at "halfway shifted"
-  // position) is what reads as 'блик' / flicker. Listen for the CSS
-  // transitionrun/transitionend events on the transform property and
-  // opacity-0 the row during the animation. Active row stays at 0.55
-  // (visible cursor-follow). User explicitly asked for this masking.
-  const localRef = useRef<HTMLDivElement | null>(null)
-  const [animating, setAnimating] = useState(false)
-  useEffect(() => {
-    const node = localRef.current
-    if (!node) return
-    const onRun = (e: TransitionEvent) => {
-      if (e.propertyName === 'transform') setAnimating(true)
-    }
-    const onEnd = (e: TransitionEvent) => {
-      if (e.propertyName === 'transform') setAnimating(false)
-    }
-    node.addEventListener('transitionrun', onRun)
-    node.addEventListener('transitionend', onEnd)
-    node.addEventListener('transitioncancel', onEnd)
-    return () => {
-      node.removeEventListener('transitionrun', onRun)
-      node.removeEventListener('transitionend', onEnd)
-      node.removeEventListener('transitioncancel', onEnd)
-    }
-  }, [])
-  const setRef = (node: HTMLDivElement | null) => {
-    localRef.current = node
-    setNodeRef(node)
-  }
+    useSortable({
+      id,
+      animateLayoutChanges,
+      // Длительность FLIP-«доезда» соседа в новую позицию (200мс — дефолт
+      // dnd-kit, проверено визуально как самый сбалансированный вариант).
+      transition: { duration: 200, easing: 'cubic-bezier(0.25, 1, 0.5, 1)' },
+    })
+  // Active row applies its cursor-follow transform (visible feedback that
+  // it's being dragged) with opacity 0.55 hint. animateLayoutChanges
+  // (defined above) skips the post-drop FLIP for the dropped row so it
+  // doesn't 'jump N positions above destination'.
+  // Каждая строка получает собственный композиционный слой:
+  //   - `will-change: transform` поднимает её на отдельный GPU-слой,
+  //   - `contain: paint` изолирует её отрисовку от соседей,
+  //   - `translateZ(0)` форсит пиксельную сетку без субпиксельного
+  //     re-rasterize при анимации FLIP-transform-а.
+  // Без этого тень/border соседних карточек во время slide-анимации
+  // проходят сквозь друг друга и читаются как «блик».
+  const baseTransform = CSS.Transform.toString(transform)
   const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
+    transform: baseTransform ? `${baseTransform} translateZ(0)` : 'translateZ(0)',
     transition,
-    opacity: isDragging ? 0.55 : animating ? 0 : 1,
+    opacity: isDragging ? 0.55 : 1,
     cursor: 'grab',
     position: 'relative',
     zIndex: isDragging ? 20 : 0,
+    willChange: 'transform',
+    contain: 'paint',
+    backfaceVisibility: 'hidden',
   }
   return (
-    <div ref={setRef} style={style} {...attributes} {...listeners}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
       {children}
     </div>
   )
@@ -213,6 +202,7 @@ function TodayTaskRow({
   boardName,
   onToggle,
   onRemove,
+  onSnoozeDeadline,
   onClick,
 }: {
   task: Task
@@ -221,6 +211,7 @@ function TodayTaskRow({
   boardName: string | null
   onToggle: () => void
   onRemove?: () => void
+  onSnoozeDeadline?: () => void
   onClick: () => void
 }) {
   const done = task.done
@@ -333,12 +324,19 @@ function TodayTaskRow({
         </span>
       )}
 
-      {/* Deadline badge */}
-      {!done && type === 'deadline' && (
-        <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
-          Дедлайн
-        </span>
-      )}
+      {/* Deadline badge — показываем при наличии дедлайна независимо от типа.
+          Раньше ограничивалось type === 'deadline', и у scheduled-задачи с
+          отдельным дедлайном (например, делаю в среду 10–12, дедлайн четверг)
+          дедлайн просто скрывался. */}
+      {!done && task.deadline && (() => {
+        const dl = formatRelativeDate(task.deadline, todayStr)
+        const label = dl ? `Дедлайн ${dl.text}` : 'Дедлайн'
+        return (
+          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
+            {label}
+          </span>
+        )
+      })()}
 
       {/* Remove from today (manual my_day tasks only) */}
       {type === 'my_day' && onRemove && !done && (
@@ -346,6 +344,21 @@ function TodayTaskRow({
           type="button"
           onClick={onRemove}
           title="Убрать из сегодня"
+          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-200 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100"
+        >
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      )}
+
+      {/* Snooze deadline by +1 day — убрать из "сегодня" задачу с дедлайном */}
+      {type === 'deadline' && onSnoozeDeadline && !done && (
+        <button
+          type="button"
+          onClick={onSnoozeDeadline}
+          title="Перенести дедлайн на завтра"
           className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-200 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100"
         >
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -545,6 +558,10 @@ export default function TodayPage() {
   const createTask = useCreateTask()
   const reorderTasks = useReorderTasks()
   const toggleLog = useToggleHabitLog()
+  const qc = useQueryClient()
+  // Локальный порядок секции, который накапливается на onDragOver и сбрасывается
+  // на onDragEnd. Бэкенду шлём один раз — финальный порядок.
+  const liveOrderRef = useRef<number[] | null>(null)
 
   const boardsById = useMemo(() => {
     const m = new Map<number, string>()
@@ -560,20 +577,46 @@ export default function TodayPage() {
     useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
   )
 
-  const handleSectionDragEnd = (currentIds: number[]) => (event: DragEndEvent) => {
+  // Только обновление react-query кеша (без HTTP). Используется во время
+  // онго перетаскивания, чтобы строки сразу въезжали в новые позиции.
+  const reorderCacheLocal = (ids: number[]) => {
+    const positionById = new Map<number, number>()
+    ids.forEach((id, idx) => positionById.set(id, idx))
+    qc.setQueriesData<Task[]>({ queryKey: ['tasks'] }, (old) => {
+      if (!Array.isArray(old)) return old
+      return old.map((t) =>
+        positionById.has(t.id) ? ({ ...t, position: positionById.get(t.id)! } as Task) : t,
+      )
+    })
+  }
+
+  // Реальная перестановка происходит во время перетаскивания: каждый раз,
+  // когда активная строка пересекает центр соседней, кеш переписывается и
+  // React сразу рендерит список в новом порядке. FLIP отключён, поэтому
+  // соседи просто оказываются на новых местах без переходных кадров.
+  const handleSectionDragOver = (currentIds: number[]) => (event: DragOverEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
-    const oldIndex = currentIds.indexOf(Number(active.id))
-    const newIndex = currentIds.indexOf(Number(over.id))
-    if (oldIndex === -1 || newIndex === -1) return
-    const next = arrayMove(currentIds, oldIndex, newIndex)
-    // flushSync commits the cache update synchronously so the row's new
-    // DOM index is set BEFORE dnd-kit's transform-back-to-0 transition
-    // starts. Result: transform interpolates from cursor delta → 0 while
-    // DOM is already at destination → row glides cursor → destination.
-    flushSync(() => {
-      reorderTasks.mutate({ ordered_ids: next })
-    })
+    const base = liveOrderRef.current ?? currentIds
+    const oldIndex = base.indexOf(Number(active.id))
+    const newIndex = base.indexOf(Number(over.id))
+    if (oldIndex === -1 || newIndex === -1 || oldIndex === newIndex) return
+    const next = arrayMove(base, oldIndex, newIndex)
+    liveOrderRef.current = next
+    flushSync(() => reorderCacheLocal(next))
+  }
+
+  // На отпускании — единственный HTTP-запрос с финальным порядком.
+  const handleSectionDragEnd = (currentIds: number[]) => (_event: DragEndEvent) => {
+    const final = liveOrderRef.current
+    liveOrderRef.current = null
+    if (!final) return
+    // currentIds — порядок ДО drag-а; final — после. Если совпадают, шлём
+    // лишнее. Сравниваем дёшево: длины совпадают всегда, проверим элементы.
+    let same = final.length === currentIds.length
+    if (same) for (let i = 0; i < final.length; i++) if (final[i] !== currentIds[i]) { same = false; break }
+    if (same) return
+    reorderTasks.mutate({ ordered_ids: final })
   }
 
   const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
@@ -581,6 +624,7 @@ export default function TodayPage() {
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
+  const [quickAddOverrides, setQuickAddOverrides] = useState<QuickAddOverrides>(EMPTY_OVERRIDES)
   const [selectedBoardId, setSelectedBoardId] = useState<number | null>(null)
   const [topTab, setTopTab] = useState<'today' | 'overdue'>('today')
   const [sectionOverrides, setSectionOverrides] = useState<Map<string, boolean>>(new Map())
@@ -593,11 +637,19 @@ export default function TodayPage() {
     const seen = new Set<number>()
     const result: Array<{ task: Task; type: TodayTaskType }> = []
 
+    // Завершённую задачу показываем в "Сегодня" только если её закрыли
+    // именно сегодня. Иначе она "висит" с прошлых дней (особенно актуально
+    // для повторяющихся и my_day-задач, у которых сама принадлежность к
+    // сегодняшнему списку не привязана к дате завершения).
+    const isStaleDone = (t: Task) =>
+      t.done && t.completed_at != null && t.completed_at.slice(0, 10) !== todayStr
+
     // 1. Scheduled today (sorted by time)
     allTasks
       .filter((t) => {
         if (t.is_archived) return false
         if (!t.scheduled_start) return false
+        if (isStaleDone(t)) return false
         if (t.repeat_days?.length) return t.repeat_days.includes(wd)
         return isSameDay(parseISO(t.scheduled_start), today)
       })
@@ -613,13 +665,14 @@ export default function TodayPage() {
         (t) =>
           !t.is_archived &&
           !seen.has(t.id) &&
+          !isStaleDone(t) &&
           t.deadline?.slice(0, 10) === todayStr
       )
       .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'deadline' }) })
 
     // 3. My Day (manual, not already shown)
     allTasks
-      .filter((t) => !t.is_archived && !seen.has(t.id) && t.my_day)
+      .filter((t) => !t.is_archived && !seen.has(t.id) && t.my_day && !isStaleDone(t))
       .forEach((t) => { seen.add(t.id); result.push({ task: t, type: 'my_day' }) })
 
     return result
@@ -746,6 +799,20 @@ export default function TodayPage() {
     }
   }
 
+  const handleSnoozeDeadline = async (task: Task) => {
+    if (!task.deadline) return
+    // Сдвигаем дедлайн ровно на сутки вперёд от его текущего значения,
+    // сохраняя время — тогда задача исчезает из "Сегодня" и всплывает
+    // в секции "Завтра".
+    const next = new Date(task.deadline)
+    next.setDate(next.getDate() + 1)
+    try {
+      await patchTask.mutateAsync({ id: task.id, data: { deadline: next.toISOString() } })
+    } catch {
+      toast.error('Не удалось обновить задачу')
+    }
+  }
+
   const handleAddToMyDay = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { my_day: true } })
@@ -763,25 +830,38 @@ export default function TodayPage() {
     const raw = quickAdd.trim()
     if (!raw) return
     const parsed = parseTaskInput(raw, today)
+    // Явно выставленные через иконки значения перекрывают то, что выловил
+    // парсер из текста — пустой override = "не задано", парсер остаётся.
+    const eff = {
+      scheduledDate: quickAddOverrides.scheduledDate ?? parsed.scheduledDate,
+      startTime:     quickAddOverrides.startTime     ?? parsed.startTime,
+      endTime:       quickAddOverrides.endTime       ?? parsed.endTime,
+      deadline:      quickAddOverrides.deadline      ?? parsed.deadline,
+      repeatDays:    quickAddOverrides.repeatDays.length ? quickAddOverrides.repeatDays : null,
+    }
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const taskData: any = { title: parsed.title || raw }
 
-      if (parsed.scheduledDate && parsed.startTime && parsed.endTime) {
+      if (eff.scheduledDate && eff.startTime && eff.endTime) {
         // Full scheduled slot — not my_day unless it's today
-        taskData.scheduled_start = new Date(`${parsed.scheduledDate}T${parsed.startTime}:00`).toISOString()
-        taskData.scheduled_end   = new Date(`${parsed.scheduledDate}T${parsed.endTime}:00`).toISOString()
-        taskData.my_day = parsed.scheduledDate === todayStr
-      } else if (parsed.scheduledDate && parsed.scheduledDate !== todayStr) {
+        taskData.scheduled_start = new Date(`${eff.scheduledDate}T${eff.startTime}:00`).toISOString()
+        taskData.scheduled_end   = new Date(`${eff.scheduledDate}T${eff.endTime}:00`).toISOString()
+        taskData.my_day = eff.scheduledDate === todayStr
+      } else if (eff.scheduledDate && eff.scheduledDate !== todayStr) {
         // Future date with no time → treat as deadline so it shows up there
-        taskData.deadline = new Date(`${parsed.scheduledDate}T23:59:00`).toISOString()
+        taskData.deadline = new Date(`${eff.scheduledDate}T23:59:00`).toISOString()
         taskData.my_day = false
       } else {
         taskData.my_day = true
       }
 
-      if (parsed.deadline) {
-        taskData.deadline = new Date(`${parsed.deadline}T23:59:00`).toISOString()
+      if (eff.deadline) {
+        taskData.deadline = new Date(`${eff.deadline}T23:59:00`).toISOString()
+      }
+
+      if (eff.repeatDays) {
+        taskData.repeat_days = eff.repeatDays
       }
 
       taskData.board_id = selectedBoardId
@@ -789,6 +869,7 @@ export default function TodayPage() {
       await createTask.mutateAsync(taskData)
       setQuickAdd('')
       setSelectedBoardId(null)
+      setQuickAddOverrides(EMPTY_OVERRIDES)
     } catch {
       toast.error('Не удалось создать задачу')
     }
@@ -915,6 +996,7 @@ export default function TodayPage() {
                   className="quick-add relative w-full text-sm px-3 py-2 rounded-xl bg-transparent border-0 text-transparent caret-gray-900 dark:caret-gray-100 focus:outline-none"
                 />
               </div>
+              <QuickAddIcons value={quickAddOverrides} onChange={setQuickAddOverrides} />
               <ProjectChip
                 boards={boards}
                 selectedId={selectedBoardId}
@@ -987,6 +1069,7 @@ export default function TodayPage() {
               sensors={sensors}
               collisionDetection={hybridCollision}
               modifiers={[restrictToVerticalAxis]}
+              onDragOver={handleSectionDragOver(overdueTasks.map((t) => t.id))}
               onDragEnd={handleSectionDragEnd(overdueTasks.map((t) => t.id))}
             >
               <SortableContext
@@ -1018,6 +1101,7 @@ export default function TodayPage() {
               sensors={sensors}
               collisionDetection={hybridCollision}
               modifiers={[restrictToVerticalAxis]}
+              onDragOver={handleSectionDragOver(todayUnified.map((e) => e.task.id))}
               onDragEnd={handleSectionDragEnd(todayUnified.map((e) => e.task.id))}
             >
               <SortableContext
@@ -1034,6 +1118,7 @@ export default function TodayPage() {
                         boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
                         onToggle={() => handleTaskToggle(task)}
                         onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
+                        onSnoozeDeadline={type === 'deadline' ? () => handleSnoozeDeadline(task) : undefined}
                         onClick={() => openEdit(task)}
                       />
                     </SortableRow>
@@ -1071,6 +1156,7 @@ export default function TodayPage() {
                     sensors={sensors}
                     collisionDetection={hybridCollision}
                     modifiers={[restrictToVerticalAxis]}
+                    onDragOver={handleSectionDragOver(section.tasks.map((t) => t.id))}
                     onDragEnd={handleSectionDragEnd(section.tasks.map((t) => t.id))}
                   >
                     <SortableContext
