@@ -193,184 +193,6 @@ function getDateSectionLabel(key: DateSectionKey, today: Date): string {
 /** Завтра / Послезавтра / Через 3 дня — открыты по умолчанию. Дальше — свёрнуто. */
 const DEFAULT_OPEN_SECTION_KEYS = new Set<string>(['1', '2', '3'])
 
-// ─── Unified task row ────────────────────────────────────────────────────────
-
-function TodayTaskRow({
-  task,
-  type,
-  todayStr,
-  boardName,
-  onToggle,
-  onRemove,
-  onSnoozeDeadline,
-  onClick,
-}: {
-  task: Task
-  type: TodayTaskType
-  todayStr: string
-  boardName: string | null
-  onToggle: () => void
-  onRemove?: () => void
-  onSnoozeDeadline?: () => void
-  onClick: () => void
-}) {
-  const done = task.done
-
-  const timeLabel =
-    type === 'scheduled' && task.scheduled_start
-      ? new Date(task.scheduled_start).toLocaleTimeString('ru-RU', {
-          hour: '2-digit',
-          minute: '2-digit',
-        })
-      : null
-
-  const dateLabel = formatRelativeDate(
-    task.scheduled_start ?? task.deadline,
-    todayStr,
-  )
-
-  return (
-    <div
-      className={clsx(
-        'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all group',
-        done
-          ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:shadow-sm'
-      )}
-    >
-      {/* Checkbox */}
-      <button
-        type="button"
-        onClick={onToggle}
-        className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border-2',
-          done
-            ? 'text-white border-transparent'
-            : 'border-gray-300 dark:border-gray-600 hover:border-amber-400'
-        )}
-        style={done ? { backgroundColor: task.color } : undefined}
-      >
-        {done && (
-          <svg
-            width="9" height="9" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"
-          >
-            <polyline points="20 6 9 17 4 12" />
-          </svg>
-        )}
-      </button>
-
-      {/* Color accent */}
-      <div
-        className={clsx('w-1 h-4 rounded-full flex-shrink-0', done && 'opacity-50')}
-        style={{ backgroundColor: task.color }}
-      />
-
-      {/* Time badge (scheduled) */}
-      {timeLabel && (
-        <span
-          className={clsx(
-            'text-[11px] font-mono flex-shrink-0 w-10 select-none',
-            done
-              ? 'text-gray-400 dark:text-gray-600 line-through'
-              : 'text-gray-400 dark:text-gray-500',
-          )}
-        >
-          {timeLabel}
-        </span>
-      )}
-
-      {/* Title */}
-      <button
-        type="button"
-        onClick={onClick}
-        title={task.title}
-        className={clsx(
-          'flex-1 min-w-0 text-sm font-medium text-left truncate transition-colors',
-          done
-            ? 'line-through text-gray-500 dark:text-gray-400'
-            : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
-        )}
-      >
-        {truncateTitle(task.title)}
-      </button>
-
-      {/* Tags */}
-      {!done && task.tags && task.tags.length > 0 && (
-        <TagBadgeGroup tags={task.tags} className="flex-shrink-0" />
-      )}
-
-      {/* Project badge (faded, right-aligned) */}
-      {!done && boardName && (
-        <span
-          className="text-[10px] font-medium text-gray-400 dark:text-gray-500 max-w-[80px] truncate flex-shrink-0"
-          title={boardName}
-        >
-          {boardName}
-        </span>
-      )}
-
-      {/* Date badge (shows "завтра" in amber or formatted date) */}
-      {!done && dateLabel && (
-        <span
-          className={clsx(
-            'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
-            dateLabel.tomorrow
-              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-              : 'text-gray-400 dark:text-gray-500',
-          )}
-        >
-          {dateLabel.text}
-        </span>
-      )}
-
-      {/* Deadline badge — показываем при наличии дедлайна независимо от типа.
-          Раньше ограничивалось type === 'deadline', и у scheduled-задачи с
-          отдельным дедлайном (например, делаю в среду 10–12, дедлайн четверг)
-          дедлайн просто скрывался. */}
-      {!done && task.deadline && (() => {
-        const dl = formatRelativeDate(task.deadline, todayStr)
-        const label = dl ? `Дедлайн ${dl.text}` : 'Дедлайн'
-        return (
-          <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
-            {label}
-          </span>
-        )
-      })()}
-
-      {/* Remove from today (manual my_day tasks only) */}
-      {type === 'my_day' && onRemove && !done && (
-        <button
-          type="button"
-          onClick={onRemove}
-          title="Убрать из сегодня"
-          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-200 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      )}
-
-      {/* Snooze deadline by +1 day — убрать из "сегодня" задачу с дедлайном */}
-      {type === 'deadline' && onSnoozeDeadline && !done && (
-        <button
-          type="button"
-          onClick={onSnoozeDeadline}
-          title="Перенести дедлайн на завтра"
-          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-200 dark:text-gray-700 hover:text-gray-400 dark:hover:text-gray-500 transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
-      )}
-    </div>
-  )
-}
-
 // ─── Backlog task row ─────────────────────────────────────────────────────────
 
 function BacklogTaskRow({
@@ -791,28 +613,6 @@ export default function TodayPage() {
     }
   }
 
-  const handleRemoveFromMyDay = async (task: Task) => {
-    try {
-      await patchTask.mutateAsync({ id: task.id, data: { my_day: false } })
-    } catch {
-      toast.error('Не удалось обновить задачу')
-    }
-  }
-
-  const handleSnoozeDeadline = async (task: Task) => {
-    if (!task.deadline) return
-    // Сдвигаем дедлайн ровно на сутки вперёд от его текущего значения,
-    // сохраняя время — тогда задача исчезает из "Сегодня" и всплывает
-    // в секции "Завтра".
-    const next = new Date(task.deadline)
-    next.setDate(next.getDate() + 1)
-    try {
-      await patchTask.mutateAsync({ id: task.id, data: { deadline: next.toISOString() } })
-    } catch {
-      toast.error('Не удалось обновить задачу')
-    }
-  }
-
   const handleAddToMyDay = async (task: Task) => {
     try {
       await patchTask.mutateAsync({ id: task.id, data: { my_day: true } })
@@ -1109,16 +909,13 @@ export default function TodayPage() {
                 strategy={verticalListSortingStrategy}
               >
                 <div className="space-y-1.5">
-                  {todayUnified.map(({ task, type }) => (
+                  {todayUnified.map(({ task }) => (
                     <SortableRow key={task.id} id={task.id}>
-                      <TodayTaskRow
+                      <BacklogTaskRow
                         task={task}
-                        type={type}
                         todayStr={todayStr}
                         boardName={task.board_id ? boardsById.get(task.board_id) ?? null : null}
                         onToggle={() => handleTaskToggle(task)}
-                        onRemove={type === 'my_day' ? () => handleRemoveFromMyDay(task) : undefined}
-                        onSnoozeDeadline={type === 'deadline' ? () => handleSnoozeDeadline(task) : undefined}
                         onClick={() => openEdit(task)}
                       />
                     </SortableRow>
