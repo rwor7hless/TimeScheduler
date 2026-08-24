@@ -350,6 +350,57 @@ verify the drag visually, and keep them only if something actually regresses.
 - **The mobile mode is the APK.** Anything skipped in step 5 ships as an APK defect
   later, not as a web-only nicety.
 
+## Inherited by plan 2 (recorded at the end of plan 1)
+
+Plan 1's execution surfaced work that belongs to the screen pass. Listed here because
+the execution ledger it was recorded in is scratch and does not survive.
+
+**Required — plan 2 is not done until these are cleared:**
+
+1. **Focus rings.** `ring-*` / `focus:ring-*` still emit `box-shadow` through Tailwind's
+   `ringWidth`/`ringColor` core plugins, across 8 component files. They were kept
+   deliberately: deleting them with nothing in their place is an accessibility
+   regression, not a cosmetic one. As each screen is reworked, move focus to this
+   spec's border-swap pattern; once the last one is migrated, disable both core
+   plugins the way `boxShadow`, `backdropBlur`, `backdropFilter` and `borderRadius`
+   already are.
+2. **Shrink `inline-styles.test.ts`'s BASELINE to `{}`.** It records six files whose
+   inline styles still break the radius/shadow ban: `App.tsx` (toast, also hardcodes
+   `#1F2937`/`#F9FAFB` outside the token system), `components/layout/Sidebar.tsx` (two
+   7px `'50%'` indicator dots), `components/stats/HabitsWeekGrid.tsx`,
+   `components/stats/StatsPeriodView.tsx` (recharts tooltip),
+   `components/stats/WeekReportBody.tsx`, `pages/LoginPage.tsx`. The test fails in both
+   directions, so each fix must also shrink the baseline.
+3. **`rounded-[2px]` at `pages/HabitsPage.tsx:355`** is inert now that `borderRadius` is
+   a disabled core plugin, but the class name is still there and reads as intent.
+
+**Decide and act:**
+
+4. **`components/ui/ThemePicker.tsx` has zero call sites.** Rewritten for two themes in
+   plan 1, reachable from nowhere — `Sidebar` calls `useTheme().toggle()` directly.
+   Either wire it up or delete it; three plans of drift is how orphans become permanent.
+5. **`pages/ExportPage.tsx` has no route.** `App.tsx` has no `/export` entry. Do not
+   budget time restyling an unreachable page — decide whether Export is a feature.
+6. **`/boards` and `/kanban` are redirects** to `/today` and `/tasks` with no page
+   components behind them.
+
+**Cheap, do when the file is next open:**
+
+7. `backend-node/src/reports/reports.service.ts:39` still injects `ConfigService`, whose
+   only consumer was the deleted `dailyTip()`. Dead DI wiring.
+8. `frontend/src/styles/tokens.test.ts` asserts colours come from `tokens.ts` by string
+   equality, which a hardcoded literal would also satisfy. A `grep -n '#'` over
+   `ThemeContext.tsx` is what actually enforces it; consider adding that as a test.
+9. Grep for `backdrop-filter` in built CSS must be colon-anchored — the bare string
+   survives inside Tailwind's stock `transition-property` list and is inert there.
+
+**Known-stale in `CLAUDE.md`, parked at the end of plan 1:**
+
+10. The S3-backup variable list omits `S3_ACCESS_KEY` and `S3_SECRET_KEY`, both read by
+    `backend-node/src/.../s3-backup.config.ts`.
+11. It describes `CUTOVER.md` as a record of a completed rollout; that file is an
+    unexecuted checklist with unchecked boxes, written in prospective voice.
+
 ## Out-of-scope follow-ups
 
 - Capacitor project + APK build pipeline.
