@@ -112,7 +112,7 @@ export default function AppShell() {
         searchRef={searchInputRef}
       />
 
-      <main className="ts-shell__main glass">
+      <main className="ts-shell__main">
         <div className="ts-shell__content">
           <Outlet />
         </div>

@@ -200,14 +200,16 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
       >
         {item.icon}
         <span style={{ flex: 1 }}>{item.label}</span>
-        {typeof item.count === 'number' && <span className="ts-side__count">{item.count}</span>}
+        {typeof item.count === 'number' && (
+          <span className="ts-side__count" style={{ color: 'var(--mid)' }}>{item.count}</span>
+        )}
         {item.showDot && typeof item.count !== 'number' && <span className="ts-side__dot" />}
       </NavLink>
     )
   }
 
   return (
-    <aside className={clsx('ts-side glass', isOpen && 'is-open')}>
+    <aside className={clsx('ts-side', isOpen && 'is-open')}>
       {/* User */}
       <div className="ts-side__user">
         <div className="ts-side__avatar">
@@ -261,7 +263,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
           {showResults && (
             <div
               ref={dropRef}
-              className="glass-strong"
               style={{
                 position: 'absolute',
                 bottom: 'calc(100% + 8px)',
