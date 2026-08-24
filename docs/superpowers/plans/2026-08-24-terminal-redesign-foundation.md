@@ -667,9 +667,28 @@ fontFamily: {
 },
 ```
 
-- [ ] **Step 3: Strip the smoke-glass leftovers from the same file**
+- [ ] **Step 3: Strip the smoke-glass leftovers and neutralise the forbidden utility families**
 
-In the same `theme.extend`, delete the `sand` colour scale (`50`/`100`/`200`) and both `boxShadow` entries (`paper`, `paper-lg`) — shadows are banned by the global constraints. Rewrite the semantic colours to the new variables:
+Delete the `sand` colour scale (`50`/`100`/`200`) and both `boxShadow` entries (`paper`, `paper-lg`) from `theme.extend`.
+
+Deleting those two presets is **not sufficient**, and this is the step's real purpose. `shadow-sm`, `shadow-lg`, `shadow-xl`, `shadow-2xl` and `backdrop-blur-sm` are Tailwind *defaults*: removing custom entries leaves them emitting `box-shadow` and `backdrop-filter` from class names inside `.tsx` files, where the `globals.css` drift test cannot see them. Measured across the components as of this plan: 197 `rounded-*`, 30 `shadow-*`, 3 `backdrop-blur-sm`.
+
+`backdrop-blur` is the one that actually bites. Even `blur(0)` still emits a `backdrop-filter` declaration, which creates a containing block — the exact mechanism behind the ~15 `fix(dnd)` commits in this branch's history. Zeroing the scale would not help; the utility must not exist.
+
+So disable both core plugins outright, at the top level of the config object (a sibling of `theme`, not inside it):
+
+```js
+corePlugins: {
+  backdropBlur: false,
+  boxShadow: false,
+},
+```
+
+With the plugins off, `shadow-*` and `backdrop-blur-*` class names still appear in unmigrated screens but generate no CSS at all. Plan 2 removes the dead class names as it reaches each screen.
+
+Note: `blur-sm` / `blur-2xl` (plain `filter`, not `backdrop-filter`) also appear in two places. Leave them — they sit on decorative elements plan 2 deletes, and `filter` is not what broke drag-and-drop.
+
+Rewrite the semantic colours to the new variables:
 
 ```js
 colors: {
@@ -691,16 +710,27 @@ Run: `cd frontend && npm run build && npm run preview`
 Open the preview URL, then DevTools → Network → check **Offline** → reload.
 Expected: text still renders in JetBrains Mono; no failed font request.
 
-- [ ] **Step 5: Verify the build**
+- [ ] **Step 5: Verify the build, and prove the forbidden utilities emit nothing**
 
 Run: `cd frontend && npm run build && npm test`
 Expected: both exit 0.
+
+Then inspect the built CSS — this is the check that matters, because it is the only place the two disabled core plugins can be confirmed:
+
+```bash
+cd frontend
+grep -c "backdrop-filter" dist/assets/*.css || echo "0 backdrop-filter — correct"
+grep -oE "box-shadow:[^;]*" dist/assets/*.css | grep -v "box-shadow: *none" | head
+grep -oE "border-radius:[^;]*" dist/assets/*.css | grep -v "border-radius: *0" | head
+```
+
+Expected: no `backdrop-filter` at all, and no non-`none` shadow or non-`0` radius. If any appears, find the utility family that produced it and disable it the same way before committing.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 git add frontend/public/fonts/JetBrainsMono-Variable.ttf frontend/tailwind.config.js
-git commit -m "feat: bundle JetBrains Mono locally, drop shadows and radii from tailwind"
+git commit -m "feat: bundle JetBrains Mono locally, disable shadow and backdrop-blur utilities"
 ```
 
 ---
