@@ -441,7 +441,10 @@ import { readFileSync } from 'fs'
 import { resolve } from 'path'
 import { DARK, LIGHT, CSS_VAR, type Palette } from './tokens'
 
-const css = readFileSync(resolve(__dirname, 'globals.css'), 'utf8')
+// process.cwd() — не __dirname: Vitest исполняет тесты как ESM, где __dirname
+// не определён, и тест упал бы на ReferenceError вместо осмысленного сравнения.
+// Корень Vitest здесь — frontend/, потому что оттуда запускается npm test.
+const css = readFileSync(resolve(process.cwd(), 'src/styles/globals.css'), 'utf8')
 
 /** Вытаскивает тело первого блока с данным селектором. */
 function block(selector: string): string {
