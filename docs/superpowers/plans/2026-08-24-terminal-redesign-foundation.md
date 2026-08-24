@@ -696,13 +696,15 @@ colors: {
   fg:      { DEFAULT: 'var(--fg)', body: 'var(--fg-body)', mid: 'var(--mid)', dim: 'var(--dim)' },
   line:    { DEFAULT: 'var(--line)', soft: 'var(--line-soft)' },
   accent:  { DEFAULT: 'var(--accent)', light: 'var(--accent-light)', dark: 'var(--accent-dark)' },
-  red:     'var(--red)',
-  green:   'var(--green)',
+  danger:  'var(--red)',
+  success: 'var(--green)',
 },
 borderRadius: { none: '0', sm: '0', DEFAULT: '0', md: '0', lg: '0', xl: '0', '2xl': '0', '3xl': '0', full: '0' },
 ```
 
 Flattening `borderRadius` is deliberate: it neutralises every `rounded-*` class still sitting in the 9 screens plan 2 has not reached yet, so the app is never half-rounded.
+
+The two semantic colours are named `danger` and `success`, **not** `red` and `green`, and this is not cosmetic. Keys inside `extend.colors` REPLACE a same-named default scale rather than merging with it, so `red: 'var(--red)'` would delete Tailwind's entire `red-50…red-950` ramp. There are 123 live usages of those ramps in the components (`text-red-500` ×28, `text-red-400` ×28, `bg-red-50` ×12, `bg-red-900` ×10, and others), and every one would silently emit no CSS — error text would render unstyled rather than merely unfashionable. Plan 2 migrates those call sites to `text-danger`; until then both sets must coexist.
 
 - [ ] **Step 4: Verify the font actually loads offline**
 
