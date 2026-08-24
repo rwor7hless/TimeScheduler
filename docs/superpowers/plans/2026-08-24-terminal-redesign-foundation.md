@@ -1223,12 +1223,99 @@ Three statements in the frontend section are now false. Fix each:
 
 Leave the backend sections alone; this plan does not change them beyond the daily-tip endpoint, which is worth one line under the reports router.
 
-- [ ] **Step 5: Verify**
+- [ ] **Step 5: Remove the last dead exports from `icons.tsx`**
+
+Three exports have no consumer anywhere in `frontend/src`. Verify each with a grep before deleting it, then delete all three from `frontend/src/components/ui/icons.tsx`:
+
+- `IconTag` — was imported only by `TagManager.tsx` and `BudgetPage.tsx`, both deleted in Task 10. Same root cause as the icons removed in that task's fix round; it was simply missing from the enumeration handed to the implementer.
+- `IconTarget` and `IconInfo` — never consumed at all, including before this plan started. Pre-existing dead code, removed here because it is the same one-file edit.
+
+- [ ] **Step 6: Add the inline-style invariant test**
+
+The project bans non-zero `border-radius`, non-zero `box-shadow` and any `backdrop-filter`. Three mechanisms enforce that today and all three share one blind spot: the `globals.css` drift test reads only that stylesheet, the `dist/` grep reads only compiled CSS, and the disabled Tailwind core plugins only govern class names. **Inline React `style={{...}}` objects are invisible to every one of them** — which is how a rounded panel survived into Task 7's review.
+
+Close it with a test. Create `frontend/src/styles/inline-styles.test.ts`:
+
+```ts
+import { describe, it, expect } from 'vitest'
+import { readFileSync, readdirSync, statSync } from 'fs'
+import { join, relative, resolve } from 'path'
+
+const SRC = resolve(process.cwd(), 'src')
+
+const BANNED_PROPS = ['borderRadius', 'boxShadow', 'backdropFilter'] as const
+
+/**
+ * Файлы, где инлайновые стили ещё нарушают терминальные ограничения.
+ *
+ * Это baseline, а не разрешение. План 2 переверстывает каждый из этих
+ * экранов и обязан сокращать список — до пустого объекта. Тест падает
+ * в обе стороны: и когда нарушение появляется в новом файле, и когда
+ * запись здесь устарела после того, как файл починили.
+ */
+const BASELINE: Record<string, readonly string[]> = {
+  'App.tsx': ['borderRadius'],
+  'components/layout/Sidebar.tsx': ['borderRadius'],
+  'components/stats/HabitsWeekGrid.tsx': ['boxShadow'],
+  'components/stats/StatsPeriodView.tsx': ['borderRadius'],
+  'components/stats/WeekReportBody.tsx': ['boxShadow'],
+  'pages/LoginPage.tsx': ['boxShadow'],
+}
+
+function tsxFiles(dir: string): string[] {
+  return readdirSync(dir).flatMap((entry) => {
+    const full = join(dir, entry)
+    if (statSync(full).isDirectory()) return tsxFiles(full)
+    return full.endsWith('.tsx') ? [full] : []
+  })
+}
+
+function offendersByFile(): Record<string, string[]> {
+  const found: Record<string, string[]> = {}
+  for (const file of tsxFiles(SRC)) {
+    const source = readFileSync(file, 'utf8')
+    const hits = BANNED_PROPS.filter((prop) =>
+      new RegExp(`\\b${prop}\\s*:`).test(source),
+    )
+    if (hits.length) found[relative(SRC, file)] = hits.slice().sort()
+  }
+  return found
+}
+
+describe('inline style constraints', () => {
+  it('matches the recorded baseline exactly, in both directions', () => {
+    expect(offendersByFile()).toEqual(BASELINE)
+  })
+
+  it('no file outside the baseline introduces a banned inline property', () => {
+    const unexpected = Object.keys(offendersByFile()).filter((f) => !(f in BASELINE))
+    expect(unexpected).toEqual([])
+  })
+})
+```
+
+The test matches on property NAME, not on the value. Parsing values out of JSX source is fragile — one of the current offenders spreads `boxShadow` across a multi-line array — and there is no legitimate reason to write a zero radius inline anyway.
+
+Run `npm test` and confirm it passes. If it fails because the baseline does not match reality, **update the baseline to what the code actually contains** — do not edit the offending screens. Those belong to plan 2. Record the real list in your report.
+
+- [ ] **Step 7: Stop tracking the TypeScript build artifact**
+
+`frontend/tsconfig.tsbuildinfo` is committed to git and rewritten by every `tsc -b`, so it turns up dirty in the working tree after any build and adds noise to every diff. It surfaced in nearly every task of this plan.
+
+```bash
+cd /home/wor7hless/Documents/Github/TimeScheduler
+git rm --cached frontend/tsconfig.tsbuildinfo
+printf '\nfrontend/tsconfig.tsbuildinfo\n' >> .gitignore
+```
+
+Confirm with `git status --short` that it no longer appears after a build.
+
+- [ ] **Step 8: Verify**
 
 Run: `cd frontend && npm run build && npm test`
-Expected: both exit 0.
+Expected: both exit 0, with the new inline-style test included.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add frontend/package.json frontend/package-lock.json CLAUDE.md
