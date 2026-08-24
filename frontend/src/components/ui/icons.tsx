@@ -42,29 +42,6 @@ export const IconFlame = (p: IconProps) => (
   </IconBase>
 )
 
-export const IconTarget = (p: IconProps) => (
-  <IconBase {...p}>
-    <circle cx="12" cy="12" r="10" />
-    <circle cx="12" cy="12" r="6" />
-    <circle cx="12" cy="12" r="2" />
-  </IconBase>
-)
-
-export const IconTag = (p: IconProps) => (
-  <IconBase {...p}>
-    <path d="M20.6 13.4l-7.2 7.2a1 1 0 0 1-1.4 0l-8.4-8.4a1 1 0 0 1-.3-.7V4a1 1 0 0 1 1-1h7.5a1 1 0 0 1 .7.3l8.1 8.1a1 1 0 0 1 0 1.4z" />
-    <circle cx="7.5" cy="7.5" r="1.5" />
-  </IconBase>
-)
-
-export const IconInfo = (p: IconProps) => (
-  <IconBase {...p}>
-    <circle cx="12" cy="12" r="10" />
-    <path d="M12 16v-4" />
-    <path d="M12 8h.01" />
-  </IconBase>
-)
-
 /* ── Priority icons for TaskCard ────────────────────────────────────────── */
 
 export const IconArrowDown = (p: IconProps) => (

@@ -27,7 +27,7 @@ TimeScheduler is a personal task/habit scheduling app with a FastAPI backend and
 - `Transaction`, `PlannedPurchase`, `BudgetTag`, `BudgetAllocation` — backend-persisted budget data
 - `WeeklyReport` — generated AI weekly summaries (status: pending/in_progress/done/error)
 
-**Router structure:** `auth`, `admin`, `tasks`, `boards`, `tags`, `habits`, `stats`, `export`, `backup`, `telegram`, `budget`, `search`, `reports`
+**Router structure:** `auth`, `admin`, `tasks`, `boards`, `tags`, `habits`, `stats`, `export`, `backup`, `telegram`, `budget`, `search`, `reports`. (The `reports` router's `GET /reports/daily-tip` endpoint was removed; it no longer exists.)
 
 **LLM integration:** `backend/app/services/gigachat.py` (legacy name) is a provider-agnostic OpenAI-compatible client. `LLM_PROVIDER` selects between `gigachat` (cloud.ru foundation-models, `GIGACHAT_API_KEY`) and `nvidia` (NVIDIA NIM `integrate.api.nvidia.com`, `NVIDIA_API_KEY`). Both expose `/v1/chat/completions`, so only `base_url`/`api_key`/model name differ. All errors are mapped to `RuntimeError` with human-readable messages — call sites translate them to HTTP 503.
 
@@ -38,14 +38,15 @@ TimeScheduler is a personal task/habit scheduling app with a FastAPI backend and
 - Path alias `@` maps to `src/`
 - **Tailwind CSS** for styling
 - **dnd-kit** for drag-and-drop (kanban)
-- **recharts** + **react-activity-calendar** for stats visualizations
+- **recharts** for stats visualizations (used by `StatsPeriodView.tsx` and `HabitsPage.tsx`)
 - **framer-motion** for animations
+- Two themes (`dark` default, `light`), defined in `src/styles/tokens.ts` and switched via `ThemeContext`
 
-**Pages:** Today, Calendar (day/week/month views), Boards, Kanban (per-board), Habits, Stats, Budget, Export, Notifications, Admin. (Notes were dropped in migration `012_drop_notes_table.py` and removed from the UI.)
+**Pages:** Today, Calendar (day/week/month views), Boards, Kanban (per-board), Habits, Stats, Export, Notifications, Admin. (Notes were dropped in migration `012_drop_notes_table.py` and removed from the UI. Budget has no frontend page — the API and all 8 Prisma budget models remain, unconsumed by the UI.)
 
 **Auth flow:** JWT stored in `localStorage`. On 401 response, the axios interceptor (`src/api/client.ts`) shows a toast and redirects to `/login` after a short delay. `AuthContext` provides `isAuthenticated` and `isAdmin`.
 
-**localStorage-only state:** Theme preference (`ThemeContext`), daily-tip cache (`useDailyTip`), and last-seen-reports timestamp (`useReports`). Budget is **backend-persisted**, not localStorage.
+**localStorage-only state:** Theme preference (`ThemeContext`) and last-seen-reports timestamp (`useReports`).
 
 ## Development Commands
 
