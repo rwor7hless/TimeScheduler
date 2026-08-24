@@ -1,21 +1,6 @@
 import client from './client'
 import type { WeeklyReport } from '@/types/report'
 
-export interface DailyTipPersona {
-  id: string
-  name: string
-  eyes_l: string
-  eyes_r: string
-}
-
-export interface DailyTipResponse {
-  date: string
-  disabled?: boolean
-  persona: DailyTipPersona | null
-  short: string | null
-  long: string | null
-}
-
 // Backend сериализует Prisma Date как полный ISO ("2026-04-13T00:00:00.000Z").
 // Фронту удобнее иметь YYYY-MM-DD: это исключает (а) рассинхронизацию
 // при сравнении с локально-вычисленным `mondayOfTodayISO()` и (б) сдвиг
@@ -38,17 +23,6 @@ export const reportsApi = {
         params: weekStart ? { week_start: weekStart } : undefined,
       })
       .then((r) => normalizeWeekStart(r.data as WeeklyReport)),
-
-  getDailyTip: (forcePersona?: string, refresh = false): Promise<DailyTipResponse> => {
-    const params: Record<string, string> = {}
-    if (forcePersona) params.persona = forcePersona
-    if (refresh) params.refresh = '1'
-    return client
-      .get('/reports/daily-tip', {
-        params: Object.keys(params).length > 0 ? params : undefined,
-      })
-      .then((r) => r.data)
-  },
 
   requestSummary: (): Promise<WeeklyReport> =>
     client.post('/reports/request-summary').then((r) => normalizeWeekStart(r.data as WeeklyReport)),

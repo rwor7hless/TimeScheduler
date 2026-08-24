@@ -8,10 +8,7 @@ import TaskModal from '@/components/tasks/TaskModal'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import ProjectChip from '@/components/tasks/ProjectChip'
 import QuickAddIcons, { EMPTY_OVERRIDES, type QuickAddOverrides } from '@/components/today/QuickAddIcons'
-import AsciiPet from '@/components/today/AsciiPet'
-import PersonaPicker from '@/components/today/PersonaPicker'
 import Spinner from '@/components/ui/Spinner'
-import { useDailyTip } from '@/hooks/useDailyTip'
 import { parseTaskInput, friendlyDate, type TokenSpan } from '@/utils/parseTask'
 import type { Task } from '@/types/task'
 import type { Habit } from '@/types/habit'
@@ -441,8 +438,6 @@ export default function TodayPage() {
     reorderTasks.mutate({ ordered_ids: final })
   }
 
-  const { tip, isLoading: tipLoading, forcePersona, overrideId, refresh: refreshTip } = useDailyTip()
-
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [quickAdd, setQuickAdd] = useState('')
@@ -729,24 +724,6 @@ export default function TodayPage() {
         </div>
       </div>
 
-      {/* ── Pet (mobile) ────────────────────────────────────────────────────── */}
-      <div className="lg:hidden space-y-2">
-        <AsciiPet
-          short={tip?.short ?? null}
-          long={tip?.long ?? null}
-          persona={tip?.persona ?? null}
-          isLoading={tipLoading}
-          progress={(taskPct + habitPct) / 200}
-          celebrateKey={doneTodayCount + doneHabits}
-          onRefresh={refreshTip}
-        />
-        <PersonaPicker
-          selectedId={overrideId}
-          onPick={forcePersona}
-          disabled={tipLoading}
-        />
-      </div>
-
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
 
@@ -982,25 +959,8 @@ export default function TodayPage() {
           })}
         </div>
 
-        {/* Right — pet + habits */}
+        {/* Right — habits */}
         <div className="space-y-5">
-          <div className="hidden lg:block space-y-2">
-            <AsciiPet
-              short={tip?.short ?? null}
-              long={tip?.long ?? null}
-              persona={tip?.persona ?? null}
-              isLoading={tipLoading}
-              progress={(taskPct + habitPct) / 200}
-              celebrateKey={doneTodayCount + doneHabits}
-              onRefresh={refreshTip}
-            />
-            <PersonaPicker
-              selectedId={overrideId}
-              onPick={forcePersona}
-              disabled={tipLoading}
-            />
-          </div>
-
           <div>
             <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
               Привычки
