@@ -13,7 +13,6 @@ import HabitsPage from '@/pages/HabitsPage'
 import StatsPage from '@/pages/StatsPage'
 import TodayPage from '@/pages/TodayPage'
 import TasksPage from '@/pages/TasksPage'
-import BudgetPage from '@/pages/BudgetPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import { queryClient } from '@/lib/queryClient'
 
@@ -64,7 +63,6 @@ export default function App() {
                 <Route path="/list/:boardId" element={<TodoListPage />} />
                 <Route path="/habits" element={<HabitsPage />} />
                 <Route path="/stats" element={<StatsPage />} />
-                <Route path="/budget" element={<BudgetPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminPage />} />

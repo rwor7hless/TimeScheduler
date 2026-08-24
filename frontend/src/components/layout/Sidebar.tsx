@@ -55,13 +55,6 @@ function StatsIcon() {
     </svg>
   )
 }
-function BudgetIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="6" width="18" height="13" rx="2" /><circle cx="16" cy="12" r="1.8" />
-    </svg>
-  )
-}
 function BellIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -180,7 +173,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
   const tracking: Item[] = [
     { to: '/habits', label: 'Привычки', icon: <HabitIcon /> },
     { to: '/stats', label: 'Статистика', icon: <StatsIcon /> },
-    { to: '/budget', label: 'Бюджет', icon: <BudgetIcon /> },
   ]
   const history: Item[] = [
     { to: '/notifications', label: 'История', count: unread > 0 ? unread : undefined, showDot: unread > 0, icon: <BellIcon /> },
