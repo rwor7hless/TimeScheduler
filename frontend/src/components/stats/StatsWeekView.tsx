@@ -6,38 +6,15 @@ import { useReports } from '@/hooks/useReports'
 import type { BreakdownItem } from '@/types/stats'
 import { CHART_COLORS as DEFAULT_COLORS } from '@/lib/colors'
 import { WeekNavigator } from './WeekNavigator'
-import { WeekHeroBand } from './WeekHeroBand'
 import { WeekReportBody } from './WeekReportBody'
 import { KpiCard } from './KpiCard'
 import { DailyBarsMicro } from './DailyBarsMicro'
-import { WeeklySpotlight } from './WeeklySpotlight'
 import { HabitsWeekGrid } from './HabitsWeekGrid'
 import { PeakHoursStrip } from './PeakHoursStrip'
-import { ShareWeekButton } from './ShareWeekButton'
 
 interface Props {
   weekStart: string
   onWeekChange: (ws: string) => void
-}
-
-/**
- * Donut value with a graceful fallback.
- *
- * Backend productivity = completed_in_week / created_in_week.
- * If the user didn't CREATE any task this week but closed old ones, the
- * backend returns null → donut shows "—". That's confusing for users who
- * clearly did productive work. Fall back to completion share vs closable
- * work (done + overdue), which is always meaningful when there's activity.
- */
-function donutValue(stats: import('@/types/stats').Stats): number | null {
-  if (stats.productivity_percent != null) return stats.productivity_percent
-  const denom = stats.completed_last_month + stats.overdue_count
-  if (denom === 0) return null
-  return Math.round((stats.completed_last_month / denom) * 100)
-}
-
-function donutLabel(stats: import('@/types/stats').Stats): string {
-  return stats.productivity_percent != null ? 'Продуктивность' : 'Закрыто'
 }
 
 function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] }) {
@@ -85,8 +62,6 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
   const { data: stats, isLoading, isError, refetch } = useWeekStats(weekStart)
   const { data: reports } = useReports()
   const earliestReport = reports?.[reports.length - 1]?.week_start
-  const weekReport = reports?.find((r) => r.week_start === weekStart)
-  const reportMarkdown = weekReport?.status === 'done' ? weekReport.content : null
 
   const blockVariants = {
     hidden: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
@@ -131,10 +106,6 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
 
       {stats && (
         <>
-          <motion.div variants={blockVariants}>
-            <WeekHeroBand stats={stats} />
-          </motion.div>
-
           <motion.div variants={blockVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <KpiCard label="Активные" value={stats.active_tasks} />
             <KpiCard label="Просрочено" value={stats.overdue_count} accent="red" />
@@ -160,13 +131,8 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
             />
           </motion.div>
 
-          <motion.div variants={blockVariants} className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 items-stretch">
+          <motion.div variants={blockVariants}>
             <DailyBarsMicro weekStart={weekStart} dailyCompletions={stats.daily_completions} />
-            <WeeklySpotlight
-              stats={stats}
-              donutValue={donutValue(stats)}
-              donutLabel={donutLabel(stats)}
-            />
           </motion.div>
 
           <motion.div variants={blockVariants}>
@@ -197,13 +163,8 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
 
           <motion.div
             variants={blockVariants}
-            className="flex flex-wrap items-center justify-between gap-3 pt-2"
+            className="flex flex-wrap items-center justify-end gap-3 pt-2"
           >
-            <ShareWeekButton
-              weekStart={weekStart}
-              stats={stats}
-              reportMarkdown={reportMarkdown}
-            />
             <Link
               to="/notifications"
               className="text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
