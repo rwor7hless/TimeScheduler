@@ -272,7 +272,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
                 overflowY: 'auto',
                 zIndex: 46,
                 padding: 8,
-                borderRadius: 14,
               }}
             >
               {hasResults ? (
