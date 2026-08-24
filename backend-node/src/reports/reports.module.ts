@@ -13,10 +13,10 @@ import { WeeklyDataService } from './weekly-data.service';
  * Ports `backend/app/routers/reports.py` + weekly cron from `main.py`.
  *
  * Provides:
- *  - ReportsController — list / generate / request-summary / test-push / daily-tip
+ *  - ReportsController — list / generate / request-summary / test-push
  *  - ReportStreamController — raw @Res SSE for GET /:id/stream
  *  - WeeklyDataService — collects tasks + habits for the week
- *  - ReportsService — non-streaming orchestration + daily-tip cache
+ *  - ReportsService — non-streaming orchestration
  *  - ReportsSchedulerService — Sunday 21:00 Europe/Moscow cron
  */
 @Module({

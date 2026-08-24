@@ -14,17 +14,6 @@ import {
   ANGLE_SEEDS as WEEKLY_ANGLES,
   buildWeeklyPrompt,
 } from '../llm/prompts/weekly-report.prompt';
-import {
-  buildPetPrompt,
-  dayOfWeekRu,
-  isWeekendInTz,
-  timeOfDayFromHour,
-} from '../llm/prompts/pet-tip.prompt';
-import {
-  PERSONAS,
-  parseAndValidate,
-  pickPersona,
-} from '../llm/prompts/pet-personas.prompt';
 
 /**
  * If a report has been stuck in `in_progress` longer than this, we assume
@@ -32,29 +21,6 @@ import {
  * allow a retry. Mirrors the Python `STALE_IN_PROGRESS = 3 minutes`.
  */
 export const STALE_IN_PROGRESS_MS = 3 * 60 * 1000;
-
-export interface DailyTipPersonaDto {
-  id: string;
-  name: string;
-  eyes_l: string;
-  eyes_r: string;
-}
-
-export interface DailyTipResult {
-  date: string;
-  disabled?: boolean;
-  persona: DailyTipPersonaDto | null;
-  short: string | null;
-  long: string | null;
-}
-
-type DailyTipCacheEntry = {
-  date: string;
-  personaId: string;
-  persona: DailyTipPersonaDto;
-  short: string;
-  long: string;
-};
 
 /**
  * Non-stream orchestration for reports. The SSE stream lives in
@@ -64,12 +30,6 @@ type DailyTipCacheEntry = {
 @Injectable()
 export class ReportsService {
   private readonly logger = new Logger(ReportsService.name);
-  /**
-   * Кеш per-(user, persona) — ключ `${userId}:${personaId}`.
-   * Раз в день генерируется одна запись на персону, чтобы пользователь мог
-   * переключаться между котами без LLM-вызова на каждый клик.
-   */
-  private readonly dailyTipCache = new Map<string, DailyTipCacheEntry>();
 
   constructor(
     private readonly prisma: PrismaService,
@@ -199,178 +159,6 @@ export class ReportsService {
     });
   }
 
-  async dailyTip(
-    user: User,
-    forcedPersona?: string,
-    refresh = false,
-  ): Promise<DailyTipResult> {
-    const today = ReportsService.todayIso();
-    if (!this.llm.llmAvailable()) {
-      return { date: today, disabled: true, persona: null, short: null, long: null };
-    }
-
-    // Override доступен любому пользователю. Защита от мусора в query — только
-    // валидные id персон. Всё кешируется per-(user, persona), так что
-    // переключение между котами не дёргает LLM повторно.
-    const overrideId =
-      forcedPersona && forcedPersona in PERSONAS ? forcedPersona : undefined;
-
-    // Если есть валидный override — можем дёрнуть кеш до фетча данных.
-    // refresh=true принудительно обходит кеш и тянет свежий ответ от LLM.
-    if (overrideId && !refresh) {
-      const cached = this.dailyTipCache.get(`${user.id}:${overrideId}`);
-      if (cached && cached.date === today) {
-        return {
-          date: today,
-          persona: cached.persona,
-          short: cached.short,
-          long: cached.long,
-        };
-      }
-    }
-
-    const todayStart = new Date(today + 'T00:00:00.000Z');
-    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
-
-    const base = {
-      user_id: user.id,
-      deleted_at: null,
-      done: false,
-    };
-
-    const [myDayRows, schedRows, deadlineRows, overdueRows, habitNames] = await Promise.all([
-      this.prisma.task.findMany({
-        where: { ...base, my_day: true },
-        select: { title: true },
-        take: 6,
-      }),
-      this.prisma.task.findMany({
-        where: {
-          ...base,
-          my_day: false,
-          scheduled_start: { gte: todayStart, lt: todayEnd },
-        },
-        select: { title: true },
-        take: 4,
-      }),
-      this.prisma.task.findMany({
-        where: {
-          ...base,
-          my_day: false,
-          deadline: { gte: todayStart, lt: todayEnd },
-          scheduled_start: null,
-        },
-        select: { title: true },
-        take: 5,
-      }),
-      this.prisma.task.findMany({
-        where: { ...base, deadline: { lt: todayStart } },
-        select: { title: true },
-        take: 3,
-      }),
-      this.prisma.habit.findMany({
-        where: { user_id: user.id, is_active: true },
-        select: { name: true },
-        take: 6,
-      }),
-    ]);
-
-    const myDayTitles = myDayRows.map((r) => r.title);
-    const schedTitles = schedRows.map((r) => r.title);
-    const allTasks = [...myDayTitles, ...schedTitles.filter((t) => !myDayTitles.includes(t))];
-
-    const tz = this.config.get<string>('USER_TIMEZONE') ?? 'Europe/Moscow';
-    let localHour: number;
-    try {
-      localHour = Number(
-        new Intl.DateTimeFormat('en-US', {
-          hour: '2-digit',
-          hour12: false,
-          timeZone: tz,
-        }).format(new Date()),
-      );
-      if (!Number.isFinite(localHour)) localHour = new Date().getUTCHours();
-    } catch {
-      localHour = new Date().getUTCHours();
-    }
-
-    const personaId =
-      overrideId ??
-      pickPersona({
-        userId: user.id,
-        todayIso: today,
-        tasksCount: allTasks.length,
-        overdueCount: overdueRows.length,
-        deadlineTodayCount: deadlineRows.length,
-        hour: localHour,
-      });
-
-    // Авто-режим: кеш проверяем здесь (после вычисления auto-персоны).
-    // Override-кеш уже проверен выше, так что повторно не дёргаем.
-    // refresh=true пропускает кеш в обоих ветках.
-    if (!overrideId && !refresh) {
-      const cached = this.dailyTipCache.get(`${user.id}:${personaId}`);
-      if (cached && cached.date === today) {
-        return {
-          date: today,
-          persona: cached.persona,
-          short: cached.short,
-          long: cached.long,
-        };
-      }
-    }
-
-    const now = new Date();
-    const messages = buildPetPrompt({
-      personaId,
-      tasks: allTasks,
-      habits: habitNames.map((h) => h.name),
-      deadlineToday: deadlineRows.map((r) => r.title),
-      overdue: overdueRows.map((r) => r.title),
-      dayOfWeek: dayOfWeekRu(now, tz),
-      timeOfDay: timeOfDayFromHour(localHour),
-      isWeekend: isWeekendInTz(now, tz),
-    });
-
-    let raw: string;
-    try {
-      raw = await this.llm.chatCompletion(messages, { maxTokens: 260 });
-    } catch (exc) {
-      throw new ServiceUnavailableException(exc instanceof Error ? exc.message : String(exc));
-    }
-
-    let parsed;
-    try {
-      parsed = parseAndValidate(raw);
-    } catch (exc) {
-      throw new ServiceUnavailableException(exc instanceof Error ? exc.message : String(exc));
-    }
-
-    const p = PERSONAS[personaId];
-    const personaDto: DailyTipPersonaDto = {
-      id: personaId,
-      name: p.name,
-      eyes_l: p.eyes_l,
-      eyes_r: p.eyes_r,
-    };
-
-    // Кеш per-(user, persona) — пишем всегда, в т.ч. для override.
-    this.dailyTipCache.set(`${user.id}:${personaId}`, {
-      date: today,
-      personaId,
-      persona: personaDto,
-      short: parsed.short,
-      long: parsed.long,
-    });
-
-    return {
-      date: today,
-      persona: personaDto,
-      short: parsed.short,
-      long: parsed.long,
-    };
-  }
-
   /**
    * Non-streaming report generation used by the weekly cron. Mirrors the
    * `generate_report_for_user` flow in `backend/app/services/weekly_report.py`.
@@ -432,13 +220,5 @@ export class ReportsService {
     const dd = String(d.getUTCDate()).padStart(2, '0');
     const mm = String(d.getUTCMonth() + 1).padStart(2, '0');
     return `${dd}.${mm}`;
-  }
-
-  /** Testing hook: reset daily-tip cache for a specific user (все его персоны). */
-  clearDailyTipCache(userId: number): void {
-    const prefix = `${userId}:`;
-    for (const key of this.dailyTipCache.keys()) {
-      if (key.startsWith(prefix)) this.dailyTipCache.delete(key);
-    }
   }
 }

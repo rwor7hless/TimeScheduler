@@ -13,17 +13,17 @@ import { User, WeeklyReport } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GenerateReportDto } from './dto/generate-report.dto';
-import { DailyTipResult, ReportsService } from './reports.service';
+import { ReportsService } from './reports.service';
 
 /**
  * `/api/reports` — ports `backend/app/routers/reports.py`.
  *
  * Route ordering: static paths (`/generate`, `/request-summary`,
- * `/test-push`, `/daily-tip`) are declared here. The SSE endpoint
- * `/:id/stream` lives in `report-stream.controller.ts` — same base
- * path, but the `@Res()` escape hatch is isolated so it's obvious at
- * review time that the stream controller deliberately bypasses the
- * interceptor chain.
+ * `/test-push`) are declared here. The SSE endpoint `/:id/stream`
+ * lives in `report-stream.controller.ts` — same base path, but the
+ * `@Res()` escape hatch is isolated so it's obvious at review time
+ * that the stream controller deliberately bypasses the interceptor
+ * chain.
  */
 @Controller('reports')
 @UseGuards(JwtAuthGuard)
@@ -53,14 +53,5 @@ export class ReportsController {
   @Post('test-push')
   testPush(): Promise<{ ok: boolean; topic?: string; server?: string; error?: string }> {
     return this.reports.testPush();
-  }
-
-  @Get('daily-tip')
-  dailyTip(
-    @CurrentUser() user: User,
-    @Query('persona') persona?: string,
-    @Query('refresh') refresh?: string,
-  ): Promise<DailyTipResult> {
-    return this.reports.dailyTip(user, persona, refresh === '1');
   }
 }

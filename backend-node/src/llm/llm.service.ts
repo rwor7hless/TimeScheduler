@@ -35,7 +35,7 @@ const BASE_PARAMS = {
   top_p: 0.95,
 } as const;
 
-// Non-stream: hard cap on whole request (short daily-tip style replies).
+// Non-stream: hard cap on whole request (short, non-streamed replies).
 const SHORT_TIMEOUT_MS = 60_000;
 // Stream: long cap to let the model generate. OpenAI SDK has a single
 // request-level timeout (no per-operation read/connect like Python httpx),

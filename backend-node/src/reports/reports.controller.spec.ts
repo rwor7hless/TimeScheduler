@@ -13,9 +13,6 @@ describe('ReportsController', () => {
       generate: jest.fn().mockResolvedValue({ id: 1 }),
       requestSummary: jest.fn().mockResolvedValue({ id: 2 }),
       testPush: jest.fn().mockResolvedValue({ ok: true }),
-      dailyTip: jest
-        .fn()
-        .mockResolvedValue({ date: '2026-04-20', persona: null, short: 's', long: 'l' }),
     } as unknown as jest.Mocked<ReportsService>;
     return { ctrl: new ReportsController(svc), svc };
   }
@@ -41,26 +38,9 @@ describe('ReportsController', () => {
     expect(svc.requestSummary).toHaveBeenCalledWith(u);
   });
 
-  it('testPush and dailyTip delegate', async () => {
+  it('testPush delegates', async () => {
     const { ctrl, svc } = make();
     await ctrl.testPush();
     expect(svc.testPush).toHaveBeenCalled();
-    const u = user();
-    await ctrl.dailyTip(u);
-    expect(svc.dailyTip).toHaveBeenCalledWith(u, undefined, false);
-  });
-
-  it('dailyTip forwards persona query param', async () => {
-    const { ctrl, svc } = make();
-    const u = user({ is_admin: true });
-    await ctrl.dailyTip(u, 'blin');
-    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'blin', false);
-  });
-
-  it('dailyTip forwards refresh=1 as boolean true', async () => {
-    const { ctrl, svc } = make();
-    const u = user();
-    await ctrl.dailyTip(u, 'lazer', '1');
-    expect(svc.dailyTip).toHaveBeenCalledWith(u, 'lazer', true);
   });
 });
