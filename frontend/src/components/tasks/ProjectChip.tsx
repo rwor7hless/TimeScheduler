@@ -54,7 +54,7 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
         {label}
       </button>
       {open && (
-        <div className="popover-glass absolute right-0 z-40 mt-1 w-56 max-h-64 overflow-y-auto rounded-xl py-1">
+        <div className="popover absolute right-0 z-40 mt-1 w-56 max-h-64 overflow-y-auto rounded-xl py-1">
           <button
             type="button"
             onClick={() => {

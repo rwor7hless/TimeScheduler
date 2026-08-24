@@ -473,10 +473,16 @@ select:focus {
 }
 
 /* ============================================================================
-   MODAL
+   MODAL / POPOVER
    ============================================================================ */
 
-.modal-glass {
+.modal {
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  color: var(--fg);
+}
+
+.popover {
   background: var(--bg-raised);
   border: 1px solid var(--line);
   color: var(--fg);

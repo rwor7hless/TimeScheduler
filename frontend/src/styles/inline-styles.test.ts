@@ -23,17 +23,23 @@ const BASELINE: Record<string, readonly string[]> = {
   'pages/LoginPage.tsx': ['boxShadow'],
 }
 
-function tsxFiles(dir: string): string[] {
+/**
+ * .tsx and .ts, excluding test files themselves — they contain the banned
+ * property NAMES as string literals (in BANNED_PROPS above, and in fixture
+ * strings elsewhere) and would self-trip the scan otherwise.
+ */
+function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
     const full = join(dir, entry)
-    if (statSync(full).isDirectory()) return tsxFiles(full)
-    return full.endsWith('.tsx') ? [full] : []
+    if (statSync(full).isDirectory()) return sourceFiles(full)
+    if (/\.test\.tsx?$/.test(full)) return []
+    return /\.tsx?$/.test(full) ? [full] : []
   })
 }
 
 function offendersByFile(): Record<string, string[]> {
   const found: Record<string, string[]> = {}
-  for (const file of tsxFiles(SRC)) {
+  for (const file of sourceFiles(SRC)) {
     const source = readFileSync(file, 'utf8')
     const hits = BANNED_PROPS.filter((prop) =>
       new RegExp(`\\b${prop}\\s*:`).test(source),

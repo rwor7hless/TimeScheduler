@@ -38,7 +38,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`modal-glass w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] min-h-0 flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
+                className={`modal w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] min-h-0 flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
                   maxWidth === '2xl' ? 'max-w-2xl' : maxWidth === '4xl' ? 'max-w-4xl' : 'max-w-md'
                 }`}
               >

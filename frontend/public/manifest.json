@@ -4,8 +4,8 @@
   "description": "Планировщик задач и привычек",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F9FAFB",
-  "theme_color": "#D97706",
+  "background_color": "#0b0c0c",
+  "theme_color": "#0b0c0c",
   "orientation": "any",
   "icons": [
     {

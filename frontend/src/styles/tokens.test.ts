@@ -56,4 +56,32 @@ describe('palette shape', () => {
     expect(classified).not.toContain('accentLight')
     expect(classified).not.toContain('accentDark')
   })
+
+  /**
+   * Non-text keys: backgrounds, lines, and the two hover/press accent
+   * variants. Named explicitly (not derived) so that adding a 19th Palette
+   * key forces a deliberate choice between READABLE_KEYS, DECORATIVE_KEYS,
+   * or here — it cannot silently escape all three and go unchecked for
+   * contrast.
+   */
+  const NON_TEXT_KEYS = [
+    'bg',
+    'bgRaised',
+    'bgCell',
+    'bgHover',
+    'bgSel',
+    'line',
+    'lineSoft',
+    'accentLight',
+    'accentDark',
+  ] as const satisfies readonly (keyof Palette)[]
+
+  it('every Palette key is covered by READABLE_KEYS, DECORATIVE_KEYS, or NON_TEXT_KEYS', () => {
+    const allKeys = Object.keys(DARK) as (keyof Palette)[]
+    const covered = new Set([...READABLE_KEYS, ...DECORATIVE_KEYS, ...NON_TEXT_KEYS])
+    expect(covered.size).toBe(allKeys.length)
+    for (const key of allKeys) {
+      expect(covered.has(key)).toBe(true)
+    }
+  })
 })

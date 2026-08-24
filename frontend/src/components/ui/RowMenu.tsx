@@ -34,7 +34,7 @@ export default function RowMenu({ items }: { items: MenuItem[] }) {
         ⋯
       </button>
       {open && (
-        <div className="popover-glass absolute right-0 z-50 mt-1 min-w-[140px] rounded-lg py-1 text-sm">
+        <div className="popover absolute right-0 z-50 mt-1 min-w-[140px] rounded-lg py-1 text-sm">
           {items.map((item) => (
             <button
               key={item.label}

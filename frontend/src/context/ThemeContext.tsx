@@ -53,8 +53,7 @@ interface ThemeContextValue {
   meta: ThemeMeta
   /** Прямая установка темы по id. */
   setTheme: (id: ThemeId) => void
-  /** Legacy-toggle: переключает между тёмным и светлым семейством,
-   *  оставаясь на соседней нейтральной палитре. */
+  /** Legacy-toggle: переключает между двумя темами — тёмной и светлой. */
   toggle: () => void
   /** true, если активная тема относится к тёмному семейству. */
   isDark: boolean

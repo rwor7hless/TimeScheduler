@@ -70,7 +70,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="glass p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="popover p-6 space-y-4">
           <Input
             label="Имя пользователя"
             value={username}

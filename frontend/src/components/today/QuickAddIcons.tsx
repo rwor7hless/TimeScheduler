@@ -73,7 +73,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
           </svg>
         </button>
         {open === 'date' && (
-          <div className="popover-glass absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
+          <div className="popover absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
             <div>
               <label className="block text-[11px] uppercase opacity-60 mb-1 tracking-wider">Дата</label>
               <input
@@ -164,7 +164,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
           </svg>
         </button>
         {open === 'repeat' && (
-          <div className="popover-glass absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
+          <div className="popover absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
             <div className="text-[11px] uppercase opacity-60 tracking-wider">Повторять по дням</div>
             <div className="flex gap-1">
               {WEEKDAYS.map((label, i) => {
