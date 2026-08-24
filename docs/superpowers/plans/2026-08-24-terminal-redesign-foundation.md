@@ -31,7 +31,7 @@ Plan 1 does not leave the app visually finished — the spec says so explicitly,
 - Decorative tokens (`dim`, `muted`, `faint`) are deliberately **below 4.5:1**. No date, counter, or error message may be rendered only at those tiers.
 - Two themes only: `dark` (default) and `light`.
 - Font stack everywhere: `'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace`.
-- The NestJS `budget` module and its 8 Prisma models are **not touched**. Frontend only.
+- The NestJS `budget` module and its 9 Prisma models are **not touched**. Frontend only.
 - Run `npm run build` from `frontend/` after every task. It is `tsc -b && vite build`.
 
 ---
@@ -1062,7 +1062,7 @@ git commit -m "refactor: remove the daily-tip endpoint and pet prompts"
 
 ### Task 10: Delete the budget frontend
 
-The NestJS module, its cron jobs and its 8 Prisma models stay. This is frontend only, and it is one revert away.
+The NestJS module, its cron jobs and its 9 Prisma models stay. This is frontend only, and it is one revert away.
 
 **Files:**
 - Delete: `frontend/src/pages/BudgetPage.tsx` (1 289)

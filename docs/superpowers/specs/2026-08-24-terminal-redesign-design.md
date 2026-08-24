@@ -32,7 +32,7 @@ spec called top-level visibility of «Привычки / Статистика / 
 - **Capacitor / APK packaging.** A follow-up project. This spec only avoids blocking
   it (local fonts, no CDN calls). No `capacitor.config.ts`, no Android project.
 - **Dropping budget data.** The NestJS `budget` module (2 897 lines, 12 sub-dirs,
-  2 cron jobs) and its 8 Prisma models stay untouched and reachable over the API.
+  2 cron jobs) and its 9 Prisma models stay untouched and reachable over the API.
   Only the frontend goes. The change is one revert away.
 - **Copying lumen's storage model.** Postgres + Prisma stay; lumen's single JSON
   document is irrelevant here.
@@ -353,7 +353,7 @@ verify the drag visually, and keep them only if something actually regresses.
 ## Out-of-scope follow-ups
 
 - Capacitor project + APK build pipeline.
-- Removing the budget backend module and its 8 Prisma models, should the frontend
+- Removing the budget backend module and its 9 Prisma models, should the frontend
   removal prove permanent.
 - Porting lumen's evening-summary flow (`Ctrl+Shift+S`).
 - Deleting `1.txt` and `cloud-ru-s3-backup-integration (2).md` from the repo root —
