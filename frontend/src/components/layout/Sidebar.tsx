@@ -8,68 +8,11 @@ import { useTasks } from '@/hooks/useTasks'
 import { searchApi, type SearchResult } from '@/api/search'
 import TagBadgeGroup from '@/components/tasks/TagBadgeGroup'
 import SidebarBoardTree from './SidebarBoardTree'
+import { buildNav, BoardsIcon, type NavItem } from '@/lib/nav'
 
-type Item = {
-  to: string
-  label: string
+type Item = NavItem & {
   count?: number
   showDot?: boolean
-  match?: (p: string) => boolean
-  icon: JSX.Element
-}
-
-function ClockIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" />
-    </svg>
-  )
-}
-function CalIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" />
-    </svg>
-  )
-}
-function BoardsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="4" width="6" height="16" rx="2" />
-      <rect x="11" y="4" width="4" height="10" rx="2" />
-      <rect x="17" y="4" width="4" height="14" rx="2" />
-    </svg>
-  )
-}
-function HabitIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 12l4 4 12-12" />
-    </svg>
-  )
-}
-function StatsIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M4 20V10M10 20V4M16 20v-8M22 20H2" />
-    </svg>
-  )
-}
-function BellIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <path d="M7 3h10l4 4v14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" />
-      <path d="M7 12h10M7 16h7M7 8h6" />
-    </svg>
-  )
-}
-function AdminIcon() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z" />
-    </svg>
-  )
 }
 
 const PRIO_COLOR: Record<string, string> = {
@@ -163,21 +106,21 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
 
   const tasksCount = useMemo(() => (allTasks ?? []).filter((t) => !t.is_archived && !t.done).length, [allTasks])
 
-  const myDay: Item[] = [
-    { to: '/today', label: 'Мой день', count: myDayCount > 0 ? myDayCount : undefined, icon: <ClockIcon /> },
-  ]
-  const planning: Item[] = [
-    { to: '/tasks', label: 'Задачи', count: tasksCount > 0 ? tasksCount : undefined, match: (p) => p === '/tasks', icon: <BoardsIcon /> },
-    { to: '/calendar/day', label: 'Календарь', match: (p) => p.startsWith('/calendar'), icon: <CalIcon /> },
-  ]
-  const tracking: Item[] = [
-    { to: '/habits', label: 'Привычки', icon: <HabitIcon /> },
-    { to: '/stats', label: 'Статистика', icon: <StatsIcon /> },
-  ]
-  const history: Item[] = [
-    { to: '/notifications', label: 'История', count: unread > 0 ? unread : undefined, showDot: unread > 0, icon: <BellIcon /> },
-  ]
-  if (isAdmin) history.push({ to: '/admin', label: 'Админ', icon: <AdminIcon /> })
+  // Структура приходит из общего модуля; здесь на неё накладываются только
+  // живые данные, которых палитра не показывает.
+  const COUNTS: Record<string, number | undefined> = {
+    '/today': myDayCount > 0 ? myDayCount : undefined,
+    '/tasks': tasksCount > 0 ? tasksCount : undefined,
+    '/notifications': unread > 0 ? unread : undefined,
+  }
+  const navGroups = buildNav({ isAdmin }).map((g) => ({
+    ...g,
+    items: g.items.map<Item>((i) => ({
+      ...i,
+      count: COUNTS[i.to],
+      showDot: i.to === '/notifications' && unread > 0,
+    })),
+  }))
 
   const hasResults = results && (results.tasks.length + results.habits.length + results.boards.length) > 0
 
@@ -215,22 +158,16 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
       </div>
 
       <div className="ts-side__scroll">
-        <nav className="ts-side__nav">{myDay.map(renderLink)}</nav>
-
-        <div>
-          <div className="ts-side__group-title">Планирование</div>
-          <nav className="ts-side__nav">{planning.map(renderLink)}</nav>
-        </div>
-
-        <div>
-          <div className="ts-side__group-title">Трекинг</div>
-          <nav className="ts-side__nav">{tracking.map(renderLink)}</nav>
-        </div>
-
-        <div>
-          <div className="ts-side__group-title">Архив</div>
-          <nav className="ts-side__nav">{history.map(renderLink)}</nav>
-        </div>
+        {navGroups.map((g) =>
+          g.title === null ? (
+            <nav key={g.id} className="ts-side__nav">{g.items.map(renderLink)}</nav>
+          ) : (
+            <div key={g.id}>
+              <div className="ts-side__group-title">{g.title}</div>
+              <nav className="ts-side__nav">{g.items.map(renderLink)}</nav>
+            </div>
+          ),
+        )}
 
         <SidebarBoardTree onClose={onClose} taskCounts={taskCountsByBoard} />
       </div>
