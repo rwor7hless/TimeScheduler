@@ -603,6 +603,78 @@ input.quick-add {
 }
 
 /* ============================================================================
+   COMMAND PALETTE
+   ============================================================================ */
+
+.ts-palette {
+  position: fixed;
+  top: 12vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100vw - 32px));
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-raised);
+  border: 1px solid var(--line);
+  z-index: 60;
+}
+.ts-palette__input {
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: transparent;
+  color: var(--fg);
+  font-family: inherit;
+  font-size: var(--fs);
+  outline: none;
+}
+.ts-palette__input::placeholder {
+  color: var(--dim);
+}
+.ts-palette__list {
+  overflow-y: auto;
+  min-height: 0;
+}
+.ts-palette__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--fg-body);
+  font-family: inherit;
+  font-size: var(--fs);
+  text-align: left;
+  cursor: pointer;
+}
+.ts-palette__row:hover,
+.ts-palette__row.is-active {
+  background: var(--bg-sel);
+  color: var(--fg);
+}
+.ts-palette__label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ts-palette__hint {
+  color: var(--mid);
+  font-size: 11px;
+  flex-shrink: 0;
+}
+.ts-palette__empty {
+  padding: 12px;
+  color: var(--mid);
+  font-size: 12px;
+}
+
+/* ============================================================================
    MODAL / POPOVER
    ============================================================================ */
 

@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import CommandPalette from '@/components/palette/CommandPalette'
+import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 // Edge-swipe: палец должен стартовать не дальше 24px от левого края, чтобы
 // не путать со свайпом внутри карусели/картинки. Порог «открыли» — 60px.
@@ -10,6 +12,7 @@ const SWIPE_CLOSE_THRESHOLD = 60
 
 export default function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const palette = useCommandPalette()
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const navigate = useNavigate()
 
@@ -117,6 +120,8 @@ export default function AppShell() {
           <Outlet />
         </div>
       </main>
+
+      <CommandPalette isOpen={palette.isOpen} onClose={palette.close} />
     </div>
   )
 }
