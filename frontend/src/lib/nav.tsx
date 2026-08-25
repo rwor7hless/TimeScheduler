@@ -18,16 +18,16 @@ export function ClockIcon() {
 export function CalIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="5" width="18" height="16" rx="3" /><path d="M8 3v4M16 3v4M3 10h18" />
+      <rect x="3" y="5" width="18" height="16" /><path d="M8 3v4M16 3v4M3 10h18" />
     </svg>
   )
 }
 export function BoardsIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      <rect x="3" y="4" width="6" height="16" rx="2" />
-      <rect x="11" y="4" width="4" height="10" rx="2" />
-      <rect x="17" y="4" width="4" height="14" rx="2" />
+      <rect x="3" y="4" width="6" height="16" />
+      <rect x="11" y="4" width="4" height="10" />
+      <rect x="17" y="4" width="4" height="14" />
     </svg>
   )
 }

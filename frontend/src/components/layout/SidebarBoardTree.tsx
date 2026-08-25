@@ -48,8 +48,8 @@ interface Props {
 function ListIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" width="16" height="16">
-      <rect x="3" y="4" width="18" height="16" rx="3" />
-      <path d="M7 9h10M7 13h7M7 17h5" />
+      <path d="M4 7h1M4 12h1M4 17h1" />
+      <path d="M9 7h11M9 12h8M9 17h5" />
     </svg>
   )
 }

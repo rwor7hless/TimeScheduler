@@ -48,3 +48,19 @@ describe('svg sizing', () => {
     expect(unsizedByFile()).toEqual({})
   })
 })
+
+describe('svg shapes', () => {
+  it('no icon rounds its corners — the system sets --radius: 0', () => {
+    // Скруглённый прямоугольник внутри иконки противоречит центральному
+    // правилу системы ровно так же, как скруглённая карточка: все панели,
+    // поля и кнопки квадратные, а иконка рядом с ними — нет.
+    const offenders: string[] = []
+    for (const file of sourceFiles(SRC)) {
+      const source = readFileSync(file, 'utf8')
+      for (const m of source.matchAll(/<(?:rect|circle|ellipse)\b[^>]*\br[xy]=["'][^"']+["']/g)) {
+        offenders.push(`${relative(SRC, file)}:${source.slice(0, m.index).split('\n').length}`)
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})

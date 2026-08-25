@@ -275,7 +275,7 @@ function ArchiveIcon() {
   return (
     <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
       <path d="M21 8v13H3V8" />
-      <rect x="1" y="3" width="22" height="5" rx="1" />
+      <rect x="1" y="3" width="22" height="5" />
       <line x1="10" y1="12" x2="14" y2="12" />
     </svg>
   )

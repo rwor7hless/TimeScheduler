@@ -68,7 +68,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
           className={iconClasses(dateActive || open === 'date')}
         >
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="5" width="18" height="16" rx="2" />
+            <rect x="3" y="5" width="18" height="16" />
             <path d="M8 3v4M16 3v4M3 10h18" />
           </svg>
         </button>
