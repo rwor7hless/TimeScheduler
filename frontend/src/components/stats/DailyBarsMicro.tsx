@@ -54,8 +54,8 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
   const BAR_AREA_PX = 120
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 flex flex-col h-full">
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">По дням недели</h3>
+    <div className="bg-bg-cell border border-line p-4 flex flex-col h-full">
+      <h3 className="text-sm font-medium text-fg-body mb-3">По дням недели</h3>
       {/* Spacer pushes the chart to the bottom so bars share a visual floor
           with the labels under them, instead of floating at the top of the
           card when the row-stretched card is taller than its content. */}
@@ -80,10 +80,10 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
                 <motion.div
                   className={
                     d.isFuture
-                      ? 'w-full rounded-t-md bg-gray-100 dark:bg-gray-700 opacity-40 border-t-2 border-dashed border-gray-300 dark:border-gray-600 transition-all'
+                      ? 'w-full bg-bg-hover opacity-40 border-t-2 border-dashed border-line transition-all'
                       : d.isToday
-                      ? 'w-full rounded-t-md bg-gradient-to-t from-amber-500 to-amber-400 dark:from-amber-400 dark:to-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)] transition-all duration-200 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.75)] group-hover:from-amber-400 group-hover:to-amber-300'
-                      : 'w-full rounded-t-md bg-gradient-to-t from-amber-500/70 to-amber-400/80 dark:from-amber-600/70 dark:to-amber-500/80 transition-all duration-200 group-hover:from-amber-500 group-hover:to-amber-400 dark:group-hover:from-amber-500 dark:group-hover:to-amber-400 group-hover:shadow-[0_0_14px_rgba(245,158,11,0.4)]'
+                      ? 'w-full bg-accent transition-all duration-200 group-hover:bg-accent-light'
+                      : 'w-full bg-accent-dark transition-all duration-200 group-hover:bg-accent'
                   }
                   style={{ height: heightPx, transformOrigin: 'bottom' }}
                   initial={{ scaleY: 0, opacity: 0 }}
@@ -100,13 +100,13 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
                 className={
                   'text-[10px] uppercase tracking-wide transition-colors ' +
                   (d.isToday
-                    ? 'text-amber-600 dark:text-amber-400 font-semibold'
-                    : 'text-gray-400 dark:text-gray-500 group-hover:text-amber-600 dark:group-hover:text-amber-400')
+                    ? 'text-accent font-semibold'
+                    : 'text-fg-mid group-hover:text-accent')
                 }
               >
                 {d.label}
               </div>
-              <div className="text-[11px] tabular-nums font-medium text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-gray-50 transition-colors">
+              <div className="text-[11px] tabular-nums font-medium text-fg-body group-hover:text-fg transition-colors">
                 {d.isFuture ? '' : d.count}
               </div>
             </div>

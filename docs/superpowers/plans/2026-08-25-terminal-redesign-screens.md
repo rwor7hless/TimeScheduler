@@ -187,10 +187,18 @@ function sourceFiles(dir: string): string[] {
   })
 }
 
+/**
+ * Комментарии не разметка: строка «box-shadow глушится спеком» — это проза
+ * о запрете, а не нарушение. Сканируем только код.
+ */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+}
+
 function offendersByFile(): Record<string, string[]> {
   const found: Record<string, string[]> = {}
   for (const file of sourceFiles(SRC)) {
-    const source = readFileSync(file, 'utf8')
+    const source = stripComments(readFileSync(file, 'utf8'))
     const hits = CATEGORIES.filter(([, re]) => re.test(source)).map(([name]) => name)
     if (hits.length) found[relative(SRC, file)] = hits.slice().sort()
   }

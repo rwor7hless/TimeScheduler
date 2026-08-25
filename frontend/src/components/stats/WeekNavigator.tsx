@@ -77,17 +77,17 @@ export function WeekNavigator({ weekStart, onChange, minDate }: Props) {
   }, [goPrev, goNext])
 
   return (
-    <div className="flex items-center justify-center gap-3 sm:gap-5">
+    <div className="flex items-center justify-center gap-5">
       <button
         type="button"
         onClick={goPrev}
         disabled={!canGoPrev}
         aria-label="Предыдущая неделя"
         className={clsx(
-          'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+          'flex-shrink-0 w-10 h-10 flex items-center justify-center transition-colors',
           canGoPrev
-            ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-            : 'text-gray-300 dark:text-gray-600 cursor-not-allowed',
+            ? 'text-fg-body hover:bg-bg-hover'
+            : 'text-fg-mid cursor-not-allowed',
         )}
       >
         <ChevronLeft />
@@ -103,17 +103,17 @@ export function WeekNavigator({ weekStart, onChange, minDate }: Props) {
             transition={{ duration: shouldReduceMotion ? 0 : 0.22, ease: [0.2, 0.6, 0.2, 1] }}
             className="w-full"
           >
-            <div className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500">
+            <div className="text-[11px] uppercase tracking-wider text-fg-mid">
               Неделя {weekNumber}
             </div>
-            <div className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 truncate">
+            <div className="text-base font-semibold text-fg truncate">
               {rangeLabel}
             </div>
             {isCurrent && (
               <motion.span
                 animate={shouldReduceMotion ? undefined : { opacity: [1, 0.7, 1] }}
                 transition={shouldReduceMotion ? undefined : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[10px] font-medium tracking-wide"
+                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-bg-sel text-accent text-[10px] font-medium tracking-wide"
               >
                 Текущая неделя
               </motion.span>
@@ -128,10 +128,10 @@ export function WeekNavigator({ weekStart, onChange, minDate }: Props) {
         disabled={!canGoNext}
         aria-label="Следующая неделя"
         className={clsx(
-          'flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center transition-colors',
+          'flex-shrink-0 w-10 h-10 flex items-center justify-center transition-colors',
           canGoNext
-            ? 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
-            : 'text-gray-300 dark:text-gray-600 cursor-not-allowed',
+            ? 'text-fg-body hover:bg-bg-hover'
+            : 'text-fg-mid cursor-not-allowed',
         )}
       >
         <ChevronRight />

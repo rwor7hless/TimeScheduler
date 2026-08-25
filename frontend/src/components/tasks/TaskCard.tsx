@@ -1,4 +1,5 @@
 import clsx from 'clsx'
+import { inkOn } from '@/styles/contrast'
 import type { Task, Priority } from '@/types/task'
 import { WEEKDAY_LABELS } from '@/types/task'
 import TagBadgeGroup from './TagBadgeGroup'
@@ -51,7 +52,7 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
     <div
       onClick={onClick}
       className={clsx(
-        'border cursor-pointer hover: transition- overflow-hidden outline-none',
+        'border cursor-pointer overflow-hidden outline-none',
         overlapping ? 'border-transparent' : 'bg-bg-cell',
         !overlapping && isCancelled && 'opacity-60',
         !overlapping && deadlineStatus === 'overdue' && 'border-danger ring-1 ring-red-200',
@@ -97,8 +98,9 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
                 className={clsx(
                   'font-medium leading-snug break-words flex-1 min-w-0',
                   compact ? 'text-[11px]' : 'text-sm',
-                  overlapping ? 'text-bg drop-' : (isCancelled ? 'text-fg-mid line-through' : 'text-fg'),
+                  overlapping ? '' : (isCancelled ? 'text-fg-mid line-through' : 'text-fg'),
                 )}
+                style={overlapping ? { color: inkOn(color) } : undefined}
               >
                 {task.title}
               </h4>

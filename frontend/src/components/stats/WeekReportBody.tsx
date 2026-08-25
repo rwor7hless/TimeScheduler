@@ -53,13 +53,10 @@ export function WeekReportBody({ weekStart }: Props) {
 
   useEffect(() => {
     if (wasStreamingRef.current && !isStreaming && (content || report?.status === 'done')) {
-      // Stream just finished AND we have content → celebratory one-shot amber glow.
+      // Stream just finished AND we have content → one-shot accent flash on the
+      // section border. A box-shadow glow is what this used to be; the spec bans them.
       glow.start({
-        boxShadow: [
-          '0 0 0 0 rgba(245,158,11,0)',
-          '0 0 36px 6px rgba(245,158,11,0.35)',
-          '0 0 0 0 rgba(245,158,11,0)',
-        ],
+        borderColor: ['var(--line)', 'var(--accent)', 'var(--line)'],
         transition: { duration: 0.9, ease: 'easeOut' },
       })
     }
@@ -111,7 +108,7 @@ export function WeekReportBody({ weekStart }: Props) {
 
   if (effectiveContent) {
     return (
-      <motion.section animate={glow} className="space-y-2 rounded-2xl">
+      <motion.section animate={glow} className="space-y-2 border border-line px-3 py-2">
         <SectionHeader generatedAt={generatedAt} earlyGenerated={!!isCurrentWeek && report?.status === 'done'} />
         <ReportContent md={effectiveContent} isStreaming={isStreaming} />
       </motion.section>
@@ -159,7 +156,7 @@ export function WeekReportBody({ weekStart }: Props) {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 px-4 py-6 rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+            className="flex items-center gap-3 text-sm text-fg-mid px-4 py-6 border border-line bg-bg-cell"
           >
             <Spinner className="!w-5 !h-5" />
             <span>Отчёт пишется в другой вкладке…</span>
@@ -190,13 +187,13 @@ function SectionHeader({
 }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
+      <h3 className="text-sm font-semibold text-fg-body uppercase tracking-wider">
         AI-разбор недели
       </h3>
       {generatedAt && (
-        <div className="flex items-center gap-2 text-[11px] text-gray-400 dark:text-gray-500">
+        <div className="flex items-center gap-2 text-[11px] text-fg-mid">
           {earlyGenerated && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium">
+            <span className="px-1.5 py-0.5 bg-bg-sel text-accent font-medium">
               Сгенерировано досрочно
             </span>
           )}
@@ -220,14 +217,14 @@ function EmptyState({ icon, title, body, cta }: EmptyStateProps) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0 }}
-      className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-5 py-8 flex flex-col items-center text-center gap-3"
+      className=" border border-line bg-bg-cell px-5 py-8 flex flex-col items-center text-center gap-3"
     >
-      <div className="text-gray-400 dark:text-gray-500">
+      <div className="text-fg-mid">
         {icon === 'clock' ? <ClockIcon /> : <ArchiveIcon />}
       </div>
       <div>
-        <div className="text-base font-semibold text-gray-900 dark:text-gray-100">{title}</div>
-        <div className="mt-1 text-sm text-gray-500 dark:text-gray-400 max-w-md">{body}</div>
+        <div className="text-base font-semibold text-fg">{title}</div>
+        <div className="mt-1 text-sm text-fg-mid max-w-md">{body}</div>
       </div>
       {cta && (
         <Button type="button" onClick={cta.onClick} disabled={cta.disabled} className="mt-1">
@@ -252,10 +249,10 @@ function ErrorCard({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="rounded-2xl border border-rose-200 dark:border-rose-900/40 bg-rose-50 dark:bg-rose-900/15 px-5 py-5"
+      className="border border-danger bg-bg-cell px-5 py-5"
     >
-      <p className="font-semibold text-rose-700 dark:text-rose-300">Не удалось сгенерировать отчёт</p>
-      <p className="mt-1 text-xs font-mono text-rose-600 dark:text-rose-400 break-all">{message}</p>
+      <p className="font-semibold text-danger">Не удалось сгенерировать отчёт</p>
+      <p className="mt-1 text-xs font-mono text-danger break-all">{message}</p>
       {onRetry && (
         <Button type="button" onClick={onRetry} disabled={retrying} className="mt-3">
           {retrying ? 'Запрос…' : 'Повторить'}

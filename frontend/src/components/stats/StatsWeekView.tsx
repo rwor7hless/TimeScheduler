@@ -23,7 +23,7 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
   if (total === 0) return null
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">{title}</h4>
+      <h4 className="text-xs font-medium text-fg-mid">{title}</h4>
       <div className="space-y-1">
         {items.map((item, idx) => {
           const pct = Math.round((item.count / total) * 100)
@@ -31,22 +31,22 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
           return (
             <div
               key={item.label}
-              className="group flex items-center gap-2 -mx-1 px-1 py-1 rounded-md cursor-default transition-colors hover:bg-gray-50 dark:hover:bg-gray-700/40"
+              className="group flex items-center gap-2 -mx-1 px-1 py-1 cursor-default transition-colors hover:bg-bg-raised"
             >
               <div
-                className="w-2 h-2 rounded-full flex-shrink-0 transition-transform duration-200 group-hover:scale-150"
+                className="w-2 h-2 flex-shrink-0 transition-transform duration-200 group-hover:scale-150"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate group-hover:text-gray-900 dark:group-hover:text-gray-100 transition-colors">
+              <span className="text-xs text-fg-body flex-1 truncate group-hover:text-fg transition-colors">
                 {item.label}
               </span>
-              <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div className="w-20 h-1.5 bg-bg-hover overflow-hidden">
                 <div
-                  className="h-full rounded-full transition-all duration-200 group-hover:brightness-110"
+                  className="h-full transition-all duration-200 group-hover:brightness-110"
                   style={{ width: `${pct}%`, backgroundColor: color }}
                 />
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right tabular-nums">
+              <span className="text-xs text-fg-mid w-8 text-right tabular-nums">
                 {item.count}
               </span>
             </div>
@@ -91,13 +91,13 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
 
       {isError && (
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+          <div className="text-sm text-fg-mid">
             Не удалось загрузить неделю.
           </div>
           <button
             type="button"
             onClick={() => refetch()}
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:bg-accent-dark transition-colors"
+            className="px-3 py-1.5 text-xs font-medium bg-accent text-bg hover:bg-accent-dark transition-colors"
           >
             Повторить
           </button>
@@ -106,7 +106,7 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
 
       {stats && (
         <>
-          <motion.div variants={blockVariants} className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <motion.div variants={blockVariants} className="grid grid-cols-4 gap-3">
             <KpiCard label="Активные" value={stats.active_tasks} />
             <KpiCard label="Просрочено" value={stats.overdue_count} accent="red" />
             <KpiCard
@@ -148,14 +148,14 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
           </motion.div>
 
           {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
-            <motion.div variants={blockVariants} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+            <motion.div variants={blockVariants} className="grid grid-cols-3 gap-4">
+              <div className="bg-bg-cell border border-line p-4">
                 <BreakdownBar title="По приоритету" items={stats.by_priority} />
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div className="bg-bg-cell border border-line p-4">
                 <BreakdownBar title="По доскам" items={stats.by_board} />
               </div>
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+              <div className="bg-bg-cell border border-line p-4">
                 <BreakdownBar title="По тегам" items={stats.by_tag} />
               </div>
             </motion.div>
@@ -167,7 +167,7 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
           >
             <Link
               to="/notifications"
-              className="text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+              className="text-sm text-fg-mid hover:text-accent transition-colors"
             >
               История отчётов →
             </Link>

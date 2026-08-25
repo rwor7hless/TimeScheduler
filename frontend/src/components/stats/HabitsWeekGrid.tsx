@@ -88,7 +88,7 @@ export function HabitsWeekGrid({ habits }: Props) {
                           shouldReduceMotion
                             ? undefined
                             : done
-                            ? { scale: 1.25, boxShadow: '0 0 14px rgba(245,158,11,0.55)' }
+                            ? { scale: 1.25 }
                             : { scale: 1.2 }
                         }
                         transition={{ duration: 0.25, ease: [0.2, 0.6, 0.2, 1] }}

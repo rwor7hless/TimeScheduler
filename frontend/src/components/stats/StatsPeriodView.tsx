@@ -62,15 +62,15 @@ function StatCard({
   accent?: 'green' | 'red' | 'amber'
 }) {
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-      <div className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">{label}</div>
+    <div className="bg-bg-cell border border-line p-4">
+      <div className="text-xs font-medium text-fg-mid mb-1">{label}</div>
       <div
         className={clsx(
           'text-2xl font-bold',
-          accent === 'green' && 'text-green-600 dark:text-green-400',
-          accent === 'red' && 'text-red-500 dark:text-red-400',
-          accent === 'amber' && 'text-amber-600 dark:text-amber-400',
-          !accent && 'text-gray-900 dark:text-gray-100',
+          accent === 'green' && 'text-success',
+          accent === 'red' && 'text-danger',
+          accent === 'amber' && 'text-accent',
+          !accent && 'text-fg',
         )}
       >
         {value}
@@ -86,19 +86,19 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
 
   return (
     <div className="space-y-2">
-      <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400">{title}</h4>
+      <h4 className="text-xs font-medium text-fg-mid">{title}</h4>
       <div className="space-y-1.5">
         {items.map((item, idx) => {
           const pct = Math.round((item.count / total) * 100)
           const color = item.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
           return (
             <div key={item.label} className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
-              <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{item.label}</span>
-              <div className="w-20 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+              <div className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-xs text-fg-body flex-1 truncate">{item.label}</span>
+              <div className="w-20 h-1.5 bg-bg-hover overflow-hidden">
+                <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400 w-8 text-right">{item.count}</span>
+              <span className="text-xs text-fg-mid w-8 text-right">{item.count}</span>
             </div>
           )
         })}
@@ -130,13 +130,13 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
   if (isError) {
     return (
       <div className="mt-16 flex flex-col items-center gap-3 text-center">
-        <div className="text-sm text-gray-500 dark:text-gray-400">
+        <div className="text-sm text-fg-mid">
           Не удалось загрузить статистику.
         </div>
         <button
           type="button"
           onClick={() => refetch()}
-          className="px-3 py-1.5 text-xs font-medium rounded-lg bg-accent text-white hover:bg-accent-dark transition-colors"
+          className="px-3 py-1.5 text-xs font-medium bg-accent text-bg hover:bg-accent-dark transition-colors"
         >
           Повторить
         </button>
@@ -145,7 +145,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
   }
   if (!stats) {
     return (
-      <div className="mt-16 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div className="mt-16 text-center text-sm text-fg-mid">
         Пока нет данных для статистики. Создайте задачу или привычку, чтобы начать.
       </div>
     )
@@ -153,7 +153,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <StatCard label="Активные задачи" value={stats.active_tasks} />
         <StatCard label="Выполнено" value={stats.completed_last_month} accent="green" />
         <StatCard label="Просрочено" value={stats.overdue_count} accent="red" />
@@ -164,9 +164,9 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
         />
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Выполнения по дням</h3>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-bg-cell border border-line p-4">
+          <h3 className="text-sm font-medium text-fg-body mb-3">Выполнения по дням</h3>
           <div style={{ color: 'var(--mid)' }}>
             <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={chartData} margin={{ top: 4, right: 4, bottom: 0, left: -20 }}>
@@ -191,7 +191,12 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
                   allowDecimals={false}
                 />
                 <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                  contentStyle={{
+                    fontSize: 12,
+                    background: colors.surface,
+                    border: `1px solid ${colors.line}`,
+                    color: colors.fg,
+                  }}
                   labelFormatter={(label) => `Дата: ${label}`}
                   formatter={(value: number) => [`${value} задач`, 'Выполнено']}
                 />
@@ -209,33 +214,33 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Итоги периода</h3>
+        <div className="bg-bg-cell border border-line p-4">
+          <h3 className="text-sm font-medium text-fg-body mb-3">Итоги периода</h3>
           {periodMetrics ? (
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Выполнено задач</div>
-                  <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">{periodMetrics.total}</div>
+                  <div className="text-xs text-fg-mid">Выполнено задач</div>
+                  <div className="text-2xl font-bold text-accent">{periodMetrics.total}</div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Серия дней</div>
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  <div className="text-xs text-fg-mid">Серия дней</div>
+                  <div className="text-2xl font-bold text-success">
                     {periodMetrics.streak}
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">дн.</span>
+                    <span className="text-xs font-normal text-fg-mid ml-1">дн.</span>
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Ср. в день</div>
-                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  <div className="text-xs text-fg-mid">Ср. в день</div>
+                  <div className="text-xl font-bold text-fg">
                     {periodMetrics.avgPerDay.toFixed(1)}
                   </div>
                 </div>
                 <div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Активных дней</div>
-                  <div className="text-xl font-bold text-gray-800 dark:text-gray-100">
+                  <div className="text-xs text-fg-mid">Активных дней</div>
+                  <div className="text-xl font-bold text-fg">
                     {periodMetrics.daysWithTasks}
-                    <span className="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">
+                    <span className="text-xs font-normal text-fg-mid ml-1">
                       / {PERIOD_DAYS[period]}
                     </span>
                   </div>
@@ -243,18 +248,18 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
               </div>
 
               {periodMetrics.best.count > 0 && (
-                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">Лучший день</div>
+                <div className="pt-2 border-t border-line-soft">
+                  <div className="text-xs text-fg-mid mb-0.5">Лучший день</div>
                   <div className="flex items-baseline gap-2">
-                    <span className="text-sm font-semibold text-gray-800 dark:text-gray-100">{periodMetrics.best.label}</span>
-                    <span className="text-xs text-gray-500 dark:text-gray-400">— {periodMetrics.best.count} задач</span>
+                    <span className="text-sm font-semibold text-fg">{periodMetrics.best.label}</span>
+                    <span className="text-xs text-fg-mid">— {periodMetrics.best.count} задач</span>
                   </div>
                 </div>
               )}
 
               {stats.most_active_hours.length > 0 && (
-                <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
-                  <div className="text-xs text-gray-500 dark:text-gray-400 mb-2">Пиковые часы</div>
+                <div className="pt-2 border-t border-line-soft">
+                  <div className="text-xs text-fg-mid mb-2">Пиковые часы</div>
                   <div className="flex gap-px flex-wrap">
                     {Array.from({ length: 24 }, (_, h) => {
                       const isActive = stats.most_active_hours.includes(h)
@@ -263,15 +268,15 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
                           key={h}
                           title={`${h}:00${isActive ? ' — активный' : ''}`}
                           className={[
-                            'h-4 rounded-sm transition-colors',
-                            isActive ? 'bg-amber-500 dark:bg-amber-400' : 'bg-gray-100 dark:bg-gray-700',
+                            'h-4 transition-colors',
+                            isActive ? 'bg-bg-sel' : 'bg-bg-hover',
                           ].join(' ')}
                           style={{ width: 'calc((100% - 23px) / 24)' }}
                         />
                       )
                     })}
                   </div>
-                  <div className="flex justify-between text-[10px] text-gray-400 dark:text-gray-500 mt-1">
+                  <div className="flex justify-between text-[10px] text-fg-mid mt-1">
                     <span>0:00</span>
                     <span>12:00</span>
                     <span>23:00</span>
@@ -280,43 +285,43 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
               )}
             </div>
           ) : (
-            <p className="text-sm text-gray-400 dark:text-gray-500">Нет данных</p>
+            <p className="text-sm text-fg-mid">Нет данных</p>
           )}
         </div>
       </div>
 
       {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-bg-cell border border-line p-4">
             <BreakdownBar title="По приоритету" items={stats.by_priority} />
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-bg-cell border border-line p-4">
             <BreakdownBar title="По доскам" items={stats.by_board} />
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div className="bg-bg-cell border border-line p-4">
             <BreakdownBar title="По тегам" items={stats.by_tag} />
           </div>
         </div>
       )}
 
       {stats.habit_progress.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Прогресс привычек</h3>
+        <div className="bg-bg-cell border border-line p-4">
+          <h3 className="text-sm font-medium text-fg-body mb-3">Прогресс привычек</h3>
           <div className="space-y-3">
             {stats.habit_progress.map((hp) => (
               <div key={hp.habit_id} className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{hp.name}</div>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">Стрик: {hp.current_streak} дн.</div>
+                  <div className="text-sm font-medium text-fg truncate">{hp.name}</div>
+                  <div className="text-xs text-fg-mid">Стрик: {hp.current_streak} дн.</div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="w-20 sm:w-32 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
+                  <div className="w-32 bg-bg-hover h-2">
                     <div
-                      className="h-2 rounded-full bg-green-500 dark:bg-green-400 transition-all"
+                      className="h-2 bg-bg-cell transition-all"
                       style={{ width: `${Math.min(hp.completion_rate * 100, 100)}%` }}
                     />
                   </div>
-                  <span className="text-sm font-medium text-gray-600 dark:text-gray-300 w-12 text-right">
+                  <span className="text-sm font-medium text-fg-body w-12 text-right">
                     {Math.round(hp.completion_rate * 100)}%
                   </span>
                 </div>

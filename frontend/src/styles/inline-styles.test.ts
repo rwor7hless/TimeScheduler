@@ -17,10 +17,7 @@ const BANNED_PROPS = ['borderRadius', 'boxShadow', 'backdropFilter'] as const
 const BASELINE: Record<string, readonly string[]> = {
   'App.tsx': ['borderRadius'],
   'components/layout/Sidebar.tsx': ['borderRadius'],
-  'components/stats/HabitsWeekGrid.tsx': ['boxShadow'],
   'components/ui/Spinner.tsx': ['borderRadius'],
-  'components/stats/StatsPeriodView.tsx': ['borderRadius'],
-  'components/stats/WeekReportBody.tsx': ['boxShadow'],
 }
 
 /**

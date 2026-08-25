@@ -244,7 +244,7 @@ export default function HabitsPage() {
                   'flex items-center gap-0 pr-2 py-3 overflow-hidden',
                   isSelected
                     ? 'border-accent bg-bg-sel'
-                    : 'border-line bg-bg-cell hover:border-line hover:'
+                    : 'border-line bg-bg-cell hover:border-accent'
                 )}
               >
                 {/* Color accent bar */}

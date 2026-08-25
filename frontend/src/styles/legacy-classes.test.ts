@@ -33,13 +33,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/reports/ReportContent.tsx': ['breakpoint'],
   'components/reports/ReportStatusBadge.tsx': ['palette', 'radius'],
   'components/reports/ThinkingIndicator.tsx': ['palette'],
-  'components/stats/DailyBarsMicro.tsx': ['palette', 'radius', 'shadow'],
-  'components/stats/KpiCard.tsx': ['palette', 'radius', 'shadow'],
-  'components/stats/PeakHoursStrip.tsx': ['palette', 'radius'],
-  'components/stats/StatsPeriodView.tsx': ['breakpoint', 'palette', 'radius'],
-  'components/stats/StatsWeekView.tsx': ['breakpoint', 'palette', 'radius'],
-  'components/stats/WeekNavigator.tsx': ['breakpoint', 'palette', 'radius'],
-  'components/stats/WeekReportBody.tsx': ['palette', 'radius'],
   'components/ui/ThemePicker.tsx': ['shadow'],
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
@@ -55,10 +48,18 @@ function sourceFiles(dir: string): string[] {
   })
 }
 
+/**
+ * Комментарии не разметка: строка «box-shadow глушится спеком» — это проза
+ * о запрете, а не нарушение. Сканируем только код.
+ */
+function stripComments(source: string): string {
+  return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')
+}
+
 function offendersByFile(): Record<string, string[]> {
   const found: Record<string, string[]> = {}
   for (const file of sourceFiles(SRC)) {
-    const source = readFileSync(file, 'utf8')
+    const source = stripComments(readFileSync(file, 'utf8'))
     const hits = CATEGORIES.filter(([, re]) => re.test(source)).map(([name]) => name)
     if (hits.length) found[relative(SRC, file)] = hits.slice().sort()
   }

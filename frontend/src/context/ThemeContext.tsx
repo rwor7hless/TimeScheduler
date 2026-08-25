@@ -16,6 +16,10 @@ export interface ThemeMeta {
   accentDark: string
   bg: string
   surface: string
+  /** Границы и текст — recharts красит оси и тултипы из JS. */
+  line: string
+  fg: string
+  fgMid: string
 }
 
 export const THEMES: readonly ThemeMeta[] = [
@@ -24,12 +28,14 @@ export const THEMES: readonly ThemeMeta[] = [
     swatch: [DARK.bg, DARK.bgCell, DARK.accent],
     accent: DARK.accent, accentLight: DARK.accentLight, accentDark: DARK.accentDark,
     bg: DARK.bg, surface: DARK.bgCell,
+    line: DARK.line, fg: DARK.fg, fgMid: DARK.mid,
   },
   {
     id: 'light', label: 'Светлая', isDark: false,
     swatch: [LIGHT.bg, LIGHT.bgCell, LIGHT.accent],
     accent: LIGHT.accent, accentLight: LIGHT.accentLight, accentDark: LIGHT.accentDark,
     bg: LIGHT.bg, surface: LIGHT.bgCell,
+    line: LIGHT.line, fg: LIGHT.fg, fgMid: LIGHT.mid,
   },
 ] as const
 
@@ -58,7 +64,7 @@ interface ThemeContextValue {
   /** true, если активная тема относится к тёмному семейству. */
   isDark: boolean
   /** Выжимка ключевых цветов — для inline-стилей и SVG, где var() не работает. */
-  colors: Pick<ThemeMeta, 'accent' | 'accentLight' | 'accentDark' | 'bg' | 'surface'>
+  colors: Pick<ThemeMeta, 'accent' | 'accentLight' | 'accentDark' | 'bg' | 'surface' | 'line' | 'fg' | 'fgMid'>
   /** Полный список доступных тем — для UI-пикера. */
   themes: readonly ThemeMeta[]
 }
@@ -108,6 +114,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
         accentDark: meta.accentDark,
         bg: meta.bg,
         surface: meta.surface,
+        line: meta.line,
+        fg: meta.fg,
+        fgMid: meta.fgMid,
       },
       themes: THEMES,
     }
