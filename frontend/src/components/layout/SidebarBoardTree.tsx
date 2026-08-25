@@ -36,6 +36,7 @@ import Modal from '@/components/ui/Modal'
 import CreateProjectModal from '@/components/boards/CreateProjectModal'
 import Button from '@/components/ui/Button'
 import RowMenu from '@/components/ui/RowMenu'
+import { useLongPress } from '@/hooks/useLongPress'
 import toast from 'react-hot-toast'
 import type { Board } from '@/types/board'
 import type { BoardGroup } from '@/types/boardGroup'
@@ -314,6 +315,10 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
     })
     const style = { transform: CSS.Transform.toString(transform), transition }
     const renaming = renameTarget?.type === 'list' && renameTarget.id === board.id
+    // Долгое нажатие — единственный путь к этим действиям на телефоне:
+    // кнопка «⋯» там слишком мелкая цель, а правого клика нет вовсе.
+    const [menuOpen, setMenuOpen] = useState(false)
+    const longPress = useLongPress(() => setMenuOpen(true))
 
     return (
       <div
@@ -322,6 +327,7 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
         className={clsx('flex items-center', indent && 'pl-[18px]')}
         {...attributes}
         {...listeners}
+        {...longPress}
       >
         {renaming ? (
           <input
@@ -350,6 +356,8 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
           </NavLink>
         )}
         <RowMenu
+          open={menuOpen}
+          onOpenChange={setMenuOpen}
           items={[
             {
               label: 'Переименовать',
@@ -380,10 +388,12 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
       transition: { duration: 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
     })
     const style = { transform: CSS.Transform.toString(transform), transition }
+    const [menuOpen, setMenuOpen] = useState(false)
+    const longPress = useLongPress(() => setMenuOpen(true))
 
     return (
       <div ref={setNodeRef} style={{ ...style, opacity: isDragging ? 0.4 : 1 }}>
-        <div className="flex items-center" {...attributes} {...listeners}>
+        <div className="flex items-center" {...attributes} {...listeners} {...longPress}>
           <button
             type="button"
             onClick={() => toggle(group.id)}
@@ -419,6 +429,8 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
             </button>
           )}
           <RowMenu
+            open={menuOpen}
+            onOpenChange={setMenuOpen}
             items={[
               {
                 label: 'Переименовать',

@@ -6,8 +6,20 @@ interface MenuItem {
   destructive?: boolean
 }
 
-export default function RowMenu({ items }: { items: MenuItem[] }) {
-  const [open, setOpen] = useState(false)
+interface Props {
+  items: MenuItem[]
+  /** Управляемый режим: строка открывает меню долгим нажатием, где кнопки «⋯» не видно. */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+}
+
+export default function RowMenu({ items, open: openProp, onOpenChange }: Props) {
+  const [openState, setOpenState] = useState(false)
+  const open = openProp ?? openState
+  const setOpen = (next: boolean) => {
+    setOpenState(next)
+    onOpenChange?.(next)
+  }
   const ref = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -27,7 +39,7 @@ export default function RowMenu({ items }: { items: MenuItem[] }) {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          setOpen((v) => !v)
+          setOpen(!open)
         }}
         className="px-1 opacity-30 hover:opacity-80"
       >

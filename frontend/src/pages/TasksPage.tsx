@@ -4,6 +4,7 @@ import { useTasks, useBoards, usePatchTask } from '@/hooks/useTasks'
 import { useTaskDateSections } from '@/hooks/useTaskDateSections'
 import BacklogTaskRow from '@/components/tasks/BacklogTaskRow'
 import TaskModal from '@/components/tasks/TaskModal'
+import SidebarBoardTree from '@/components/layout/SidebarBoardTree'
 import Spinner from '@/components/ui/Spinner'
 import type { Task } from '@/types/task'
 import toast from 'react-hot-toast'
@@ -103,6 +104,16 @@ export default function TasksPage() {
         buckets.sections.length === 0 && (
           <p className="text-sm text-fg-mid py-3">Нет задач — всё чисто</p>
         )}
+
+      {/* Ниже 900px сайдбара нет, а дерево проектов жило только в нём — без этого
+          переименовать или удалить проект с телефона было бы нельзя. На широком
+          экране дерево уже слева, дублировать его здесь незачем. */}
+      <section className="hidden narrow:block border-t border-line pt-4">
+        <div className="text-[11px] font-semibold uppercase tracking-widest text-fg-mid mb-2">
+          Проекты
+        </div>
+        <SidebarBoardTree />
+      </section>
 
       <TaskModal isOpen={modalOpen} onClose={() => setModalOpen(false)} task={editing} />
     </div>
