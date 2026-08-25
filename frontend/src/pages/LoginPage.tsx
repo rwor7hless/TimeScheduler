@@ -33,11 +33,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm fade-in">
         <div className="text-center mb-8">
           <div
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4"
-            style={{
-              background: 'linear-gradient(135deg, #eaffb0, var(--accent))',
-              boxShadow: '0 14px 30px -10px rgba(212,255,90,0.45), inset 0 1px 0 rgba(255,255,255,0.5)',
-            }}
+            className="inline-flex items-center justify-center w-16 h-16 mb-4"
+            style={{ background: 'var(--accent)' }}
           >
             <svg
               width="28"

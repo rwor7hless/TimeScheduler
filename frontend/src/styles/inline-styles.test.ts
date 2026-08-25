@@ -20,7 +20,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/stats/HabitsWeekGrid.tsx': ['boxShadow'],
   'components/stats/StatsPeriodView.tsx': ['borderRadius'],
   'components/stats/WeekReportBody.tsx': ['boxShadow'],
-  'pages/LoginPage.tsx': ['boxShadow'],
 }
 
 /**

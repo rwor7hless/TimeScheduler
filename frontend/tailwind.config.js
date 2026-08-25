@@ -14,8 +14,21 @@ export default {
   theme: {
     extend: {
       colors: {
-        bg:      { DEFAULT: 'var(--bg)', raised: 'var(--bg-raised)', cell: 'var(--bg-cell)' },
-        fg:      { DEFAULT: 'var(--fg)', body: 'var(--fg-body)', mid: 'var(--mid)', dim: 'var(--dim)' },
+        bg:      {
+          DEFAULT: 'var(--bg)',
+          raised:  'var(--bg-raised)',
+          cell:    'var(--bg-cell)',
+          hover:   'var(--bg-hover)',
+          sel:     'var(--bg-sel)',
+        },
+        fg:      {
+          DEFAULT: 'var(--fg)',
+          body:    'var(--fg-body)',
+          mid:     'var(--mid)',
+          dim:     'var(--dim)',
+          muted:   'var(--muted)',
+          faint:   'var(--faint)',
+        },
         line:    { DEFAULT: 'var(--line)', soft: 'var(--line-soft)' },
         accent:  { DEFAULT: 'var(--accent)', light: 'var(--accent-light)', dark: 'var(--accent-dark)' },
         danger:  'var(--red)',

@@ -164,7 +164,7 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/ui/Modal.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'components/ui/RowMenu.tsx': ['palette', 'radius'],
   'components/ui/Spinner.tsx': ['palette', 'radius'],
-  'components/ui/ThemePicker.tsx': ['palette', 'shadow'],
+  'components/ui/ThemePicker.tsx': ['shadow'],
   'components/ui/TimeField.tsx': ['palette', 'radius', 'shadow'],
   'components/ui/TimePicker.tsx': ['palette', 'radius'],
   'components/ui/TimeRangeInput.tsx': ['palette'],
@@ -820,7 +820,7 @@ confirms no external link points at either path.
 If both files are deleted, remove:
 
 ```ts
-  'components/ui/ThemePicker.tsx': ['palette', 'shadow'],
+  'components/ui/ThemePicker.tsx': ['shadow'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
 ```
 
