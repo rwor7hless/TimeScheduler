@@ -306,10 +306,10 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
   const today = new Date()
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full min-h-0">
+    <div className="bg-bg-cell border border-line overflow-hidden flex flex-col h-full min-h-0">
       {/* Day headers - fixed */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-        <div className="w-10 sm:w-14 flex-shrink-0" />
+      <div className="flex border-b border-line bg-bg-raised flex-shrink-0">
+        <div className="w-14 flex-shrink-0" />
         {days.map((day) => {
           const isToday = isSameDay(day, today)
           return (
@@ -317,14 +317,14 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
               key={day.toISOString()}
               type="button"
               onClick={() => onDayClick?.(day)}
-              className="flex-1 text-center py-2.5 border-l border-gray-100 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors"
+              className="flex-1 text-center py-2.5 border-l border-line-soft hover:bg-bg-hover transition-colors"
             >
-              <div className="text-[11px] font-medium text-gray-400 dark:text-gray-500 capitalize mb-0.5">
+              <div className="text-[11px] font-medium text-fg-mid capitalize mb-0.5">
                 {format(day, isMobile ? 'EEE' : 'EEEE', { locale: ru })}
               </div>
               <div
-                className={`text-sm font-bold mx-auto w-7 h-7 flex items-center justify-center rounded-full transition-colors ${
-                  isToday ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-700 dark:text-gray-300'
+                className={`text-sm font-bold mx-auto w-7 h-7 flex items-center justify-center transition-colors ${
+                  isToday ? 'bg-bg-sel text-bg' : 'text-fg-body'
                 }`}
               >
                 {format(day, 'd')}
@@ -341,8 +341,8 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
         const anyDeadlines = days.some((d) => (deadlinesByDay.get(format(d, 'yyyy-MM-dd')) ?? []).length > 0)
         if (!anyDeadlines) return null
         return (
-          <div className="flex border-b border-gray-200 dark:border-gray-700 bg-orange-50/40 dark:bg-orange-900/10 flex-shrink-0">
-            <div className="w-10 sm:w-14 flex-shrink-0 flex items-center justify-end pr-1.5 text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 opacity-70">
+          <div className="flex border-b border-line bg-bg-cell flex-shrink-0">
+            <div className="w-14 flex-shrink-0 flex items-center justify-end pr-1.5 text-[10px] uppercase tracking-wider text-danger opacity-70">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M4 21V4l16 0-3 5 3 5H4" />
               </svg>
@@ -353,7 +353,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
               return (
                 <div
                   key={`dl-${key}`}
-                  className="flex-1 min-w-0 border-l border-gray-100 dark:border-gray-700 px-1 py-1 space-y-0.5"
+                  className="flex-1 min-w-0 border-l border-line-soft px-1 py-1 space-y-0.5"
                 >
                   {items.slice(0, 3).map((task) => (
                     <button
@@ -361,7 +361,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                       type="button"
                       onClick={(e) => { e.stopPropagation(); onTaskClick(task) }}
                       title={task.title}
-                      className="block w-full truncate text-left text-[10px] px-1.5 py-0.5 rounded font-medium border-l-2"
+                      className="block w-full truncate text-left text-[10px] px-1.5 py-0.5 font-medium border-l-2"
                       style={{
                         backgroundColor: `${task.color}18`,
                         borderLeftColor: task.color,
@@ -372,7 +372,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                     </button>
                   ))}
                   {items.length > 3 && (
-                    <div className="text-[10px] text-gray-400 dark:text-gray-500 px-1">
+                    <div className="text-[10px] text-fg-mid px-1">
                       +{items.length - 3} ещё
                     </div>
                   )}
@@ -387,12 +387,12 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-10 sm:w-14 flex-shrink-0 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50">
+          <div className="w-14 flex-shrink-0 border-r border-line-soft bg-bg-raised">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-end pr-2 pt-1 text-[10px] font-mono text-gray-400 dark:text-gray-500 select-none"
+                className="flex items-start justify-end pr-2 pt-1 text-[10px] font-mono text-fg-mid select-none"
               >
                 {hour === 0 ? '' : `${String(hour).padStart(2, '0')}:00`}
               </div>
@@ -410,19 +410,19 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
               <div
                 key={key}
                 ref={el => { dayColRefs.current[dayIdx] = el }}
-                className={`flex-1 relative border-l border-gray-100 dark:border-gray-700/60 ${isToday ? 'bg-amber-50/30 dark:bg-amber-900/10' : ''}`}
+                className={`flex-1 relative border-l border-line-soft ${isToday ? 'bg-bg-sel' : ''}`}
               >
                 {HOURS.map((hour) => (
                   <div
                     key={hour}
                     style={{ height: `${HOUR_H}px` }}
-                    className="border-t border-gray-100 dark:border-gray-700/40 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors relative"
+                    className="border-t border-line-soft cursor-pointer hover:bg-bg-sel transition-colors relative"
                     onClick={() => {
                       if (ghost) return
                       onSlotClick(format(addHours(startOfDay(day), hour), "yyyy-MM-dd'T'HH:mm"))
                     }}
                   >
-                    <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200 opacity-40 pointer-events-none" />
+                    <div className="absolute inset-x-0 top-1/2 h-px bg-bg-hover opacity-40 pointer-events-none" />
                   </div>
                 ))}
 
@@ -434,7 +434,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                   return (
                     <>
                       <div
-                        className="absolute z-30 pointer-events-none rounded-full"
+                        className="absolute z-30 pointer-events-none"
                         style={{ top: `calc(${pct}% - 4px)`, left: '0px', width: '8px', height: '8px', backgroundColor: '#ef4444' }}
                       />
                       <div
@@ -442,7 +442,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                         style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: '#ef4444' }}
                       />
                       <div
-                        className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-red-700 bg-gray-100/95 px-1 rounded border border-red-100 shadow-sm"
+                        className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-danger bg-bg-hover px-1 border border-danger"
                         style={{ top: `calc(${pct}% - 1px)` }}
                       >
                         {label}
@@ -490,11 +490,11 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                       left: ghost.sourceDayIdx === dayIdx ? (layout.get(ghost.task.id)?.left ?? '2px') : '2px',
                       width: ghost.sourceDayIdx === dayIdx ? (layout.get(ghost.task.id)?.width ?? 'calc(100% - 4px)') : 'calc(100% - 4px)',
                       minHeight: '20px',
-                      filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
+                      filter: 'drop-(0 4px 12px rgba(0,0,0,0.25))',
                     }}
                   >
                     <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
-                    <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/60 text-white px-1 rounded leading-tight">
+                    <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-bg text-bg px-1 leading-tight">
                       {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
                     </div>
                   </div>

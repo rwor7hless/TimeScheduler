@@ -83,28 +83,28 @@ export default function CalendarPage() {
   if (isLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-180px)] lg:h-[calc(100vh-9rem)] min-h-0 overflow-x-hidden">
+    <div className="flex flex-col h-[calc(100vh-9rem)] min-h-0 overflow-x-hidden">
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 flex-shrink-0 mb-2">
+      <div className="flex flex-row items-center justify-between gap-2 flex-shrink-0 mb-2">
         {/* Nav + date */}
         <div className="flex items-center gap-1.5 min-w-0">
           <Button variant="secondary" size="sm" onClick={navigatePrev}>&larr;</Button>
           <Button variant="secondary" size="sm" onClick={goToToday}>Сегодня</Button>
           <Button variant="secondary" size="sm" onClick={navigateNext}>&rarr;</Button>
-          <h2 className="text-sm sm:text-base font-semibold text-gray-900 dark:text-gray-100 ml-1 capitalize truncate">{headerText}</h2>
+          <h2 className="text-base font-semibold text-fg ml-1 capitalize truncate">{headerText}</h2>
         </div>
 
         {/* Mode switcher + add */}
         <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+          <div className="flex bg-bg-hover p-0.5">
             {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}
-                className={`px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md transition-colors ${
+                className={`px-3 py-1.5 text-sm transition-colors ${
                   viewMode === mode
-                    ? 'bg-white dark:bg-gray-700 shadow-sm font-medium text-gray-900 dark:text-gray-100'
-                    : 'text-gray-600 dark:text-gray-300'
+                    ? 'bg-bg-cell font-medium text-fg'
+                    : 'text-fg-body'
                 }`}
               >
                 {mode === 'day' ? 'День' : mode === 'week' ? 'Неделя' : 'Месяц'}

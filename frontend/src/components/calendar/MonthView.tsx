@@ -72,13 +72,13 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
   }, [tasks, days])
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div className="bg-bg-cell border border-line overflow-hidden">
       {/* Weekday headers */}
-      <div className="grid grid-cols-7 border-b border-gray-200">
+      <div className="grid grid-cols-7 border-b border-line">
         {WEEKDAYS_LONG.map((day, i) => (
-          <div key={day} className="px-1 py-2 text-xs font-medium text-gray-500 text-center">
-            <span className="hidden sm:inline">{day}</span>
-            <span className="sm:hidden">{WEEKDAYS_SHORT[i]}</span>
+          <div key={day} className="px-1 py-2 text-xs font-medium text-fg-mid text-center">
+            <span>{day}</span>
+            <span className="hidden">{WEEKDAYS_SHORT[i]}</span>
           </div>
         ))}
       </div>
@@ -95,16 +95,16 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
               key={key}
               onClick={() => onDayClick(day)}
               className={clsx(
-                'min-h-[56px] sm:min-h-[100px] p-1 sm:p-1.5 border-b border-r border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors',
-                !inMonth && 'bg-gray-50/50'
+                'min-h-[100px] p-1.5 border-b border-r border-line-soft cursor-pointer hover:bg-bg-raised transition-colors',
+                !inMonth && 'bg-bg-raised'
               )}
             >
               <div
                 className={clsx(
-                  'text-xs sm:text-sm font-medium mb-0.5 sm:mb-1 w-5 h-5 sm:w-7 sm:h-7 flex items-center justify-center rounded-full',
-                  isToday(day) && 'bg-accent text-white',
-                  !isToday(day) && inMonth && 'text-gray-900',
-                  !inMonth && 'text-gray-300'
+                  'text-sm font-medium mb-1 w-7 h-7 flex items-center justify-center',
+                  isToday(day) && 'bg-accent text-bg',
+                  !isToday(day) && inMonth && 'text-fg',
+                  !inMonth && 'text-fg-mid'
                 )}
               >
                 {format(day, 'd')}
@@ -130,7 +130,7 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                         return (
                           <div
                             key={task.id}
-                            className="text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate font-medium"
+                            className="text-[11px] px-1.5 py-0.5 truncate font-medium"
                             style={{
                               backgroundColor: `${task.color}18`,
                               borderLeft: `2px solid ${task.color}`,
@@ -138,7 +138,7 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                             }}
                           >
                             {time && (
-                              <span className="hidden sm:inline opacity-60 mr-1 font-normal text-[10px]">{time}</span>
+                              <span className="opacity-60 mr-1 font-normal text-[10px]">{time}</span>
                             )}
                             {task.title}
                           </div>
@@ -147,7 +147,7 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                       {visibleDeadlines.map((task) => (
                         <div
                           key={`dl-${task.id}`}
-                          className="text-[10px] sm:text-[11px] px-1 sm:px-1.5 py-0.5 rounded truncate font-medium border border-dashed flex items-center gap-1"
+                          className="text-[11px] px-1.5 py-0.5 truncate font-medium border border-dashed flex items-center gap-1"
                           style={{
                             borderColor: `${task.color}66`,
                             color: task.color,
@@ -161,7 +161,7 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
                         </div>
                       ))}
                       {hidden > 0 && (
-                        <div className="text-[11px] text-gray-400 px-1.5 font-medium">
+                        <div className="text-[11px] text-fg-mid px-1.5 font-medium">
                           +{hidden} ещё
                         </div>
                       )}

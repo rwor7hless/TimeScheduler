@@ -247,10 +247,10 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
   }, [])
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden h-full flex flex-col min-h-0">
+    <div className="bg-bg-cell border border-line overflow-hidden h-full flex flex-col min-h-0">
       {dayDeadlines.length > 0 && (
-        <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-orange-50/40 dark:bg-orange-900/10 flex-shrink-0">
-          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-orange-600 dark:text-orange-400 opacity-80">
+        <div className="flex items-center gap-2 flex-wrap px-3 py-2 border-b border-line bg-bg-cell flex-shrink-0">
+          <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-danger opacity-80">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
               <path d="M4 21V4l16 0-3 5 3 5H4" />
             </svg>
@@ -262,7 +262,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
               type="button"
               onClick={() => onTaskClick(task)}
               title={task.title}
-              className="text-[11px] px-2 py-0.5 rounded font-medium border-l-2 truncate max-w-[180px]"
+              className="text-[11px] px-2 py-0.5 font-medium border-l-2 truncate max-w-[180px]"
               style={{
                 backgroundColor: `${task.color}18`,
                 borderLeftColor: task.color,
@@ -277,12 +277,12 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-10 sm:w-16 flex-shrink-0 border-r border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/40">
+          <div className="w-16 flex-shrink-0 border-r border-line-soft bg-bg-raised">
             {HOURS.map((hour) => (
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="flex items-start justify-center px-1 sm:px-2 pt-1 text-[10px] sm:text-xs font-mono text-gray-500 dark:text-gray-300 select-none"
+                className="flex items-start justify-center px-2 pt-1 text-xs font-mono text-fg-mid select-none"
               >
                 {format(addHours(startOfDay(date), hour), 'HH:00')}
               </div>
@@ -295,13 +295,13 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
               <div
                 key={hour}
                 style={{ height: `${HOUR_H}px` }}
-                className="border-t border-gray-100 dark:border-gray-700 cursor-pointer hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors relative"
+                className="border-t border-line-soft cursor-pointer hover:bg-bg-sel transition-colors relative"
                 onClick={() => {
                   if (ghost) return
                   onSlotClick(format(addHours(startOfDay(date), hour), "yyyy-MM-dd'T'HH:mm"))
                 }}
               >
-                <div className="absolute inset-x-0 top-1/2 h-px bg-gray-200 dark:bg-gray-700 opacity-40 pointer-events-none" />
+                <div className="absolute inset-x-0 top-1/2 h-px bg-bg-hover opacity-40 pointer-events-none" />
               </div>
             ))}
 
@@ -313,7 +313,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
               return (
                 <>
                   <div
-                    className="absolute z-30 pointer-events-none rounded-full"
+                    className="absolute z-30 pointer-events-none"
                     style={{ top: `calc(${pct}% - 4px)`, left: '0px', width: '8px', height: '8px', backgroundColor: '#ef4444' }}
                   />
                   <div
@@ -321,7 +321,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
                     style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: '#ef4444' }}
                   />
                   <div
-                    className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-red-700 bg-gray-100/95 px-1 rounded border border-red-100 shadow-sm"
+                    className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-danger bg-bg-hover px-1 border border-danger"
                     style={{ top: `calc(${pct}% - 1px)` }}
                   >
                     {label}
@@ -369,11 +369,11 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
                   left: overlapLayout.get(ghost.task.id)?.left ?? '2px',
                   width: overlapLayout.get(ghost.task.id)?.width ?? 'calc(100% - 4px)',
                   minHeight: '20px',
-                  filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.25))',
+                  filter: 'drop-(0 4px 12px rgba(0,0,0,0.25))',
                 }}
               >
                 <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
-                <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-black/60 text-white px-1 rounded leading-tight">
+                <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-bg text-bg px-1 leading-tight">
                   {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
                 </div>
               </div>

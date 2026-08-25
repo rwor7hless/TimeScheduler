@@ -28,9 +28,6 @@ const CATEGORIES = [
  * записи, которая устарела после того, как файл починили.
  */
 const BASELINE: Record<string, readonly string[]> = {
-  'components/calendar/DayView.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
-  'components/calendar/MonthView.tsx': ['breakpoint', 'palette', 'radius'],
-  'components/calendar/WeekView.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'components/layout/AppShell.tsx': ['breakpoint'],
   'components/reports/ReportAccordion.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'components/reports/ReportContent.tsx': ['breakpoint'],
@@ -45,7 +42,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/stats/WeekReportBody.tsx': ['palette', 'radius'],
   'components/ui/ThemePicker.tsx': ['shadow'],
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
-  'pages/CalendarPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/NotificationsPage.tsx': ['palette'],
 }
