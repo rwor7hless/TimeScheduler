@@ -37,7 +37,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/reports/ReportStatusBadge.tsx': ['palette', 'radius'],
   'components/reports/ThinkingIndicator.tsx': ['palette'],
   'components/stats/DailyBarsMicro.tsx': ['palette', 'radius', 'shadow'],
-  'components/stats/HabitsWeekGrid.tsx': ['palette', 'radius', 'shadow'],
   'components/stats/KpiCard.tsx': ['palette', 'radius', 'shadow'],
   'components/stats/PeakHoursStrip.tsx': ['palette', 'radius'],
   'components/stats/StatsPeriodView.tsx': ['breakpoint', 'palette', 'radius'],
@@ -48,7 +47,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/CalendarPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
-  'pages/HabitsPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/NotificationsPage.tsx': ['palette'],
 }
 

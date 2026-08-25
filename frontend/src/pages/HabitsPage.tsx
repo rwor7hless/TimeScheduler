@@ -54,17 +54,17 @@ function buildHeatmapGrid(completedDates: Set<string>): HeatmapDay[][] {
 type StatColor = 'amber' | 'emerald' | 'orange' | 'violet'
 
 const colorMap: Record<StatColor, { bg: string; text: string }> = {
-  amber:   { bg: 'bg-amber-50',   text: 'text-amber-900' },
-  emerald: { bg: 'bg-emerald-50', text: 'text-emerald-900' },
-  orange:  { bg: 'bg-orange-50',  text: 'text-orange-900' },
-  violet:  { bg: 'bg-violet-50',  text: 'text-violet-900' },
+  amber:   { bg: 'bg-bg-cell', text: 'text-accent' },
+  emerald: { bg: 'bg-bg-cell', text: 'text-success' },
+  orange:  { bg: 'bg-bg-cell', text: 'text-accent' },
+  violet:  { bg: 'bg-bg-cell', text: 'text-accent' },
 }
 
 function StatCard({ label, value, color }: { label: string; value: string; color: StatColor }) {
   const c = colorMap[color]
   return (
-    <div className={clsx('rounded-lg px-3 py-2', c.bg)}>
-      <div className="text-[10px] text-gray-500 leading-tight">{label}</div>
+    <div className={clsx('px-3 py-2', c.bg)}>
+      <div className="text-[10px] text-fg-mid leading-tight">{label}</div>
       <div className={clsx('text-xl font-bold leading-tight mt-0.5', c.text)}>{value}</div>
     </div>
   )
@@ -210,21 +210,21 @@ export default function HabitsPage() {
   if (isLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="flex flex-col gap-4 lg:h-[calc(100vh-9rem)] min-h-0">
+    <div className="flex flex-col gap-4 h-[calc(100vh-9rem)] min-h-0">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
-        <h2 className="text-lg font-semibold text-gray-900">Привычки</h2>
+        <h2 className="text-lg font-semibold text-fg">Привычки</h2>
         <Button size="sm" onClick={() => setModalOpen(true)}>+ Привычка</Button>
       </div>
 
       {/* Main grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4 lg:overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4 overflow-hidden">
 
         {/* Left: habit list */}
         <div className="flex flex-col gap-2 overflow-y-auto">
           {habits?.length === 0 && (
-            <p className="text-center py-16 text-sm text-gray-400 leading-relaxed">
+            <p className="text-center py-16 text-sm text-fg-mid leading-relaxed">
               Привычек пока нет.<br />Создайте первую для отслеживания.
             </p>
           )}
@@ -240,25 +240,25 @@ export default function HabitsPage() {
                 type="button"
                 onClick={() => setSelectedHabitId(habit.id)}
                 className={clsx(
-                  'group w-full text-left rounded-xl border transition-all',
+                  'group w-full text-left border transition-all',
                   'flex items-center gap-0 pr-2 py-3 overflow-hidden',
                   isSelected
-                    ? 'border-amber-300 shadow-sm bg-amber-50/30'
-                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                    ? 'border-accent bg-bg-sel'
+                    : 'border-line bg-bg-cell hover:border-line hover:'
                 )}
               >
                 {/* Color accent bar */}
                 <div
-                  className="w-[3px] self-stretch rounded-r-full flex-shrink-0 mr-3"
+                  className="w-[3px] self-stretch flex-shrink-0 mr-3"
                   style={{ backgroundColor: habit.color }}
                 />
 
                 {/* Text info */}
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-gray-900 truncate">{habit.name}</div>
-                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-400">
+                  <div className="font-medium text-sm text-fg truncate">{habit.name}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5 text-xs text-fg-mid">
                     <span>{s.currentStreak} дн. подряд</span>
-                    <span className="text-gray-200">·</span>
+                    <span className="text-fg-body">·</span>
                     <span>{s.completion30}% / мес</span>
                   </div>
                 </div>
@@ -268,11 +268,11 @@ export default function HabitsPage() {
                   type="button"
                   onClick={(e) => { e.stopPropagation(); handleToggle(habit.id, todayStr) }}
                   className={clsx(
-                    'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ml-2 transition-all',
-                    done ? 'text-white shadow-sm' : 'bg-gray-100 text-gray-300 hover:bg-gray-200'
+                    'w-7 h-7 flex items-center justify-center flex-shrink-0 ml-2 transition-all',
+                    done ? 'text-bg' : 'bg-bg-hover text-fg-mid hover:bg-bg-hover'
                   )}
                   style={done ? { backgroundColor: habit.color } : undefined}
-                  title={done ? 'Выполнено' : 'Отметить'}
+                  title={done ? 'Выполнено':'Отметить'}
                 >
                   {done ? (
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -293,7 +293,7 @@ export default function HabitsPage() {
                     setHabitToDelete(habit)
                     setDeleteModalOpen(true)
                   }}
-                  className="opacity-0 group-hover:opacity-100 ml-1 w-5 h-5 flex items-center justify-center text-gray-300 hover:text-red-400 transition-all flex-shrink-0"
+                  className="opacity-0 group-hover:opacity-100 ml-1 w-5 h-5 flex items-center justify-center text-fg-mid hover:text-danger transition-all flex-shrink-0"
                   title="Удалить"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -308,16 +308,16 @@ export default function HabitsPage() {
 
         {/* Right: selected habit details */}
         {selectedHabit ? (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-x-hidden min-h-0">
+          <div className="bg-bg-cell border border-line p-4 flex flex-col gap-3 overflow-x-hidden min-h-0">
 
             {/* Habit header */}
             <div className="flex items-center gap-2.5">
               <div
-                className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+                className="w-3.5 h-3.5 flex-shrink-0"
                 style={{ backgroundColor: selectedHabit.color }}
               />
-              <h3 className="font-semibold text-gray-900 text-base">{selectedHabit.name}</h3>
-              <span className="ml-auto text-xs text-gray-400 flex-shrink-0">
+              <h3 className="font-semibold text-fg text-base">{selectedHabit.name}</h3>
+              <span className="ml-auto text-xs text-fg-mid flex-shrink-0">
                 С {format(new Date(selectedHabit.created_at), 'd MMM yyyy', { locale: ru })}
               </span>
             </div>
@@ -326,7 +326,7 @@ export default function HabitsPage() {
             {(() => {
               const s = buildSummary(selectedHabit)
               return (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-4 gap-2.5">
                   <StatCard label="За 30 дней"       value={`${s.completion30}%`}    color="amber"   />
                   <StatCard label="Всего выполнено"  value={`${s.totalAll}`}         color="emerald" />
                   <StatCard label="Текущий стрик"    value={`${s.currentStreak} дн.`} color="orange"  />
@@ -337,7 +337,7 @@ export default function HabitsPage() {
 
             {/* Year heatmap */}
             <div>
-              <p className="text-xs font-medium text-gray-500 mb-2">Обзор года</p>
+              <p className="text-xs font-medium text-fg-mid mb-2">Обзор года</p>
               <div className="flex gap-[3px] overflow-x-auto pb-1 select-none">
                 {heatmapGrid.map((week, wi) => {
                   const firstDay = week.find(d => d !== null)
@@ -346,13 +346,13 @@ export default function HabitsPage() {
                     (!prevFirstDay || getMonth(firstDay.day) !== getMonth(prevFirstDay.day))
                   return (
                     <div key={wi} className="flex flex-col gap-[3px] flex-shrink-0">
-                      <div className="h-3 text-[8px] text-gray-400 capitalize overflow-visible whitespace-nowrap">
+                      <div className="h-3 text-[8px] text-fg-mid capitalize overflow-visible whitespace-nowrap">
                         {showMonth ? format(firstDay!.day, 'MMM', { locale: ru }) : ''}
                       </div>
                       {week.map((day, di) => (
                         <div
                           key={di}
-                          className="w-[11px] h-[11px] rounded-[2px]"
+                          className="w-[11px] h-[11px]-[2px]"
                           style={{
                             backgroundColor:
                               day === null ? 'transparent'
@@ -371,10 +371,10 @@ export default function HabitsPage() {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3">
 
               <div className="flex flex-col">
-                <p className="text-xs font-medium text-gray-500 mb-1 flex-shrink-0">Стрики — 30 дней</p>
+                <p className="text-xs font-medium text-fg-mid mb-1 flex-shrink-0">Стрики — 30 дней</p>
                 <div className="h-[160px]" style={{ color: 'var(--mid)' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={buildStreakLineData()} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
@@ -415,7 +415,7 @@ export default function HabitsPage() {
               </div>
 
               <div className="flex flex-col">
-                <p className="text-xs font-medium text-gray-500 mb-1 flex-shrink-0">Время дня</p>
+                <p className="text-xs font-medium text-fg-mid mb-1 flex-shrink-0">Время дня</p>
                 <div className="h-[160px] flex items-center">
                   {buildTimeData(selectedHabit).length > 0 ? (
                     <>
@@ -490,7 +490,7 @@ export default function HabitsPage() {
                         {buildTimeData(selectedHabit).map((entry) => (
                           <div key={entry.id} className="flex items-center gap-1.5">
                             <span
-                              className="w-[7px] h-[7px] rounded-full flex-shrink-0"
+                              className="w-[7px] h-[7px] flex-shrink-0"
                               style={{ backgroundColor: isDark ? entry.neon : entry.color }}
                             />
                             <span style={{ color: 'var(--fg-body)', fontSize: 10 }}>{entry.label}</span>
@@ -499,7 +499,7 @@ export default function HabitsPage() {
                       </div>
                     </>
                   ) : (
-                    <p className="text-xs text-gray-400 text-center px-4 leading-relaxed">
+                    <p className="text-xs text-fg-mid text-center px-4 leading-relaxed">
                       Выполните привычку несколько раз,<br />чтобы увидеть распределение.
                     </p>
                   )}
@@ -508,7 +508,7 @@ export default function HabitsPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 text-sm">
+          <div className="bg-bg-cell border border-line flex items-center justify-center text-fg-mid text-sm">
             Создайте привычку для отслеживания.
           </div>
         )}
@@ -526,7 +526,7 @@ export default function HabitsPage() {
             autoFocus
           />
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">Цвет</label>
+            <label className="block text-sm font-medium text-fg-body">Цвет</label>
             <div className="flex flex-wrap gap-2">
               {HABIT_COLORS.map((c) => (
                 <button
@@ -534,7 +534,7 @@ export default function HabitsPage() {
                   type="button"
                   onClick={() => setNewColor(c)}
                   className={clsx(
-                    'w-8 h-8 rounded-full transition-all ring-2 ring-offset-1',
+                    'w-8 h-8 transition-all ring-2 ring-offset-1',
                     newColor === c ? 'ring-gray-700 scale-110' : 'ring-transparent hover:scale-105'
                   )}
                   style={{ backgroundColor: c }}

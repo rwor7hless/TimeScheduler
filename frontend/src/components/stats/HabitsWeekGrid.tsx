@@ -18,11 +18,11 @@ export function HabitsWeekGrid({ habits }: Props) {
 
   if (habits.length === 0) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 text-center">
-        <p className="text-sm text-gray-500 dark:text-gray-400">Привычки не заведены.</p>
+      <div className="bg-bg-cell border border-line p-6 text-center">
+        <p className="text-sm text-fg-mid">Привычки не заведены.</p>
         <Link
           to="/habits"
-          className="inline-block mt-2 text-xs font-medium text-amber-600 dark:text-amber-400 hover:underline"
+          className="inline-block mt-2 text-xs font-medium text-accent hover:underline"
         >
           Добавить привычку →
         </Link>
@@ -43,9 +43,9 @@ export function HabitsWeekGrid({ habits }: Props) {
           },
         },
       }}
-      className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4"
+      className="bg-bg-cell border border-line p-4"
     >
-      <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+      <h3 className="text-sm font-medium text-fg-body mb-3">
         Привычки по дням недели
       </h3>
 
@@ -53,18 +53,18 @@ export function HabitsWeekGrid({ habits }: Props) {
         <table className="w-full text-sm">
           <thead>
             <tr>
-              <th className="text-left font-medium text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 pb-2">
+              <th className="text-left font-medium text-xs uppercase tracking-wider text-fg-mid pb-2">
                 Привычка
               </th>
               {RU_SHORT.map((d) => (
                 <th
                   key={d}
-                  className="text-center font-medium text-[10px] uppercase tracking-wider text-gray-400 dark:text-gray-500 pb-2 w-9"
+                  className="text-center font-medium text-[10px] uppercase tracking-wider text-fg-mid pb-2 w-9"
                 >
                   {d}
                 </th>
               ))}
-              <th className="text-right font-medium text-xs uppercase tracking-wider text-gray-400 dark:text-gray-500 pb-2 pl-3">
+              <th className="text-right font-medium text-xs uppercase tracking-wider text-fg-mid pb-2 pl-3">
                 Стрик
               </th>
             </tr>
@@ -73,8 +73,8 @@ export function HabitsWeekGrid({ habits }: Props) {
             {habits.map((h) => {
               const days = h.days.length === 7 ? h.days : [...h.days, ...Array(7).fill(false)].slice(0, 7)
               return (
-                <tr key={h.habit_id} className="border-t border-gray-100 dark:border-gray-700/60">
-                  <td className="py-2 pr-3 text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[12rem]">
+                <tr key={h.habit_id} className="border-t border-line-soft">
+                  <td className="py-2 pr-3 text-sm font-medium text-fg truncate max-w-[12rem]">
                     {h.name}
                   </td>
                   {days.map((done, i) => (
@@ -93,10 +93,10 @@ export function HabitsWeekGrid({ habits }: Props) {
                         }
                         transition={{ duration: 0.25, ease: [0.2, 0.6, 0.2, 1] }}
                         className={
-                          'inline-flex items-center justify-center w-5 h-5 rounded-full cursor-default transition-colors ' +
+                          'inline-flex items-center justify-center w-5 h-5 cursor-default transition-colors ' +
                           (done
-                            ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-sm'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-600')
+                            ? 'bg-accent text-bg'
+                            : 'bg-bg-hover text-fg-mid hover:bg-bg-hover')
                         }
                       >
                         {done ? (
@@ -104,12 +104,12 @@ export function HabitsWeekGrid({ habits }: Props) {
                             <polyline points="20 6 9 17 4 12" />
                           </svg>
                         ) : (
-                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          <span className="w-1.5 h-1.5 bg-current" />
                         )}
                       </motion.span>
                     </td>
                   ))}
-                  <td className="py-2 pl-3 text-right text-sm tabular-nums text-gray-700 dark:text-gray-300">
+                  <td className="py-2 pl-3 text-right text-sm tabular-nums text-fg-body">
                     <span className="inline-flex items-baseline gap-1">
                       {h.current_streak >= 3 && (
                         <motion.span
@@ -120,14 +120,14 @@ export function HabitsWeekGrid({ habits }: Props) {
                               ? undefined
                               : { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }
                           }
-                          className="inline-flex items-center text-amber-500"
+                          className="inline-flex items-center text-accent"
                           style={{ color: 'var(--accent)' }}
                         >
                           <IconFlame size={14} />
                         </motion.span>
                       )}
                       <span>{h.current_streak}</span>
-                      <span className="text-[11px] text-gray-400 dark:text-gray-500">дн.</span>
+                      <span className="text-[11px] text-fg-mid">дн.</span>
                     </span>
                   </td>
                 </tr>
