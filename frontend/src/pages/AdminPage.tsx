@@ -83,33 +83,33 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Admin Panel</h2>
+      <h2 className="text-lg font-semibold text-fg">Admin Panel</h2>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Бэкап БД → S3</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+      <div className="bg-bg-cell border border-line p-4">
+        <h3 className="text-sm font-medium text-fg-body mb-1">Бэкап БД → S3</h3>
+        <p className="text-xs text-fg-mid mb-3">
           Принудительный запуск pg_dump → Cloud.ru S3. Авто-крон работает ежедневно в 03:00 МСК.
         </p>
         <Button
           type="button"
           onClick={() => triggerS3Backup.mutate()}
           disabled={triggerS3Backup.isPending}
-          className="min-h-[44px] sm:min-h-0 touch-manipulation"
+          className="min-h-0 touch-manipulation"
         >
           {triggerS3Backup.isPending ? 'Бэкап выполняется…' : 'Сделать бэкап сейчас'}
         </Button>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Register User</h3>
-        <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-end">
+      <div className="bg-bg-cell border border-line p-4">
+        <h3 className="text-sm font-medium text-fg-body mb-3">Register User</h3>
+        <form onSubmit={handleSubmit} className="flex flex-row flex-wrap gap-3 items-end">
           <Input
             label="Username"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             placeholder="New username"
             required
-            className="min-w-0 sm:min-w-[160px] flex-1"
+            className="min-w-[160px] flex-1"
           />
           <Input
             label="Password"
@@ -118,25 +118,25 @@ export default function AdminPage() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder="Password"
             required
-            className="min-w-0 sm:min-w-[160px] flex-1"
+            className="min-w-[160px] flex-1"
           />
-          <Button type="submit" disabled={register.isPending} className="min-h-[44px] sm:min-h-0 touch-manipulation">
+          <Button type="submit" disabled={register.isPending} className="min-h-0 touch-manipulation">
             {register.isPending ? 'Creating...' : 'Register'}
           </Button>
         </form>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">Users</h3>
-        <div className="overflow-x-auto -mx-4 sm:mx-0">
+      <div className="bg-bg-cell border border-line p-4">
+        <h3 className="text-sm font-medium text-fg-body mb-3">Users</h3>
+        <div className="overflow-x-auto mx-0">
           <table className="w-full text-sm min-w-[360px]">
             <thead>
-              <tr className="border-b border-gray-200 dark:border-gray-600 text-left text-gray-500 dark:text-gray-400">
-                <th className="py-2 pr-2 sm:pr-4">ID</th>
-                <th className="py-2 pr-2 sm:pr-4">Username</th>
-                <th className="py-2 pr-2 sm:pr-4">Role</th>
-                <th className="py-2 pr-2 sm:pr-4">Саммари</th>
-                <th className="py-2 pr-2 sm:pr-4 hidden sm:table-cell">Created</th>
+              <tr className="border-b border-line text-left text-fg-mid">
+                <th className="py-2 pr-4">ID</th>
+                <th className="py-2 pr-4">Username</th>
+                <th className="py-2 pr-4">Role</th>
+                <th className="py-2 pr-4">Саммари</th>
+                <th className="py-2 pr-4 table-cell">Created</th>
                 <th className="py-2 w-20 text-right">Actions</th>
               </tr>
             </thead>
@@ -146,17 +146,17 @@ export default function AdminPage() {
                 const checked = isSelfAdmin || u.can_request_summary
                 const disabled = isSelfAdmin || togglingId === u.id
                 return (
-                  <tr key={u.id} className="border-b border-gray-100 dark:border-gray-700">
-                    <td className="py-2 pr-2 sm:pr-4 text-gray-600 dark:text-gray-400">{u.id}</td>
-                    <td className="py-2 pr-2 sm:pr-4 font-medium text-gray-900 dark:text-gray-100">{u.username}</td>
-                    <td className="py-2 pr-2 sm:pr-4">
+                  <tr key={u.id} className="border-b border-line-soft">
+                    <td className="py-2 pr-4 text-fg-body">{u.id}</td>
+                    <td className="py-2 pr-4 font-medium text-fg">{u.username}</td>
+                    <td className="py-2 pr-4">
                       {u.is_admin ? (
-                        <span className="text-amber-600 dark:text-amber-400 font-medium">Admin</span>
+                        <span className="text-accent font-medium">Admin</span>
                       ) : (
-                        <span className="text-gray-500 dark:text-gray-400">User</span>
+                        <span className="text-fg-mid">User</span>
                       )}
                     </td>
-                    <td className="py-2 pr-2 sm:pr-4">
+                    <td className="py-2 pr-4">
                       <label className="inline-flex items-center gap-2 cursor-pointer select-none">
                         <input
                           type="checkbox"
@@ -172,11 +172,11 @@ export default function AdminPage() {
                           aria-label="Может запрашивать недельное саммари"
                         />
                         {isSelfAdmin && (
-                          <span className="text-[11px] text-gray-400 dark:text-gray-500">всегда</span>
+                          <span className="text-[11px] text-fg-mid">всегда</span>
                         )}
                       </label>
                     </td>
-                    <td className="py-2 pr-2 sm:pr-4 text-gray-500 dark:text-gray-400 hidden sm:table-cell">
+                    <td className="py-2 pr-4 text-fg-mid table-cell">
                       {new Date(u.created_at).toLocaleDateString('ru-RU')}
                     </td>
                     <td className="py-2 text-right">

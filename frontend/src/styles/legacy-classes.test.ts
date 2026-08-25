@@ -32,7 +32,6 @@ const CATEGORIES = [
 const BASELINE: Record<string, readonly string[]> = {
   'components/layout/AppShell.tsx': ['breakpoint'],
   'components/ui/ThemePicker.tsx': ['shadow'],
-  'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
 }
 
