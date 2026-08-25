@@ -76,7 +76,7 @@ Login goes first, out of the spec's order, because it is the smallest dirty file
   - `legacy-classes.test.ts` exporting nothing; every later task edits its `BASELINE` constant.
   - `tailwind.config.js` gains `bg.hover`, `bg.sel`, `fg.muted`, `fg.faint` colour keys, which every later task's substitutions depend on.
 
-- [ ] **Step 1: Add the four missing colour keys to Tailwind**
+- [x] **Step 1: Add the four missing colour keys to Tailwind**
 
 The substitution table needs `bg-bg-hover`, `bg-bg-sel`, `text-fg-muted` and `text-fg-faint`; `tailwind.config.js` currently maps only `bg`/`raised`/`cell` and `fg`/`body`/`mid`/`dim`. In `frontend/tailwind.config.js` replace the `bg` and `fg` entries under `theme.extend.colors`:
 
@@ -98,7 +98,7 @@ The substitution table needs `bg-bg-hover`, `bg-bg-sel`, `text-fg-muted` and `te
         },
 ```
 
-- [ ] **Step 2: Write the guard test, with Login already absent from the baseline**
+- [x] **Step 2: Write the guard test, with Login already absent from the baseline**
 
 Create `frontend/src/styles/legacy-classes.test.ts`. Note `LoginPage.tsx` is deliberately **not** in `BASELINE` even though it still has `rounded-2xl` — that is the failure this task fixes.
 
@@ -222,7 +222,7 @@ describe('legacy tailwind classes', () => {
 })
 ```
 
-- [ ] **Step 3: Run the test to verify it fails**
+- [x] **Step 3: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -231,7 +231,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 Expected: FAIL on the first assertion — the received object carries an extra
 `'pages/LoginPage.tsx': ['radius']` that `BASELINE` does not.
 
-- [ ] **Step 4: Clean LoginPage**
+- [x] **Step 4: Clean LoginPage**
 
 In `frontend/src/pages/LoginPage.tsx`, the logo wrapper is the only offender. Drop `rounded-2xl` from its `className`, and while the file is open drop the two constructs the spec bans outright — the `boxShadow` and the hardcoded smoke-glass `#eaffb0` in the gradient:
 
@@ -242,7 +242,7 @@ In `frontend/src/pages/LoginPage.tsx`, the logo wrapper is the only offender. Dr
           >
 ```
 
-- [ ] **Step 5: Shrink the inline-styles baseline to match**
+- [x] **Step 5: Shrink the inline-styles baseline to match**
 
 `pages/LoginPage.tsx` no longer has a `boxShadow`, so `src/styles/inline-styles.test.ts` now has a stale entry and fails in the other direction. Delete this line from its `BASELINE`:
 
@@ -250,7 +250,7 @@ In `frontend/src/pages/LoginPage.tsx`, the logo wrapper is the only offender. Dr
   'pages/LoginPage.tsx': ['boxShadow'],
 ```
 
-- [ ] **Step 6: Run the tests and the build to verify green**
+- [x] **Step 6: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -258,7 +258,7 @@ cd frontend && npm test && npm run build
 
 Expected: all suites pass, `vite build` succeeds.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/styles/legacy-classes.test.ts frontend/src/pages/LoginPage.tsx \
@@ -289,7 +289,7 @@ Every screen renders these, so they migrate before any screen does — otherwise
 - Consumes: the Tailwind colour keys added in Task 1.
 - Produces: nothing new. Component props and exports are unchanged — this task must not alter a single signature.
 
-- [ ] **Step 1: Delete the ten files from the baseline**
+- [x] **Step 1: Delete the ten files from the baseline**
 
 In `src/styles/legacy-classes.test.ts`, remove these entries from `BASELINE`:
 
@@ -308,7 +308,7 @@ In `src/styles/legacy-classes.test.ts`, remove these entries from `BASELINE`:
 
 Leave `components/ui/ThemePicker.tsx` in place — Task 13 decides whether that file lives at all, and restyling a file that may be deleted is waste.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -316,7 +316,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL, received carries ten entries `BASELINE` no longer has.
 
-- [ ] **Step 3: Apply the substitution table to all ten files**
+- [x] **Step 3: Apply the substitution table to all ten files**
 
 Work file by file against the table in Global Constraints. Rules that decide the cases the table does not spell out:
 
@@ -325,7 +325,7 @@ Work file by file against the table in Global Constraints. Rules that decide the
 - `DurationClock.tsx` and `TimePicker.tsx` render arcs and dials from inline SVG. `fill-*`/`stroke-*` palette classes there become `fill="var(--accent)"` / `stroke="var(--line)"` attributes — SVG presentation attributes, not Tailwind.
 - `ErrorBoundary.tsx` prints an error message: `text-danger`, never a decorative tier.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -341,7 +341,7 @@ cd frontend && npm run dev
 
 Open a task modal, a confirm dialog, a row context menu and the Telegram settings modal in dark, then toggle to light from the sidebar. Nothing may render unstyled, and no panel may keep a visible corner radius.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/components/ui frontend/src/components/layout/TelegramSettingsModal.tsx \
@@ -371,7 +371,7 @@ row parts migrate with it.
 - Consumes: the migrated primitives from Task 2.
 - Produces: nothing new. No prop or export changes.
 
-- [ ] **Step 1: Delete the seven files from the baseline**
+- [x] **Step 1: Delete the seven files from the baseline**
 
 ```ts
   'components/tasks/BacklogTaskRow.tsx': ['palette', 'radius'],
@@ -383,7 +383,7 @@ row parts migrate with it.
   'pages/TodayPage.tsx': ['breakpoint', 'palette', 'radius'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -391,7 +391,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with seven extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 Screen-specific decisions:
 
@@ -399,7 +399,7 @@ Screen-specific decisions:
 - `TagBadge` and `ProjectChip` carry **user-chosen** colours from the database (`tag.color`, `board.color`). Those stay as inline `backgroundColor` — they are data, not design. Only the surrounding chrome (`rounded-full`, `shadow`, gray borders) is migrated.
 - Task titles truncate at 50 characters (commit `14c5821`). JetBrains Mono is wider than Inter, so verify at 1440px that the truncation point still fits its column; if it overflows, lower the constant rather than shrinking the font.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -409,7 +409,7 @@ cd frontend && npm test && npm run build
 
 The spec calls this out: the branch carries ~15 `fix(dnd)` commits that exist only because `backdrop-filter` created a containing block. With blur gone, try removing the workarounds in this page's DnD path — the `DragOverlay` body portal, the stable-position/GPU-layer hack, the `opacity: 0` sibling mask — then drag a task between sections at 1440px. Keep a workaround **only** if dropping it visibly regresses. Removing them blind is as wrong as keeping them blind.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/TodayPage.tsx frontend/src/components/today \
@@ -432,7 +432,7 @@ git commit -m "style(today): move Today and shared task rows onto terminal token
 - Consumes: the migrated row furniture from Task 3.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the four files from the baseline**
+- [x] **Step 1: Delete the four files from the baseline**
 
 ```ts
   'components/layout/SidebarBoardTree.tsx': ['palette', 'radius'],
@@ -441,7 +441,7 @@ git commit -m "style(today): move Today and shared task rows onto terminal token
   'pages/TodoListPage.tsx': ['palette', 'radius', 'shadow'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -449,13 +449,13 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with four extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 `TaskModal.tsx` is the single dirtiest file in the tree (165 palette usages, 18 radii). It is a form: labels are `text-fg-body`, help text `text-fg-mid`, validation errors `text-danger`, section separators `border-line-soft`. Its lone `sm:` prefix is a panel width — unprefix it, as in Task 2.
 
 `TodoListPage.tsx` is the `/list/:boardId` view. It is a real, routed screen even though the spec's nine-screen list does not name it; it migrates here because it shares every row component with Tasks.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -465,7 +465,7 @@ cd frontend && npm test && npm run build
 
 Same procedure as Task 3 Step 5, on the Tasks board: drop the blur-era workarounds, drag a card between columns at 1440px, keep only what a visible regression justifies.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/TasksPage.tsx frontend/src/pages/TodoListPage.tsx \
@@ -488,14 +488,14 @@ git commit -m "style(tasks): move Tasks, the list view and the task modal onto t
 - Consumes: the migrated primitives from Task 2.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the two files from the baseline**
+- [x] **Step 1: Delete the two files from the baseline**
 
 ```ts
   'components/stats/HabitsWeekGrid.tsx': ['palette', 'radius', 'shadow'],
   'pages/HabitsPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -503,7 +503,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with two extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 Habits renders recharts. recharts reads colour from JS props, where `var(--…)` does
 not resolve inside SVG attributes — so axis, grid and tooltip colours must come from
@@ -516,7 +516,7 @@ inherited item 3 records it as reading like intent when it does nothing.
 
 Habit colours themselves are user data (`habit.color`) — leave them inline, as with tags.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -528,7 +528,7 @@ Toggle dark→light on the Habits screen. The recharts axes and tooltip must cha
 it; if they stay dark in light theme, they are still reading a stale palette snapshot
 rather than `useTheme()`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/HabitsPage.tsx frontend/src/components/stats/HabitsWeekGrid.tsx \
@@ -551,7 +551,7 @@ git commit -m "style(habits): move Habits onto terminal tokens, drop the inert r
 - Consumes: the migrated primitives from Task 2.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the four files from the baseline**
+- [x] **Step 1: Delete the four files from the baseline**
 
 ```ts
   'components/calendar/DayView.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
@@ -560,7 +560,7 @@ git commit -m "style(habits): move Habits onto terminal tokens, drop the inert r
   'pages/CalendarPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -568,7 +568,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with four extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 Calendar carries 26 of the tree's breakpoint prefixes — the most of any screen. They
 are column-count switches on the week and month grids. Collapse each to the desktop
@@ -583,7 +583,7 @@ main way a terminal grid looks wrong.
 Today's date marker must not rely on a decorative tier: `text-accent`, or an inverted
 `bg-accent text-bg` cell.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -595,7 +595,7 @@ Day, week and month at 1440px in both themes. Check that the current-time line i
 `DayView` is still visible against the new background, and that month cells with many
 tasks still clip rather than overflow their row.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/CalendarPage.tsx frontend/src/components/calendar \
@@ -621,7 +621,7 @@ git commit -m "style(calendar): move day/week/month onto terminal tokens and the
 - Consumes: the migrated primitives from Task 2; the recharts-reads-JS-colour rule established in Task 5.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the seven files from the baseline**
+- [x] **Step 1: Delete the seven files from the baseline**
 
 ```ts
   'components/stats/DailyBarsMicro.tsx': ['palette', 'radius', 'shadow'],
@@ -633,7 +633,7 @@ git commit -m "style(calendar): move day/week/month onto terminal tokens and the
   'components/stats/WeekReportBody.tsx': ['palette', 'radius'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -641,7 +641,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with seven extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 `StatsPeriodView.tsx` holds 107 palette usages, second only to `TaskModal`. Its KPI
 row is the spec's multi-column `stat-row`: `display: grid`, `border-right` per cell,
@@ -657,13 +657,13 @@ Two files here are in `inline-styles.test.ts`'s baseline for `boxShadow`
 violations as you go and delete their lines from that baseline too; the spec's
 inherited item 2 requires that file to reach `{}`.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/stats frontend/src/styles/legacy-classes.test.ts \
@@ -687,7 +687,7 @@ git commit -m "style(stats): move the stats screens onto terminal tokens and the
 - Consumes: the migrated primitives from Task 2.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the five files from the baseline**
+- [x] **Step 1: Delete the five files from the baseline**
 
 ```ts
   'components/reports/ReportAccordion.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
@@ -697,7 +697,7 @@ git commit -m "style(stats): move the stats screens onto terminal tokens and the
   'pages/NotificationsPage.tsx': ['palette'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -705,7 +705,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with five extra entries.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 `ReportStatusBadge` maps the `pending`/`in_progress`/`done`/`error` FSM to colour. Use
 `text-fg-mid` / `text-accent` / `text-success` / `text-danger` in that order — all four
@@ -715,7 +715,7 @@ stated.
 Commit `bbf6d08` already stripped the decorative chrome from the weekly summary, so
 `ReportContent.tsx` is down to two breakpoint prefixes. Collapse them to the desktop arm.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -727,7 +727,7 @@ Open Notifications and expand a generated weekly report. The markdown body uses
 `.markdown-preview` from `globals.css`, which plan 1 already migrated — confirm the
 accordion chrome around it now matches rather than fighting it.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/pages/NotificationsPage.tsx frontend/src/components/reports \
@@ -747,13 +747,13 @@ git commit -m "style(reports): move Notifications and the weekly report onto ter
 - Consumes: the migrated primitives from Task 2.
 - Produces: nothing new.
 
-- [ ] **Step 1: Delete the file from the baseline**
+- [x] **Step 1: Delete the file from the baseline**
 
 ```ts
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -761,19 +761,19 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with one extra entry.
 
-- [ ] **Step 3: Apply the substitution table**
+- [x] **Step 3: Apply the substitution table**
 
 Admin carries 19 breakpoint prefixes on a user table. Collapse to the desktop arm: a
 `display: grid` with `border-right` cells, per the spec's multi-column pattern. Plan 3
 turns it into stacked cards below 900px.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/pages/AdminPage.tsx frontend/src/styles/legacy-classes.test.ts
@@ -801,7 +801,7 @@ orphans become permanent, so this task ends with each one either reachable or go
 - Consumes: nothing.
 - Produces: either an `/export` route in `App.tsx`, or the absence of both files. Later tasks assume neither exists unless this one wired them.
 
-- [ ] **Step 1: Decide, and record the decision**
+- [x] **Step 1: Decide, and record the decision**
 
 The backend keeps `GET /api/export/tasks` and `GET /api/export/stats`, so the feature
 works — only the screen is unreachable. Default to **deleting both files**: an unrouted
@@ -813,7 +813,7 @@ restyle it under the substitution table like any other screen.
 Whichever way it goes, `CLAUDE.md` currently documents both as orphans — update that
 paragraph to match reality.
 
-- [ ] **Step 2: Decide the two legacy redirects**
+- [x] **Step 2: Decide the two legacy redirects**
 
 Inherited item 6: `App.tsx:56` redirects `/boards` → `/today` and `App.tsx:60`
 redirects `/kanban` → `/tasks`, with no page component behind either. `App.tsx:61`
@@ -825,7 +825,7 @@ comment saying they are compatibility shims with no page behind them, so the nex
 reader does not go looking for `BoardsPage.tsx`. Delete them only if the human partner
 confirms no external link points at either path.
 
-- [ ] **Step 3: Delete the baseline entries for whatever you deleted**
+- [x] **Step 3: Delete the baseline entries for whatever you deleted**
 
 If both files are deleted, remove:
 
@@ -834,7 +834,7 @@ If both files are deleted, remove:
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
 ```
 
-- [ ] **Step 4: Run the test to verify it fails**
+- [x] **Step 4: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -843,7 +843,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 Expected: FAIL — if you deleted the files, the baseline still names files that no
 longer exist; if you kept them, they still carry legacy classes.
 
-- [ ] **Step 5: Carry out the decision, then verify green**
+- [x] **Step 5: Carry out the decision, then verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -851,7 +851,7 @@ cd frontend && npm test && npm run build
 
 `tsc` is the gate for deletion: it fails on any surviving import of a deleted module.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add -A
@@ -874,7 +874,7 @@ each other.
 - Consumes: every migrated screen.
 - Produces: `.ts-shell__main` as a flat `--bg` surface with `border-left: 1px solid var(--line)`, which plan 3's mobile pass overrides at 900px.
 
-- [ ] **Step 1: Delete the last entry from the baseline**
+- [x] **Step 1: Delete the last entry from the baseline**
 
 ```ts
   'components/layout/AppShell.tsx': ['breakpoint'],
@@ -883,7 +883,7 @@ each other.
 `BASELINE` is now `{}`. Leave the constant in place — an empty baseline that fails in
 both directions is exactly the regression guard the rest of the app needs.
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -891,13 +891,13 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL with one extra entry.
 
-- [ ] **Step 3: Flatten the main surface**
+- [x] **Step 3: Flatten the main surface**
 
 In `globals.css`, `.ts-shell__main` becomes a flat `--bg` surface with
 `border-left: 1px solid var(--line)`. `AppShell.tsx`'s two breakpoint prefixes collapse
 to the desktop arm.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -906,7 +906,7 @@ cd frontend && npm test && npm run build
 Expected: `legacy-classes.test.ts` passes with an empty baseline. Every screen is now
 on the tokens.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/layout/AppShell.tsx frontend/src/styles/globals.css \
@@ -933,7 +933,7 @@ not a cosmetic one. Now that every screen is migrated, they can be swapped in on
 - Consumes: nothing.
 - Produces: a `:focus-visible` border-swap rule in `globals.css` that every focusable control inherits.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Add to `src/styles/legacy-classes.test.ts`:
 
@@ -946,7 +946,7 @@ Add to `src/styles/legacy-classes.test.ts`:
   })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -954,7 +954,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 
 Expected: FAIL listing the eight files that still use ring utilities.
 
-- [ ] **Step 3: Add the border-swap focus rule**
+- [x] **Step 3: Add the border-swap focus rule**
 
 In `globals.css`:
 
@@ -968,7 +968,7 @@ In `globals.css`:
 `outline` is used rather than `border` so focus never changes an element's box size —
 a border swap on a 28px row would shift every neighbour by a pixel.
 
-- [ ] **Step 4: Strip the ring utilities and disable the core plugins**
+- [x] **Step 4: Strip the ring utilities and disable the core plugins**
 
 Delete every `ring-*`, `focus:ring-*`, `ring-offset-*` class from the eight files. Then
 in `tailwind.config.js` add to `corePlugins`, alongside the four already disabled:
@@ -980,7 +980,7 @@ in `tailwind.config.js` add to `corePlugins`, alongside the four already disable
     ringOffsetColor: false,
 ```
 
-- [ ] **Step 5: Run the tests and the build to verify green**
+- [x] **Step 5: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -996,7 +996,7 @@ Tab through the login form, the sidebar nav and a task modal in both themes. Eve
 must show the accent outline. A control that takes focus invisibly is a failure of this
 task, not a detail for later.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/styles/globals.css frontend/tailwind.config.js frontend/src \
@@ -1022,7 +1022,7 @@ The spec's inherited items 2, 7 and 8 — the cheap ones that were explicitly de
 - Consumes: nothing.
 - Produces: `inline-styles.test.ts`'s `BASELINE` is `{}` except for the deliberate `Spinner.tsx` circle from Task 2.
 
-- [ ] **Step 1: Write the failing token test**
+- [x] **Step 1: Write the failing token test**
 
 The spec's item 8: `tokens.test.ts` asserts colours come from `tokens.ts` by string
 equality, which a hardcoded literal satisfies just as well. Add a scan that no source
@@ -1040,7 +1040,7 @@ file outside `tokens.ts` carries a raw hex colour. It goes in
   })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/styles/legacy-classes.test.ts
@@ -1049,7 +1049,7 @@ cd frontend && npx vitest run src/styles/legacy-classes.test.ts
 Expected: FAIL, listing at least `App.tsx` — the toast config hardcodes `#1F2937` and
 `#F9FAFB`.
 
-- [ ] **Step 3: Fix the hex literals and the two indicator dots**
+- [x] **Step 3: Fix the hex literals and the two indicator dots**
 
 `App.tsx`'s toast options read their colours from `useTheme()`'s palette instead of hex
 literals, and lose their `borderRadius`. `Sidebar.tsx`'s two 7px `'50%'` indicator dots
@@ -1061,7 +1061,7 @@ Where a user-data colour (tag, board, habit) reaches a component as a hex string
 the API, that is data and not a literal — the test only scans source text, so no
 exemption is needed.
 
-- [ ] **Step 4: Shrink the inline-styles baseline**
+- [x] **Step 4: Shrink the inline-styles baseline**
 
 `BASELINE` in `inline-styles.test.ts` should now be exactly the two deliberate circles:
 
@@ -1075,7 +1075,7 @@ const BASELINE: Record<string, readonly string[]> = {
 Update the comment above it: it currently says plan 2 must drive the list to `{}`, and
 that is no longer the target — two circles are the permanent, justified remainder.
 
-- [ ] **Step 5: Remove the dead backend DI**
+- [x] **Step 5: Remove the dead backend DI**
 
 The spec's item 7: `backend-node/src/reports/reports.service.ts:39` still injects
 `ConfigService`, whose only consumer was the deleted `dailyTip()`. Drop the constructor
@@ -1088,14 +1088,14 @@ cd backend-node && npm test
 Expected: PASS. If a spec file constructs `ReportsService` with a `ConfigService`
 argument, trim that too — the spec says these tests are trimmed, never skipped.
 
-- [ ] **Step 6: Run everything to verify green**
+- [x] **Step 6: Run everything to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
 cd ../backend-node && npm test
 ```
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src backend-node/src
@@ -1126,12 +1126,12 @@ From the spec, the items this plan is responsible for:
 The offline-font, `Ctrl+K`, palette and 375px items belong to plan 3 — do not check
 them here.
 
-- [ ] **Step 2: Update CLAUDE.md**
+- [x] **Step 2: Update CLAUDE.md**
 
 Correct anything this plan changed: the Pages paragraph if Export was deleted or routed,
 and the theme description if `ThemePicker` is gone.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add CLAUDE.md
