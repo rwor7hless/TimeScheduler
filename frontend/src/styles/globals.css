@@ -127,13 +127,6 @@ body {
   animation: fadeIn 0.35s ease;
 }
 
-.ts-shell__burger {
-  position: fixed;
-  bottom: 16px;
-  left: 16px;
-  z-index: 45;
-}
-
 /* Фокус рисуем outline-ом, а не border-ом: смена рамки на строке высотой
    28px сдвигает всех соседей на пиксель. Tailwind-овые ring-* сюда не годятся —
    они разворачиваются в box-shadow, который спек запрещает. */
@@ -148,24 +141,6 @@ body {
   background: rgba(0, 0, 0, .6);
 }
 
-.ts-shell__backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, .6);
-  z-index: 40;
-}
-
-@media (max-width: 1023px) {
-  .ts-shell {
-    display: block;
-    height: auto;
-  }
-  .ts-shell__main {
-    border-left: 0;
-    padding: 16px;
-  }
-}
-
 /* Sidebar */
 .ts-side {
   display: flex;
@@ -175,24 +150,6 @@ body {
   min-width: 0;
   overflow: hidden;
 }
-@media (max-width: 1023px) {
-  .ts-side {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    width: 260px;
-    z-index: 45;
-    background: var(--bg-raised);
-    border-right: 1px solid var(--line);
-    transform: translateX(-100%);
-    transition: transform .2s ease;
-  }
-  .ts-side.is-open {
-    transform: translateX(0);
-  }
-}
-
 .ts-side__user {
   display: flex;
   align-items: center;
@@ -600,6 +557,77 @@ input.quick-add {
 .ts-subtabs a[aria-current="true"] {
   background: var(--bg-sel);
   color: var(--fg);
+}
+
+@media (max-width: 899px) {
+  .ts-shell {
+    display: block;
+    height: auto;
+  }
+  /* Сайдбар не превращается в ящик — его заменяет ts-tabbar. */
+  .ts-side {
+    display: none;
+  }
+  .ts-shell__main {
+    border-left: 0;
+    padding: 16px 16px calc(64px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ============================================================================
+   MOBILE TAB BAR — существует только ниже 900px
+   ============================================================================ */
+
+/* Базовое состояние — скрыта. Медиазапрос ниже включает её, поэтому он обязан
+   идти ПОСЛЕ этого правила: специфичность одинаковая, побеждает последнее. */
+.ts-tabbar {
+  display: none;
+}
+
+@media (max-width: 899px) {
+  .ts-tabbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    height: calc(52px + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: var(--bg-raised);
+    border-top: 1px solid var(--line);
+    z-index: 50;
+  }
+}
+.ts-tabbar__item,
+.ts-tabbar__plus {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--mid);
+  font-family: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ts-tabbar__item svg,
+.ts-tabbar__plus svg {
+  flex-shrink: 0;
+}
+.ts-tabbar__item.active {
+  color: var(--accent);
+}
+.ts-tabbar__plus {
+  color: var(--bg);
+  background: var(--accent);
+}
+.ts-tabbar__label {
+  font-size: 10px;
+  line-height: 1;
 }
 
 /* ============================================================================

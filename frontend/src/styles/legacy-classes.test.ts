@@ -64,6 +64,16 @@ describe('legacy tailwind classes', () => {
     expect(offendersByFile()).toEqual(BASELINE)
   })
 
+  it('globals.css declares exactly one breakpoint', () => {
+    // Спек обещает единственный брейкпоинт на 900px. Второй @media — это уже
+    // две системы вёрстки, и расходиться они начинают немедленно.
+    const css = readFileSync(join(SRC, 'styles', 'globals.css'), 'utf8')
+    const widths = new Set(
+      Array.from(css.matchAll(/@media[^{]*?\(\s*(min|max)-width:\s*([^)]+)\)/g), (m) => `${m[1]}-width: ${m[2].trim()}`),
+    )
+    expect([...widths]).toEqual(['max-width: 899px'])
+  })
+
   it('no hex literal outside the colour modules', () => {
     // Освобождены три модуля, и по разным причинам.
     // tokens.ts — единственный источник палитры темы.

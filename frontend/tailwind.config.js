@@ -14,9 +14,17 @@ export default {
     ringColor: false,
     ringOffsetWidth: false,
     ringOffsetColor: false,
+    // .container тянет за собой четыре брейкпоинта Tailwind по умолчанию, а
+    // проект обещает ровно один. Утилита нигде не используется.
+    container: false,
   },
   theme: {
     extend: {
+      // Единственный брейкпоинт проекта. sm:/md:/lg: запрещены и ловятся
+      // legacy-classes.test.ts — узкая ветка называется только так.
+      screens: {
+        narrow: { max: '899px' },
+      },
       colors: {
         bg:      {
           DEFAULT: 'var(--bg)',

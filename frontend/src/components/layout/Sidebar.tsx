@@ -23,12 +23,10 @@ const PRIO_COLOR: Record<string, string> = {
 }
 
 interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
   searchRef?: React.RefObject<HTMLInputElement | null>
 }
 
-export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
+export default function Sidebar({ searchRef }: SidebarProps) {
   const { logout, isAdmin, user } = useAuth()
   const { theme, toggle } = useTheme()
   const unread = useUnreadReportsCount()
@@ -72,7 +70,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
     setQuery('')
     setResults(null)
     setShowResults(false)
-    onClose()
   }
 
   useEffect(() => {
@@ -130,7 +127,6 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
       <NavLink
         key={item.to}
         to={item.to}
-        onClick={onClose}
         className={clsx('ts-side__link', isActive && 'active')}
       >
         {item.icon}
@@ -144,7 +140,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
   }
 
   return (
-    <aside className={clsx('ts-side', isOpen && 'is-open')}>
+    <aside className="ts-side">
       {/* User */}
       <div className="ts-side__user">
         <div className="ts-side__avatar">
@@ -169,7 +165,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
           ),
         )}
 
-        <SidebarBoardTree onClose={onClose} taskCounts={taskCountsByBoard} />
+        <SidebarBoardTree taskCounts={taskCountsByBoard} />
       </div>
 
       {/* Bottom: search + theme + logout */}

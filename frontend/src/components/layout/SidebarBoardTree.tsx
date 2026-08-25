@@ -43,7 +43,6 @@ import type { BoardGroup } from '@/types/boardGroup'
 
 interface Props {
   taskCounts?: Map<number, number> // boardId → open task count
-  onClose: () => void
 }
 
 function ListIcon() {
@@ -70,7 +69,7 @@ function setGroupOpen(id: number, open: boolean) {
   window.localStorage.setItem(GROUP_KEY(id), open ? '1' : '0')
 }
 
-export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
+export default function SidebarBoardTree({ taskCounts }: Props) {
   const { data: boards } = useBoards()
   const { data: groups } = useBoardGroups()
   const [openMap, setOpenMap] = useState<Record<number, boolean>>({})
@@ -357,7 +356,6 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
         ) : (
           <NavLink
             to={`/list/${board.id}`}
-            onClick={onClose}
             className={({ isActive }) =>
               clsx('ts-side__link ts-side__link--compact flex-1', isActive && 'active')
             }
