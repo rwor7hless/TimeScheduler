@@ -34,11 +34,11 @@ export default function TimeRangeInput({
   return (
     <div className={className}>
       {label && (
-        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">{label}</label>
+        <label className="block text-xs font-medium text-fg-body mb-1">{label}</label>
       )}
       <div className="flex items-center gap-2">
         <TimePicker value={startTime || '09:00'} onChange={handleStartChange} />
-        <span className="text-gray-400 text-sm font-medium mt-1">→</span>
+        <span className="text-fg-mid text-sm font-medium mt-1">→</span>
         <TimePicker value={endTime || '10:00'} onChange={(v) => onRangeChange(startTime, v)} />
       </div>
     </div>

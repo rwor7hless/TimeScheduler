@@ -33,20 +33,20 @@ function SpinNum({ value, min, max, step = 1, onChange }: {
       <button
         type="button"
         onClick={inc}
-        className="w-7 h-5 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-white/10"
+        className="w-7 h-5 flex items-center justify-center text-fg-mid hover:text-accent transition-colors hover:bg-bg-hover"
         tabIndex={-1}
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <polyline points="18 15 12 9 6 15" />
         </svg>
       </button>
-      <span className="text-sm font-semibold tabular-nums text-gray-800 dark:text-gray-100 leading-none w-7 text-center py-0.5">
+      <span className="text-sm font-semibold tabular-nums text-fg leading-none w-7 text-center py-0.5">
         {pad(value)}
       </span>
       <button
         type="button"
         onClick={dec}
-        className="w-7 h-5 flex items-center justify-center text-gray-400 hover:text-indigo-500 dark:hover:text-indigo-400 transition-colors rounded hover:bg-gray-100 dark:hover:bg-white/10"
+        className="w-7 h-5 flex items-center justify-center text-fg-mid hover:text-accent transition-colors hover:bg-bg-hover"
         tabIndex={-1}
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -69,11 +69,11 @@ export default function TimePicker({ value, onChange, label, className }: TimePi
   return (
     <div className={clsx('inline-flex flex-col gap-1', className)}>
       {label && (
-        <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+        <label className="block text-xs font-medium text-fg-mid">{label}</label>
       )}
-      <div className="flex items-center h-[34px] bg-gray-100/80 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg px-2 gap-1">
+      <div className="flex items-center h-[34px] bg-bg-cell border border-line px-2 gap-1">
         <SpinNum value={hourNum} min={0} max={23} onChange={setH} />
-        <span className="text-sm font-bold text-gray-400 dark:text-gray-500 select-none pb-0.5">:</span>
+        <span className="text-sm font-bold text-fg-mid select-none pb-0.5">:</span>
         <SpinNum value={minNum} min={0} max={55} step={5} onChange={setM} />
       </div>
     </div>

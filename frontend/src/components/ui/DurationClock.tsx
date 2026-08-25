@@ -41,9 +41,9 @@ function floorTo5(minutes: number): number {
 }
 
 const inputClass =
-  'w-12 px-2 py-2 text-base text-center border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400/50 tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
+  'w-12 px-2 py-2 text-base text-center border border-line focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-accent tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
 const inputClassCompact =
-  'w-9 px-1.5 py-1 text-xs text-center border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-amber-500/30 tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
+  'w-9 px-1.5 py-1 text-xs text-center border border-line focus:outline-none focus:ring-1 focus:ring-amber-500/30 tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
 
 const SIZE_EMBEDDED = 280
 const SIZE_EMBEDDED_COMPACT = 160
@@ -187,7 +187,7 @@ export default function DurationClock({
   const renderClockContent = (close?: () => void) => (
     <>
       {!embedded && (
-        <div className="text-center text-sm text-gray-500 mb-2">
+        <div className="text-center text-sm text-fg-mid mb-2">
           Перетащите по циферблату (округление вниз)
         </div>
       )}
@@ -254,7 +254,7 @@ export default function DurationClock({
                         y={y}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        className={clsx('fill-gray-700 font-semibold', compact ? 'text-[10px]' : 'text-base')}
+                        className={clsx('font-semibold', compact ? 'text-[10px]' : 'text-base')}
                       >
                         {pad(h)}
                       </text>
@@ -284,7 +284,7 @@ export default function DurationClock({
                         placeholder="ч"
                         title="Часы начала"
                       />
-                      <span className="text-gray-400">:</span>
+                      <span className="text-fg-mid">:</span>
                       <input
                         type="number"
                         min={0}
@@ -296,7 +296,7 @@ export default function DurationClock({
                         placeholder="м"
                         title="Минуты начала"
                       />
-                      <span className="text-xs text-gray-400 ml-0.5">начало</span>
+                      <span className="text-xs text-fg-mid ml-0.5">начало</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <input
@@ -310,7 +310,7 @@ export default function DurationClock({
                         placeholder="ч"
                         title="Часы конца"
                       />
-                      <span className="text-gray-400">:</span>
+                      <span className="text-fg-mid">:</span>
                       <input
                         type="number"
                         min={0}
@@ -322,7 +322,7 @@ export default function DurationClock({
                         placeholder="м"
                         title="Минуты конца"
                       />
-          <span className="text-xs text-gray-400 ml-0.5">конец</span>
+          <span className="text-xs text-fg-mid ml-0.5">конец</span>
         </div>
         <button
           type="button"
@@ -330,7 +330,7 @@ export default function DurationClock({
             applyManualInput()
             close?.()
           }}
-          className={clsx('w-full rounded-lg bg-amber-500 text-white font-medium hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
+          className={clsx('w-full bg-accent text-bg font-medium hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
         >
           Подтвердить
         </button>
@@ -342,9 +342,9 @@ export default function DurationClock({
     return (
       <div className={clsx('space-y-1', className)}>
         {label && (
-          <label className="block text-sm font-medium text-gray-700">{label}</label>
+          <label className="block text-sm font-medium text-fg-body">{label}</label>
         )}
-        <div className={clsx('rounded-xl border border-gray-200 bg-white flex flex-col items-center', compact ? 'p-2' : 'p-4')}>
+        <div className={clsx('border border-line bg-bg-cell flex flex-col items-center', compact ? 'p-2' : 'p-4')}>
           {renderClockContent()}
         </div>
       </div>
@@ -354,23 +354,23 @@ export default function DurationClock({
   return (
     <div className={clsx('space-y-1', className)}>
       {label && (
-        <label className="block text-sm font-medium text-gray-700">{label}</label>
+        <label className="block text-sm font-medium text-fg-body">{label}</label>
       )}
       <Popover className="relative">
         {({ open }) => (
           <>
-            <Popover.Button className="inline-flex items-center gap-1.5 px-2 py-1.5 border border-gray-200 rounded-lg bg-white text-sm font-medium text-gray-900 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-400/50 transition-all">
+            <Popover.Button className="inline-flex items-center gap-1.5 px-2 py-1.5 border border-line bg-bg-cell text-sm font-medium text-fg hover:bg-bg-hover focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all">
               <span className="tabular-nums">{startTime}</span>
-              <span className="text-gray-400">—</span>
+              <span className="text-fg-mid">—</span>
               <span className="tabular-nums">{endTime}</span>
-              <span className={clsx('ml-0.5 text-gray-400 transition-transform', open && 'rotate-180')}>▾</span>
+              <span className={clsx('ml-0.5 text-fg-mid transition-transform', open && 'rotate-180')}>▾</span>
             </Popover.Button>
 
-            <Popover.Backdrop className="fixed inset-0 z-40 bg-black/30" />
+            <Popover.Backdrop className="overlay z-40" />
             <Popover.Panel className="fixed inset-0 z-50 flex items-center justify-center p-4">
               {({ close }) => (
                 <div
-                  className="rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl max-w-[95vw] max-h-[95vh] overflow-auto flex flex-col items-center"
+                  className="border border-line bg-bg-cell p-6 max-w-[95vw] max-h-[95vh] overflow-auto flex flex-col items-center"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {renderClockContent(close)}

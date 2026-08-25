@@ -133,6 +133,12 @@ body {
   z-index: 45;
 }
 
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, .6);
+}
+
 .ts-shell__backdrop {
   position: fixed;
   inset: 0;

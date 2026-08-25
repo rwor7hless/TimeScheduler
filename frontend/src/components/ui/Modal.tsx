@@ -23,11 +23,11 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
           leaveFrom="opacity-100"
           leaveTo="opacity-0"
         >
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="overlay" />
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto overflow-x-hidden overscroll-contain">
-          <div className="flex min-h-full items-center justify-center p-3 sm:p-4 py-4 sm:py-6">
+          <div className="flex min-h-full items-center justify-center p-4 py-6">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -38,11 +38,11 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
               leaveTo="opacity-0 scale-95"
             >
               <Dialog.Panel
-                className={`modal w-full max-h-[calc(100vh-1.5rem)] sm:max-h-[calc(100vh-3rem)] min-h-0 flex flex-col rounded-2xl shadow-2xl overflow-hidden ${
+                className={`modal w-full max-h-[calc(100vh-3rem)] min-h-0 flex flex-col overflow-hidden ${
                   maxWidth === '2xl' ? 'max-w-2xl' : maxWidth === '4xl' ? 'max-w-4xl' : 'max-w-md'
                 }`}
               >
-                <div className="flex-1 min-h-0 px-4 sm:px-6 py-4 sm:py-5 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 min-h-0 px-6 py-5 overflow-y-auto overflow-x-hidden">
                   {title && (
                     <Dialog.Title
                       className="text-base font-semibold mb-4 shrink-0"

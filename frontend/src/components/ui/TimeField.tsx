@@ -111,20 +111,20 @@ export default function TimeField({
   const accent =
     tone === 'danger'
       ? {
-          btnText: 'text-red-700 dark:text-red-300',
-          btnBorder: 'border-red-200 dark:border-red-900/40',
-          btnBg: 'bg-red-50/40 dark:bg-red-950/20',
+          btnText: 'text-danger',
+          btnBorder: 'border-line',
+          btnBg: 'bg-bg-cell',
           btnRing: 'focus:ring-red-400/30',
-          activeBg: 'bg-red-500 text-white',
-          hoverBg: 'hover:bg-red-50 dark:hover:bg-red-900/20',
+          activeBg: 'bg-danger text-bg',
+          hoverBg: 'hover:bg-bg-hover',
         }
       : {
-          btnText: 'text-gray-800 dark:text-gray-100',
-          btnBorder: 'border-gray-200 dark:border-white/10',
-          btnBg: 'bg-white dark:bg-white/5',
+          btnText: 'text-fg',
+          btnBorder: 'border-line',
+          btnBg: 'bg-bg-cell',
           btnRing: 'focus:ring-indigo-400/30',
-          activeBg: 'bg-indigo-500 text-white',
-          hoverBg: 'hover:bg-indigo-50 dark:hover:bg-indigo-900/20',
+          activeBg: 'bg-accent text-bg',
+          hoverBg: 'hover:bg-bg-hover',
         }
 
   return (
@@ -135,7 +135,7 @@ export default function TimeField({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'w-[84px] h-[34px] px-2 rounded-lg text-sm font-medium tabular-nums border transition-all focus:outline-none focus:ring-2',
+          'w-[84px] h-[34px] px-2 text-sm font-medium tabular-nums border transition-all focus:outline-none focus:ring-2',
           'flex items-center justify-center gap-0.5',
           accent.btnText, accent.btnBorder, accent.btnBg, accent.btnRing,
           open && 'ring-2 ' + (tone === 'danger' ? 'ring-red-400/40' : 'ring-indigo-400/40'),
@@ -143,7 +143,7 @@ export default function TimeField({
         )}
       >
         <span>{pad(hourNum)}</span>
-        <span className="text-gray-400 dark:text-gray-500">:</span>
+        <span className="text-fg-mid">:</span>
         <span>{pad(minuteNum)}</span>
       </button>
 
@@ -151,8 +151,8 @@ export default function TimeField({
         <div
           ref={popoverRef}
           className={clsx(
-            'fixed z-[60] flex rounded-xl shadow-xl overflow-hidden',
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700',
+            'fixed z-[60] flex overflow-hidden',
+            'bg-bg-cell border border-line',
           )}
           style={{ top: pos.top, left: pos.left, width: POPOVER_WIDTH }}
         >
@@ -163,7 +163,7 @@ export default function TimeField({
             onPick={(i) => setH(i)}
             accent={accent}
           />
-          <div className="w-px bg-gray-100 dark:bg-white/10" />
+          <div className="w-px bg-line" />
           <Column
             items={minutes.map((v) => pad(v))}
             activeIndex={Math.round(minuteNum / minuteStep)}
@@ -201,7 +201,7 @@ function Column({ items, activeIndex, colRef, onPick, accent }: ColumnProps) {
             onClick={() => onPick(i)}
             className={clsx(
               'w-full h-8 text-sm font-medium tabular-nums transition-colors flex items-center justify-center',
-              active ? accent.activeBg : 'text-gray-700 dark:text-gray-300 ' + accent.hoverBg,
+              active ? accent.activeBg : 'text-fg-body ' + accent.hoverBg,
             )}
           >
             {label}
