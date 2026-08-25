@@ -244,7 +244,7 @@ export default function Sidebar({ searchRef }: SidebarProps) {
                           style={{ padding: '7px 10px' }}
                         >
                           <span style={{ width: 7, height: 7, borderRadius: '50%', background: h.color, flexShrink: 0 }} />
-                          <span style={{ flex: 1 }}>{h.name}</span>
+                          <span className="flex-1 min-w-0 truncate">{h.name}</span>
                         </button>
                       ))}
                     </div>
@@ -261,7 +261,7 @@ export default function Sidebar({ searchRef }: SidebarProps) {
                           style={{ padding: '7px 10px' }}
                         >
                           <BoardsIcon />
-                          <span style={{ flex: 1 }}>{b.name}</span>
+                          <span className="flex-1 min-w-0 truncate">{b.name}</span>
                         </button>
                       ))}
                     </div>

@@ -129,7 +129,7 @@ export default function AdminPage() {
       <div className="bg-bg-cell border border-line p-4">
         <h3 className="text-sm font-medium text-fg-body mb-3">Users</h3>
         <div className="overflow-x-auto mx-0">
-          <table className="w-full text-sm min-w-[360px]">
+          <table className="w-full text-sm min-w-[360px] narrow:min-w-0">
             <thead>
               <tr className="border-b border-line text-left text-fg-mid">
                 <th className="py-2 pr-4">ID</th>

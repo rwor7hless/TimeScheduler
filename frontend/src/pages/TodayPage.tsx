@@ -343,7 +343,7 @@ function HabitRow({ habit, done, onToggle }: { habit: Habit; done: boolean; onTo
       </div>
       <span
         className={clsx(
-          'flex-1 text-sm font-medium',
+          'flex-1 min-w-0 truncate text-sm font-medium',
           done ? 'line-through text-fg-mid' : 'text-fg'
         )}
       >

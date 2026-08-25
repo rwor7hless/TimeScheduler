@@ -367,7 +367,8 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                           'px-2 py-0.5 text-[11px] font-medium transition-all',
                           active
                             ? 'text-bg'
-                            : 'text-fg-body bg-bg-cell border border-line hover:border-line'
+                            : 'text-fg-body bg-bg-cell border border-line hover:border-line',
+                          'max-w-full truncate',
                         )}
                         style={active ? { backgroundColor: tag.color } : undefined}
                       >

@@ -291,7 +291,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
       </div>
 
       {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 narrow:grid-cols-1 gap-4">
           <div className="bg-bg-cell border border-line p-4">
             <BreakdownBar title="По приоритету" items={stats.by_priority} />
           </div>

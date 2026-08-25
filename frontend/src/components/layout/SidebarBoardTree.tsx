@@ -339,17 +339,17 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
               if (e.key === 'Enter') handleRename()
               if (e.key === 'Escape') setRenameTarget(null)
             }}
-            className="ts-side__link flex-1 bg-transparent border border-accent px-2 py-1 text-sm"
+            className="ts-side__link flex-1 min-w-0 bg-transparent border border-accent px-2 py-1 text-sm"
           />
         ) : (
           <NavLink
             to={`/list/${board.id}`}
             className={({ isActive }) =>
-              clsx('ts-side__link ts-side__link--compact flex-1', isActive && 'active')
+              clsx('ts-side__link ts-side__link--compact flex-1 min-w-0', isActive && 'active')
             }
           >
             <ListIcon />
-            <span style={{ flex: 1 }}>{board.name}</span>
+            <span className="flex-1 min-w-0 truncate">{board.name}</span>
             {taskCounts && taskCounts.get(board.id) ? (
               <span className="ts-side__count">{taskCounts.get(board.id)}</span>
             ) : null}
@@ -417,13 +417,13 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
                 if (e.key === 'Enter') handleRename()
                 if (e.key === 'Escape') setRenameTarget(null)
               }}
-              className="flex-1 bg-transparent border border-accent px-2 py-1 text-[11px]"
+              className="flex-1 min-w-0 bg-transparent border border-accent px-2 py-1 text-[11px]"
             />
           ) : (
             <button
               type="button"
               onClick={() => toggle(group.id)}
-              className="flex-1 text-left text-[11px] font-semibold opacity-80 hover:opacity-100"
+              className="flex-1 min-w-0 truncate text-left text-[11px] font-semibold opacity-80 hover:opacity-100"
             >
               {group.name}
             </button>

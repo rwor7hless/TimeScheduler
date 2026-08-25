@@ -17,7 +17,7 @@ export default function TagBadgeGroup({ tags, max = 2, size = 'sm', className = 
   const pillClass =
     size === 'sm'
       ? 'inline-flex items-center px-1.5 py-px text-[10px] font-medium leading-tight max-w-[96px] truncate'
-      : 'inline-flex items-center px-2 py-0.5 text-xs font-medium'
+      : 'inline-flex items-center px-2 py-0.5 text-xs font-medium max-w-[140px] truncate'
   const restClass =
     size === 'sm'
       ? 'inline-flex items-center px-1.5 py-px text-[10px] font-medium text-fg-mid bg-bg-hover leading-tight'
