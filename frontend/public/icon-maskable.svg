@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Меч в земле и мак">
   <rect width="64" height="64" fill="#131318"/>
-
-  <g fill="#d8d6de">
+  <g transform="translate(8.320 8.320) scale(0.74)">
+<g fill="#d8d6de">
     <!-- навершие: плоский шестиугольник -->
     <path d="M29 5h6l2 2.2-2 2.2h-6l-2-2.2Z"/>
     <!-- рукоять -->
@@ -38,4 +38,5 @@
         fill="#d8d6de"/>
   <!-- семенная коронка в раскрыве -->
   <path d="M46.8 35.8h3" stroke="#131318" stroke-width="1.1" stroke-linecap="round"/>
+  </g>
 </svg>
