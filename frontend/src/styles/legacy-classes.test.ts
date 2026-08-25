@@ -64,6 +64,17 @@ describe('legacy tailwind classes', () => {
     expect(offendersByFile()).toEqual(BASELINE)
   })
 
+  it('no ring utility survives — they emit box-shadow', () => {
+    const offenders = sourceFiles(SRC)
+      .filter((f) =>
+        /\b(?:focus:|focus-visible:|hover:|group-hover:)?ring(?:-[a-z0-9[\]/-]+)?\b/.test(
+          stripComments(readFileSync(f, 'utf8')),
+        ),
+      )
+      .map((f) => relative(SRC, f))
+    expect(offenders).toEqual([])
+  })
+
   it('no dark: variant survives in a file already migrated', () => {
     const migrated = sourceFiles(SRC).filter((f) => !(relative(SRC, f) in BASELINE))
     const withDark = migrated

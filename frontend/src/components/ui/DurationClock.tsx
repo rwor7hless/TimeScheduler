@@ -41,9 +41,9 @@ function floorTo5(minutes: number): number {
 }
 
 const inputClass =
-  'w-12 px-2 py-2 text-base text-center border border-line focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-accent tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
+  'w-12 px-2 py-2 text-base text-center border border-line focus:outline-none focus:border-accent tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
 const inputClassCompact =
-  'w-9 px-1.5 py-1 text-xs text-center border border-line focus:outline-none focus:ring-1 focus:ring-amber-500/30 tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
+  'w-9 px-1.5 py-1 text-xs text-center border border-line focus:outline-none tabular-nums [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none appearance-none'
 
 const SIZE_EMBEDDED = 280
 const SIZE_EMBEDDED_COMPACT = 160
@@ -330,7 +330,7 @@ export default function DurationClock({
             applyManualInput()
             close?.()
           }}
-          className={clsx('w-full bg-accent text-bg font-medium hover:bg-accent-light focus:outline-none focus:ring-2 focus:ring-amber-500/50 transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
+          className={clsx('w-full bg-accent text-bg font-medium hover:bg-accent-light focus:outline-none transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
         >
           Подтвердить
         </button>
@@ -359,7 +359,7 @@ export default function DurationClock({
       <Popover className="relative">
         {({ open }) => (
           <>
-            <Popover.Button className="inline-flex items-center gap-1.5 px-2 py-1.5 border border-line bg-bg-cell text-sm font-medium text-fg hover:bg-bg-hover focus:outline-none focus:ring-2 focus:ring-amber-500/30 transition-all">
+            <Popover.Button className="inline-flex items-center gap-1.5 px-2 py-1.5 border border-line bg-bg-cell text-sm font-medium text-fg hover:bg-bg-hover focus:outline-none transition-all">
               <span className="tabular-nums">{startTime}</span>
               <span className="text-fg-mid">—</span>
               <span className="tabular-nums">{endTime}</span>

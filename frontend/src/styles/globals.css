@@ -134,6 +134,14 @@ body {
   z-index: 45;
 }
 
+/* Фокус рисуем outline-ом, а не border-ом: смена рамки на строке высотой
+   28px сдвигает всех соседей на пиксель. Tailwind-овые ring-* сюда не годятся —
+   они разворачиваются в box-shadow, который спек запрещает. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .overlay {
   position: fixed;
   inset: 0;

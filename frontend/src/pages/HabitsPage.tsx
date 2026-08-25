@@ -534,8 +534,8 @@ export default function HabitsPage() {
                   type="button"
                   onClick={() => setNewColor(c)}
                   className={clsx(
-                    'w-8 h-8 transition-all ring-2 ring-offset-1',
-                    newColor === c ? 'ring-gray-700 scale-110' : 'ring-transparent hover:scale-105'
+                    'w-8 h-8 border-2 transition-all',
+                    newColor === c ? 'border-fg scale-110' : 'border-transparent hover:scale-105'
                   )}
                   style={{ backgroundColor: c }}
                   title={c}

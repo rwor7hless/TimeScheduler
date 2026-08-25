@@ -69,7 +69,7 @@ function ReportItem({
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-bg-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50"
+        className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-bg-raised transition-colors focus:outline-none"
       >
         <span
           className={`flex-shrink-0 w-2 h-2 ${statusDotClass(report.status, isStreaming)}`}

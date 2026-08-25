@@ -114,7 +114,6 @@ export default function TimeField({
           btnText: 'text-danger',
           btnBorder: 'border-line',
           btnBg: 'bg-bg-cell',
-          btnRing: 'focus:ring-red-400/30',
           activeBg: 'bg-danger text-bg',
           hoverBg: 'hover:bg-bg-hover',
         }
@@ -122,7 +121,6 @@ export default function TimeField({
           btnText: 'text-fg',
           btnBorder: 'border-line',
           btnBg: 'bg-bg-cell',
-          btnRing: 'focus:ring-indigo-400/30',
           activeBg: 'bg-accent text-bg',
           hoverBg: 'hover:bg-bg-hover',
         }
@@ -135,10 +133,10 @@ export default function TimeField({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'w-[84px] h-[34px] px-2 text-sm font-medium tabular-nums border transition-all focus:outline-none focus:ring-2',
+          'w-[84px] h-[34px] px-2 text-sm font-medium tabular-nums border transition-all focus:outline-none',
           'flex items-center justify-center gap-0.5',
-          accent.btnText, accent.btnBorder, accent.btnBg, accent.btnRing,
-          open && 'ring-2 ' + (tone === 'danger' ? 'ring-red-400/40' : 'ring-indigo-400/40'),
+          accent.btnText, accent.btnBorder, accent.btnBg,
+          open && ' ' + (tone === 'danger' ? '' : ''),
           disabled && 'opacity-50 cursor-not-allowed',
         )}
       >

@@ -55,8 +55,8 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
         'border cursor-pointer overflow-hidden outline-none',
         overlapping ? 'border-transparent' : 'bg-bg-cell',
         !overlapping && isCancelled && 'opacity-60',
-        !overlapping && deadlineStatus === 'overdue' && 'border-danger ring-1 ring-red-200',
-        !overlapping && deadlineStatus === 'soon' && 'border-accent ring-1 ring-amber-200',
+        !overlapping && deadlineStatus === 'overdue' && 'border-danger',
+        !overlapping && deadlineStatus === 'soon' && 'border-accent',
         !overlapping && !deadlineStatus && 'border-line',
         className
       )}

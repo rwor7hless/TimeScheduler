@@ -10,6 +10,10 @@ export default {
     backdropFilter: false,
     boxShadow: false,
     borderRadius: false,
+    ringWidth: false,
+    ringColor: false,
+    ringOffsetWidth: false,
+    ringOffsetColor: false,
   },
   theme: {
     extend: {

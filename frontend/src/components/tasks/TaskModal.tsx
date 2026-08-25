@@ -426,7 +426,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     setScheduledDate(e.target.value)
                     if (e.target.value && !startTime) { setStartTime('09:00'); setEndTime('10:00') }
                   }}
-                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-line text-sm bg-bg-cell focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-accent"
+                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-line text-sm bg-bg-cell focus:outline-none focus:border-accent"
                 />
                 {scheduledDate && (
                   <>
@@ -474,7 +474,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     type="date"
                     value={deadlineDate}
                     onChange={(e) => setDeadlineDate(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 h-[34px] border border-danger text-sm bg-bg-cell text-danger focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                    className="flex-1 min-w-0 px-2.5 h-[34px] border border-danger text-sm bg-bg-cell text-danger focus:outline-none"
                   />
                   <TimeField
                     tone="danger"
@@ -541,7 +541,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full h-20 px-3 py-2 bg-bg-raised border border-line text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-accent resize-none placeholder-gray-300 transition-colors"
+              className="w-full h-20 px-3 py-2 bg-bg-raised border border-line text-sm focus:outline-none focus:border-accent resize-none placeholder-gray-300 transition-colors"
               placeholder="Описание..."
               autoFocus={showDescription && !description}
             />
@@ -637,7 +637,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask() } if (e.key === 'Escape') { setShowSubtaskInput(false); setNewSubtaskTitle('') } }}
                   placeholder="Название подзадачи..."
-                  className="flex-1 px-2.5 py-1.5 border border-line text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-accent bg-bg-cell"
+                  className="flex-1 px-2.5 py-1.5 border border-line text-xs focus:outline-none focus:border-accent bg-bg-cell"
                   autoFocus
                 />
                 <button
