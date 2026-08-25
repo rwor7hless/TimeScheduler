@@ -2,7 +2,13 @@ import { describe, it, expect, vi } from 'vitest'
 import { buildCommands, filterCommands } from './commands'
 import { buildNav } from '@/lib/nav'
 
-const ctx = () => ({ navigate: vi.fn(), toggleTheme: vi.fn(), newTask: vi.fn() })
+const ctx = () => ({
+  navigate: vi.fn(),
+  toggleTheme: vi.fn(),
+  newTask: vi.fn(),
+  newProject: vi.fn(),
+  logout: vi.fn(),
+})
 
 describe('buildCommands', () => {
   it('produces a command for every navigation destination', () => {
@@ -23,6 +29,27 @@ describe('buildCommands', () => {
     const labels = buildCommands({ isAdmin: false }).map((c) => c.label)
     expect(labels).toContain('Новая задача')
     expect(labels).toContain('Сменить тему')
+  })
+
+  it('carries everything the sidebar footer holds, because below 900px there is no sidebar', () => {
+    // Тема, выход и создание проекта живут в сайдбаре, а ниже 900px он не
+    // рендерится. Без этих команд выйти из аккаунта с телефона нельзя вообще.
+    const labels = buildCommands({ isAdmin: false }).map((c) => c.label)
+    expect(labels).toContain('Сменить тему')
+    expect(labels).toContain('Выйти')
+    expect(labels).toContain('Новый проект')
+  })
+
+  it('runs logout through the context', () => {
+    const c = ctx()
+    buildCommands({ isAdmin: false }).find((x) => x.label === 'Выйти')!.run(c)
+    expect(c.logout).toHaveBeenCalled()
+  })
+
+  it('runs project creation through the context', () => {
+    const c = ctx()
+    buildCommands({ isAdmin: false }).find((x) => x.label === 'Новый проект')!.run(c)
+    expect(c.newProject).toHaveBeenCalled()
   })
 
   it('gives every command a unique id', () => {

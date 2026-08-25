@@ -4,6 +4,8 @@ export interface CommandContext {
   navigate: (to: string) => void
   toggleTheme: () => void
   newTask: () => void
+  newProject: () => void
+  logout: () => void
 }
 
 export interface Command {
@@ -31,7 +33,9 @@ export function buildCommands({ isAdmin }: { isAdmin: boolean }): Command[] {
   return [
     ...nav,
     { id: 'action:new-task', label: 'Новая задача', hint: 'Создать', run: (ctx) => ctx.newTask() },
+    { id: 'action:new-project', label: 'Новый проект', hint: 'Создать', run: (ctx) => ctx.newProject() },
     { id: 'action:toggle-theme', label: 'Сменить тему', hint: 'Оформление', run: (ctx) => ctx.toggleTheme() },
+    { id: 'action:logout', label: 'Выйти', hint: 'Аккаунт', run: (ctx) => ctx.logout() },
   ]
 }
 

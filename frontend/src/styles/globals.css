@@ -570,7 +570,7 @@ input.quick-add {
   }
   .ts-shell__main {
     border-left: 0;
-    padding: 16px 16px calc(64px + env(safe-area-inset-bottom));
+    padding: calc(60px + env(safe-area-inset-top)) 16px calc(64px + env(safe-area-inset-bottom));
   }
 }
 
@@ -578,13 +578,38 @@ input.quick-add {
    MOBILE TAB BAR — существует только ниже 900px
    ============================================================================ */
 
-/* Базовое состояние — скрыта. Медиазапрос ниже включает её, поэтому он обязан
-   идти ПОСЛЕ этого правила: специфичность одинаковая, побеждает последнее. */
-.ts-tabbar {
+/* Базовое состояние — скрыты. Медиазапрос ниже включает их, поэтому он обязан
+   идти ПОСЛЕ этих правил: специфичность одинаковая, побеждает последнее. */
+.ts-tabbar,
+.ts-mobiletop {
   display: none;
+}
+.ts-mobiletop__title {
+  font-size: 13px;
+  color: var(--fg);
+}
+.ts-mobiletop__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 @media (max-width: 899px) {
+  .ts-mobiletop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: calc(44px + env(safe-area-inset-top));
+    padding: env(safe-area-inset-top) 12px 0;
+    background: var(--bg-raised);
+    border-bottom: 1px solid var(--line);
+    z-index: 50;
+  }
   .ts-tabbar {
     position: fixed;
     bottom: 0;

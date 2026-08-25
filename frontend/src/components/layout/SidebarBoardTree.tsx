@@ -21,7 +21,6 @@ import {
 import { CSS } from '@dnd-kit/utilities'
 import {
   useBoards,
-  useCreateBoard,
   useUpdateBoard,
   useDeleteBoard,
   useReorderBoards,
@@ -34,7 +33,7 @@ import {
   useReorderBoardGroups,
 } from '@/hooks/useBoardGroups'
 import Modal from '@/components/ui/Modal'
-import Input from '@/components/ui/Input'
+import CreateProjectModal from '@/components/boards/CreateProjectModal'
 import Button from '@/components/ui/Button'
 import RowMenu from '@/components/ui/RowMenu'
 import toast from 'react-hot-toast'
@@ -75,8 +74,6 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
   const [openMap, setOpenMap] = useState<Record<number, boolean>>({})
 
   const [createListOpen, setCreateListOpen] = useState(false)
-  const [createListName, setCreateListName] = useState('')
-  const [createListGroupId, setCreateListGroupId] = useState<number | null>(null)
 
   // null = idle, '' or string = inline input shown
   const [creatingGroupName, setCreatingGroupName] = useState<string | null>(null)
@@ -92,7 +89,6 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
 
   const [deleteListTarget, setDeleteListTarget] = useState<{ id: number; name: string } | null>(null)
 
-  const createBoard = useCreateBoard()
   const updateBoard = useUpdateBoard()
   const deleteBoard = useDeleteBoard()
   const createGroup = useCreateBoardGroup()
@@ -150,20 +146,6 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
       setGroupOpen(id, next[id])
       return next
     })
-  }
-
-  const handleCreateList = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const name = createListName.trim()
-    if (!name) return
-    try {
-      await createBoard.mutateAsync({ name, group_id: createListGroupId })
-      setCreateListOpen(false)
-      setCreateListName('')
-      setCreateListGroupId(null)
-    } catch {
-      toast.error('Не удалось создать проект')
-    }
   }
 
   const handleCreateGroup = async () => {
@@ -563,38 +545,7 @@ export default function SidebarBoardTree({ taskCounts }: Props) {
             <SortableGroup key={g.id} group={g} />
           ))}
 
-          <Modal
-            isOpen={createListOpen}
-            onClose={() => setCreateListOpen(false)}
-            title="Новый проект"
-          >
-            <form onSubmit={handleCreateList} className="space-y-4">
-              <Input
-                label="Название"
-                value={createListName}
-                onChange={(e) => setCreateListName(e.target.value)}
-                autoFocus
-                required
-              />
-              <div>
-                <label className="text-[11px] uppercase opacity-70">Группа</label>
-                <select
-                  value={createListGroupId ?? ''}
-                  onChange={(e) => setCreateListGroupId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full mt-1 px-2 py-1.5 border border-line bg-bg-cell"
-                >
-                  <option value="">Без группы (верхний уровень)</option>
-                  {(groups ?? []).map((g) => (
-                    <option key={g.id} value={g.id}>{g.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="secondary" onClick={() => setCreateListOpen(false)}>Отмена</Button>
-                <Button type="submit" disabled={!createListName.trim()}>Создать</Button>
-              </div>
-            </form>
-          </Modal>
+          <CreateProjectModal isOpen={createListOpen} onClose={() => setCreateListOpen(false)} />
 
           <Modal
             isOpen={deleteGroupTarget !== null}

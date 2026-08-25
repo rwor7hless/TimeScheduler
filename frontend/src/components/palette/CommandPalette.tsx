@@ -12,6 +12,8 @@ import { buildCommands, filterCommands, type CommandContext } from './commands'
 interface Props {
   isOpen: boolean
   onClose: () => void
+  /** Создание проекта живёт в модалке уровня шелла — палитра только зовёт её. */
+  onNewProject: () => void
 }
 
 /** Строка списка: и команда, и результат поиска приводятся к одному виду. */
@@ -25,10 +27,10 @@ interface Row {
 /** Поиск дёргаем только начиная с двух символов — на одном он бесполезен. */
 const MIN_QUERY = 2
 
-export default function CommandPalette({ isOpen, onClose }: Props) {
+export default function CommandPalette({ isOpen, onClose, onNewProject }: Props) {
   const navigate = useNavigate()
   const { toggle } = useTheme()
-  const { isAdmin } = useAuth()
+  const { isAdmin, logout } = useAuth()
   const createTask = useCreateTask()
   const [query, setQuery] = useState('')
   const [active, setActive] = useState(0)
@@ -54,6 +56,8 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
       navigate: (to) => { navigate(to); onClose() },
       toggleTheme: () => { toggle(); onClose() },
       newTask: () => { navigate('/today'); onClose() },
+      newProject: () => { onClose(); onNewProject() },
+      logout: () => { onClose(); logout() },
     }
     const cmds: Row[] = filterCommands(commands, query).map((c) => ({
       key: c.id,
@@ -77,7 +81,7 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
         run: () => { navigate(`/list/${b.id}`); onClose() },
       })),
     ]
-  }, [commands, query, results, navigate, onClose, toggle])
+  }, [commands, query, results, navigate, onClose, toggle, onNewProject, logout])
 
   async function createFromQuery() {
     const parsed = parseTaskInput(query, new Date())

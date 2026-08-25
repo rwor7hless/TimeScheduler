@@ -1,12 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import MobileTabBar from './MobileTabBar'
+import MobileTopBar from './MobileTopBar'
+import CreateProjectModal from '@/components/boards/CreateProjectModal'
 import CommandPalette from '@/components/palette/CommandPalette'
 import { useCommandPalette } from '@/hooks/useCommandPalette'
 
 export default function AppShell() {
   const palette = useCommandPalette()
+  const [createProjectOpen, setCreateProjectOpen] = useState(false)
   const searchInputRef = useRef<HTMLInputElement | null>(null)
   const navigate = useNavigate()
 
@@ -31,6 +34,8 @@ export default function AppShell() {
 
   return (
     <div className="ts-shell">
+      <MobileTopBar />
+
       <Sidebar searchRef={searchInputRef} />
 
       <main className="ts-shell__main">
@@ -41,7 +46,13 @@ export default function AppShell() {
 
       <MobileTabBar onPlus={palette.open} />
 
-      <CommandPalette isOpen={palette.isOpen} onClose={palette.close} />
+      <CommandPalette
+        isOpen={palette.isOpen}
+        onClose={palette.close}
+        onNewProject={() => setCreateProjectOpen(true)}
+      />
+
+      <CreateProjectModal isOpen={createProjectOpen} onClose={() => setCreateProjectOpen(false)} />
     </div>
   )
 }
