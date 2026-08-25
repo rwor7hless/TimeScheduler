@@ -38,6 +38,32 @@ function lineAt(source: string, index: number): string {
 }
 
 describe('narrow layout', () => {
+  it('pins .popover inside the viewport below 900px', () => {
+    // Поповер с `absolute right-0` растёт ВЛЕВО от кнопки. Если кнопка стоит не
+    // у правого края экрана, на 375px он уезжает за левый край и обрезается —
+    // именно так пропал календарь дедлайна в быстром вводе.
+    const css = readFileSync(join(SRC, 'styles', 'globals.css'), 'utf8')
+    const narrow = css.slice(css.indexOf('@media (max-width: 899px)'))
+    expect(narrow).toMatch(/\.popover\.absolute\s*\{[^}]*position:\s*fixed/)
+  })
+
+  it('every edge-anchored popover uses the shared .popover class', () => {
+    // Иначе общее правило выше его не накроет, и он уедет за край персонально.
+    const offenders: string[] = []
+    for (const file of sourceFiles(SRC)) {
+      const source = readFileSync(file, 'utf8')
+      for (const m of source.matchAll(/className=(?:\{)?["'`]([^"'`]*\babsolute\b[^"'`]*)["'`]/g)) {
+        const cls = m[1]
+        const fixedWidth = /\bw-(?:\d+|\[[^\]]+\])/.test(cls) || /\bmin-w-\[/.test(cls)
+        const anchored = /\b(?:left|right)-\d/.test(cls)
+        if (fixedWidth && anchored && !cls.includes('popover')) {
+          offenders.push(`${relative(SRC, file)}: ${cls.slice(0, 60)}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
   it('every grid of 3+ columns declares a narrow: fallback', () => {
     const offenders: string[] = []
     for (const file of sourceFiles(SRC)) {
