@@ -2,7 +2,6 @@ import { Link } from 'react-router-dom'
 import { motion, useReducedMotion } from 'framer-motion'
 import Spinner from '@/components/ui/Spinner'
 import { useWeekStats } from '@/hooks/useWeekStats'
-import { useReports } from '@/hooks/useReports'
 import type { BreakdownItem } from '@/types/stats'
 import { CHART_COLORS as DEFAULT_COLORS } from '@/lib/colors'
 import { WeekNavigator } from './WeekNavigator'
@@ -60,8 +59,6 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
 export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
   const shouldReduceMotion = useReducedMotion()
   const { data: stats, isLoading, isError, refetch } = useWeekStats(weekStart)
-  const { data: reports } = useReports()
-  const earliestReport = reports?.[reports.length - 1]?.week_start
 
   const blockVariants = {
     hidden: shouldReduceMotion ? { opacity: 0 } : { opacity: 0, y: 12 },
@@ -84,7 +81,7 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
       className="space-y-6"
     >
       <motion.div variants={blockVariants}>
-        <WeekNavigator weekStart={weekStart} onChange={onWeekChange} minDate={earliestReport} />
+        <WeekNavigator weekStart={weekStart} onChange={onWeekChange} />
       </motion.div>
 
       {isLoading && <Spinner className="mt-10" />}

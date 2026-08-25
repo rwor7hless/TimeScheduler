@@ -4,12 +4,11 @@ import { ru } from 'date-fns/locale'
 import clsx from 'clsx'
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import { mondayOfTodayISO, shiftMondayISO } from '@/hooks/useWeekStats'
+import { canPageBack, canPageForward } from '@/hooks/weekBounds'
 
 interface Props {
   weekStart: string
   onChange: (ws: string) => void
-  /** Inclusive lower bound (Monday ISO). Prev disabled when reached. */
-  minDate?: string
 }
 
 function ChevronLeft() {
@@ -28,7 +27,7 @@ function ChevronRight() {
   )
 }
 
-export function WeekNavigator({ weekStart, onChange, minDate }: Props) {
+export function WeekNavigator({ weekStart, onChange }: Props) {
   const shouldReduceMotion = useReducedMotion()
   const prevWeekStartRef = useRef(weekStart)
   const direction = weekStart > prevWeekStartRef.current ? 1 : weekStart < prevWeekStartRef.current ? -1 : 0
@@ -40,8 +39,8 @@ export function WeekNavigator({ weekStart, onChange, minDate }: Props) {
 
   const today = mondayOfTodayISO()
   const isCurrent = weekStart === today
-  const canGoNext = weekStart < today
-  const canGoPrev = !minDate || weekStart > minDate
+  const canGoNext = canPageForward(weekStart, today)
+  const canGoPrev = canPageBack(weekStart)
 
   const sameMonth = monday.getMonth() === sunday.getMonth()
   const rangeLabel = sameMonth
