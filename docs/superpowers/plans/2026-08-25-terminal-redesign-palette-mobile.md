@@ -60,7 +60,7 @@ task because it must not change anything the user sees.
 Counts and unread dots stay in `Sidebar.tsx`: they are live query data, and the palette
 does not show them. `buildNav` returns structure only.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 Create `frontend/src/lib/nav.test.ts`. The assertion that earns its keep is the drift
 one: every route the nav points at must be a route `App.tsx` actually defines.
@@ -100,7 +100,7 @@ describe('buildNav', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/lib/nav.test.ts
@@ -108,7 +108,7 @@ cd frontend && npx vitest run src/lib/nav.test.ts
 
 Expected: FAIL — `Failed to resolve import "./nav"`.
 
-- [ ] **Step 3: Create the module**
+- [x] **Step 3: Create the module**
 
 Move the seven icon components out of `Sidebar.tsx` verbatim into
 `frontend/src/lib/nav.tsx` and export each. Then add:
@@ -160,7 +160,7 @@ Keep the group titles exactly as `Sidebar.tsx` renders them today — read them 
 the file rather than inventing them, or the sidebar's headings change and this task
 stops being invisible.
 
-- [ ] **Step 4: Rewire Sidebar onto it**
+- [x] **Step 4: Rewire Sidebar onto it**
 
 `Sidebar.tsx` imports `buildNav` and the icons instead of declaring them, and merges
 its live counts onto the returned items by `to`:
@@ -174,7 +174,7 @@ const COUNTS: Record<string, number | undefined> = {
 }
 ```
 
-- [ ] **Step 5: Run the tests and the build to verify green**
+- [x] **Step 5: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -185,7 +185,7 @@ cd frontend && npm test && npm run build
 This task must be invisible. Open the app, confirm the groups, labels, order, icons,
 counts and the unread dot are exactly as before.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add frontend/src/lib/nav.tsx frontend/src/lib/nav.test.ts frontend/src/components/layout/Sidebar.tsx
@@ -210,7 +210,7 @@ gets a pure function and a test rather than being buried in an effect.
   - `isPaletteShortcut(e: Pick<KeyboardEvent, 'code' | 'ctrlKey' | 'metaKey'>): boolean`
   - `useCommandPalette(): { isOpen: boolean; open: () => void; close: () => void }`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect } from 'vitest'
@@ -244,7 +244,7 @@ describe('isPaletteShortcut', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/hooks/useCommandPalette.test.ts
@@ -252,7 +252,7 @@ cd frontend && npx vitest run src/hooks/useCommandPalette.test.ts
 
 Expected: FAIL — `Failed to resolve import "./useCommandPalette"`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 import { useCallback, useEffect, useState } from 'react'
@@ -287,13 +287,13 @@ export function useCommandPalette() {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify green**
+- [x] **Step 4: Run the tests to verify green**
 
 ```bash
 cd frontend && npm test
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/hooks/useCommandPalette.ts frontend/src/hooks/useCommandPalette.test.ts
@@ -316,7 +316,7 @@ git commit -m "feat(palette): Ctrl+K binding that survives a Cyrillic layout"
   - `buildCommands(opts: { isAdmin: boolean }): Command[]`
   - `filterCommands(commands: Command[], query: string): Command[]` — case-insensitive substring on `label`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```ts
 import { describe, it, expect, vi } from 'vitest'
@@ -365,7 +365,7 @@ describe('filterCommands', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 ```bash
 cd frontend && npx vitest run src/components/palette/commands.test.ts
@@ -373,7 +373,7 @@ cd frontend && npx vitest run src/components/palette/commands.test.ts
 
 Expected: FAIL — `Failed to resolve import "./commands"`.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 ```ts
 import { buildNav } from '@/lib/nav'
@@ -419,13 +419,13 @@ export function filterCommands(commands: Command[], query: string): Command[] {
 }
 ```
 
-- [ ] **Step 4: Run the tests to verify green**
+- [x] **Step 4: Run the tests to verify green**
 
 ```bash
 cd frontend && npm test
 ```
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/palette
@@ -450,7 +450,7 @@ free text plus Enter with nothing selected creates a task through the existing
 - Consumes: `useCommandPalette` (Task 2), `buildCommands`/`filterCommands`/`Command`/`CommandContext` (Task 3), `searchApi` from `@/api/search`, `parseTaskInput` from `@/utils/parseTask`, `useCreateTask` from `@/hooks/useTasks`, `useTheme` from `@/context/ThemeContext`.
 - Produces: `<CommandPalette isOpen onClose />`, mounted once in `AppShell`.
 
-- [ ] **Step 1: Add the palette's classes to globals.css**
+- [x] **Step 1: Add the palette's classes to globals.css**
 
 `css-classes.test.ts` fails the moment the component references a class that does not
 exist, so the stylesheet goes first. Add, next to `.popover`:
@@ -531,7 +531,7 @@ exist, so the stylesheet goes first. Add, next to `.popover`:
 }
 ```
 
-- [ ] **Step 2: Write the component**
+- [x] **Step 2: Write the component**
 
 Create `frontend/src/components/palette/CommandPalette.tsx`:
 
@@ -688,11 +688,11 @@ export default function CommandPalette({ isOpen, onClose }: Props) {
 }
 ```
 
-- [ ] **Step 3: Mount it once in AppShell**
+- [x] **Step 3: Mount it once in AppShell**
 
 `AppShell.tsx` calls `useCommandPalette()` and renders `<CommandPalette isOpen={isOpen} onClose={close} />` as a sibling of `<main>`. Keep the returned `open` — Task 5's `MobileTabBar` needs it.
 
-- [ ] **Step 4: Run the tests and the build to verify green**
+- [x] **Step 4: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -711,7 +711,7 @@ There is no jsdom in this project, so this step is the test. In `npm run dev`:
 - Type two or more characters of a real task title — search results appear under the commands.
 - Type text matching nothing and press `Enter` — a task is created and a toast confirms.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add frontend/src/components/palette frontend/src/components/layout/AppShell.tsx frontend/src/styles/globals.css
@@ -737,7 +737,7 @@ restyling them.
 - Consumes: `buildNav` (Task 1), `useCommandPalette`'s `open` (Task 2).
 - Produces: `<MobileTabBar onPlus={() => void} />`.
 
-- [ ] **Step 1: Declare the one breakpoint**
+- [x] **Step 1: Declare the one breakpoint**
 
 In `frontend/tailwind.config.js`, inside `theme.extend`:
 
@@ -750,7 +750,7 @@ In `frontend/tailwind.config.js`, inside `theme.extend`:
 This is the plan's single breakpoint. `sm:`/`md:`/`lg:` remain banned by
 `legacy-classes.test.ts`; `narrow:` is the only prefix any markup may use from here on.
 
-- [ ] **Step 2: Write the tab bar**
+- [x] **Step 2: Write the tab bar**
 
 Create `frontend/src/components/layout/MobileTabBar.tsx`. Four entries per the spec —
 Мой день / Задачи / Привычки / Статистика — plus the central `+`:
@@ -793,7 +793,7 @@ export default function MobileTabBar({ onPlus }: { onPlus: () => void }) {
 }
 ```
 
-- [ ] **Step 3: Add its styles**
+- [x] **Step 3: Add its styles**
 
 In `globals.css`. Every target is 44px tall, per the constraint:
 
@@ -852,7 +852,7 @@ In `globals.css`. Every target is 44px tall, per the constraint:
 }
 ```
 
-- [ ] **Step 4: Delete the drawer, mount the bar**
+- [x] **Step 4: Delete the drawer, mount the bar**
 
 In `AppShell.tsx`: delete the burger `<button>`, the backdrop `<div>`, the
 `sidebarOpen` state and the whole edge-swipe `useEffect` that drives it, and drop
@@ -866,7 +866,7 @@ In `globals.css`: delete `.ts-shell__burger`, `.ts-shell__backdrop` and the
 
 `tsc` is the gate — it fails on any surviving reference to a deleted prop.
 
-- [ ] **Step 5: Make the shell single-column below 900px**
+- [x] **Step 5: Make the shell single-column below 900px**
 
 Replace the remaining `@media (max-width: 1023px)` shell block with one at 899px that
 hides the sidebar entirely and leaves room for the bar:
@@ -887,7 +887,7 @@ hides the sidebar entirely and leaves room for the bar:
 }
 ```
 
-- [ ] **Step 6: Run the tests and the build to verify green**
+- [x] **Step 6: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -899,7 +899,7 @@ Devtools at 375px: the bar is fixed to the bottom, five cells, the active tab is
 accent, `+` opens the palette, nothing is hidden behind the bar at the bottom of a
 long list, and no horizontal scrollbar appears.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add frontend/src/components/layout frontend/src/styles/globals.css frontend/tailwind.config.js
@@ -930,7 +930,7 @@ arm back — once, under the `narrow:` name from Task 5.
 - Consumes: the `narrow` screen from Task 5 Step 1.
 - Produces: nothing importable.
 
-- [ ] **Step 1: Restore the narrow arms**
+- [x] **Step 1: Restore the narrow arms**
 
 Each of these was a `base narrow-arm` pair before plan 2 collapsed it. Restore the
 narrow arm as a `narrow:` utility, leaving the wide arm unprefixed:
@@ -953,13 +953,13 @@ narrow arm as a `narrow:` utility, leaving the wide arm unprefixed:
 | `AdminPage.tsx` | Created column `table-cell` | `narrow:hidden` |
 | `Modal.tsx` | `p-4 py-6`, `px-6 py-5` | `narrow:p-3 narrow:py-4`, `narrow:px-4 narrow:py-4` |
 
-- [ ] **Step 2: Give rows their tap target**
+- [x] **Step 2: Give rows their tap target**
 
 `--row-h` is already 44px below 900px, so anything using it is fine. Audit for
 hardcoded heights that are not: `grep -rn 'h-\[3[0-9]px\]\|h-8\|h-9' frontend/src`.
 Anything interactive that lands under 44px at narrow width gets `narrow:h-11`.
 
-- [ ] **Step 3: Run the tests and the build to verify green**
+- [x] **Step 3: Run the tests and the build to verify green**
 
 ```bash
 cd frontend && npm test && npm run build
@@ -978,7 +978,7 @@ Devtools at 375px, both themes, each of Today, Tasks, the list view, Calendar
 - metadata wraps to a second line rather than truncating away
 - nothing sits under the tab bar
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src
@@ -1015,18 +1015,18 @@ watching a real drag. With the checklist's drag in front of you, remove it and d
 again. Keep it only if something visibly regresses, and if it stays, replace its
 comment — it currently blames shadows that no longer exist.
 
-- [ ] **Step 3: Update CLAUDE.md**
+- [x] **Step 3: Update CLAUDE.md**
 
 Add the palette (`Ctrl+K`, bound to `event.code`) and `MobileTabBar` to the frontend
 section, and record the single `narrow` breakpoint in place of the old `sm:`/`md:`/`lg:`
 mixture.
 
-- [ ] **Step 4: Mark the spec's inherited list cleared**
+- [x] **Step 4: Mark the spec's inherited list cleared**
 
 All eight items are done as of plan 2; note it in the spec so the next reader does not
 re-derive them.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add CLAUDE.md docs/superpowers/specs
