@@ -31,8 +31,6 @@ const CATEGORIES = [
  */
 const BASELINE: Record<string, readonly string[]> = {
   'components/layout/AppShell.tsx': ['breakpoint'],
-  'components/ui/ThemePicker.tsx': ['shadow'],
-  'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
 }
 
 function sourceFiles(dir: string): string[] {

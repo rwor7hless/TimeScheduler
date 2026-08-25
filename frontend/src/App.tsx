@@ -53,6 +53,9 @@ export default function App() {
                 <Route path="/calendar/week" element={<CalendarPage />} />
                 <Route path="/calendar/month" element={<CalendarPage />} />
                 {/* legacy redirects */}
+                {/* Совместимость: страниц за этими путями нет и не было —
+                    /boards и /kanban остаются, чтобы старые закладки и
+                    ссылки из Telegram продолжали открываться. */}
                 <Route path="/boards" element={<Navigate to="/today" replace />} />
                 <Route path="/projects" element={<Navigate to="/today" replace />} />
                 <Route path="/project" element={<Navigate to="/tasks" replace />} />
