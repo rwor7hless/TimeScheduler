@@ -92,7 +92,7 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
           <div className="flex items-start justify-between gap-1 min-w-0">
             <div className="flex items-center gap-1 min-w-0 flex-1">
               {isCancelled && (
-                <span className="inline-flex items-center justify-center w-3 h-3 bg-bg-cell text-bg text-[9px] flex-shrink-0">
+                <span className="inline-flex items-center justify-center w-3 h-3 bg-fg text-bg text-[9px] flex-shrink-0">
                   ✓
                 </span>
               )}

@@ -94,3 +94,51 @@ describe('narrow layout', () => {
     expect(offenders).toEqual([])
   })
 })
+
+/**
+ * Механическая подстановка палитры на токены (план 2) в нескольких местах увела
+ * ЗАЛИВКУ в поверхность: `bg-amber-500 text-white` стало `bg-bg-sel text-bg`,
+ * то есть почти чёрное по почти чёрному. Компилятор такое не видит, контрастный
+ * тест палитры проверяет токены между собой, а не их сочетания в разметке.
+ */
+describe('token pairings in markup', () => {
+  /** Заливки, поверх которых `text-bg` действительно читается. */
+  const STRONG_FILL = /\bbg-(?:accent|danger|success|fg|red|green)(?:-[a-z]+)?\b/
+  const SURFACE = /\bbg-bg(?:-(?:raised|cell|hover|sel))?\b/
+
+  function classLists(source: string): { line: number; cls: string }[] {
+    return Array.from(source.matchAll(/['"`]([^'"`\n]*\s[^'"`\n]*)['"`]/g), (m) => ({
+      line: source.slice(0, m.index).split('\n').length,
+      cls: m[1],
+    }))
+  }
+
+  it('never puts text-bg on a surface — it would be ink on ink', () => {
+    const offenders: string[] = []
+    for (const file of sourceFiles(SRC)) {
+      const source = readFileSync(file, 'utf8')
+      for (const { line, cls } of classLists(source)) {
+        if (/\btext-bg\b/.test(cls) && SURFACE.test(cls) && !STRONG_FILL.test(cls)) {
+          offenders.push(`${relative(SRC, file)}:${line}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+
+  it('never gives a hover the value it already has', () => {
+    const offenders: string[] = []
+    for (const file of sourceFiles(SRC)) {
+      const source = readFileSync(file, 'utf8')
+      for (const { line, cls } of classLists(source)) {
+        for (const [, token] of cls.matchAll(/hover:((?:bg|text|border)-[a-z-]+)/g)) {
+          // Граница по токену целиком: text-fg не должен совпадать с text-fg-body.
+          const exact = new RegExp(`(?<![\\w-])${token}(?![\\w-])`)
+          const withoutHovers = cls.replace(/hover:[\w-]+/g, '')
+          if (exact.test(withoutHovers)) offenders.push(`${relative(SRC, file)}:${line} hover:${token}`)
+        }
+      }
+    }
+    expect(offenders).toEqual([])
+  })
+})

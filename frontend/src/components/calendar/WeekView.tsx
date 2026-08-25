@@ -324,7 +324,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
               </div>
               <div
                 className={`text-sm font-bold mx-auto w-7 h-7 flex items-center justify-center transition-colors ${
-                  isToday ? 'bg-bg-sel text-bg' : 'text-fg-body'
+                  isToday ? 'bg-accent text-bg' : 'text-fg-body'
                 }`}
               >
                 {format(day, 'd')}
@@ -494,7 +494,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
                     }}
                   >
                     <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
-                    <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-bg text-bg px-1 leading-tight">
+                    <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-fg text-bg px-1 leading-tight">
                       {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
                     </div>
                   </div>

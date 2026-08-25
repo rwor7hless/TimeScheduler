@@ -53,7 +53,7 @@ export default function BacklogTaskRow({
         'flex items-center gap-3 px-3 py-2 border transition-all group',
         done
           ? 'bg-bg-raised border-line'
-          : 'bg-bg-cell border-line hover:border-line',
+          : 'bg-bg-cell border-line hover:border-accent',
       )}
     >
       <button

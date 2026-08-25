@@ -22,7 +22,7 @@ const PRIORITY_CONFIG: { value: Priority; label: string; activeClass: string; gh
   { value: 'low',    label: '↓',  activeClass: 'bg-fg-mid text-bg',  ghostClass: 'text-fg-mid hover:text-fg-body hover:bg-bg-hover' },
   { value: 'medium', label: '—',  activeClass: 'bg-fg-body text-bg', ghostClass: 'text-fg-body hover:text-fg hover:bg-bg-hover' },
   { value: 'high',   label: '↑',  activeClass: 'bg-accent text-bg',  ghostClass: 'text-accent hover:text-accent-light hover:bg-bg-sel' },
-  { value: 'urgent', label: '⚡', activeClass: 'bg-danger text-bg',  ghostClass: 'text-danger hover:text-danger hover:bg-bg-hover' },
+  { value: 'urgent', label: '⚡', activeClass: 'bg-danger text-bg',  ghostClass: 'text-danger hover:bg-bg-hover' },
 ]
 
 const PRIORITY_TITLES: Record<Priority, string> = {
@@ -367,7 +367,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                           'px-2 py-0.5 text-[11px] font-medium transition-all',
                           active
                             ? 'text-bg'
-                            : 'text-fg-body bg-bg-cell border border-line hover:border-line',
+                            : 'text-fg-body bg-bg-cell border border-line hover:border-accent',
                           'max-w-full truncate',
                         )}
                         style={active ? { backgroundColor: tag.color } : undefined}
@@ -504,7 +504,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   className={clsx(
                     'text-[10px] font-medium px-2 py-0.5 transition-all',
                     repeatDays.length === 7
-                      ? 'bg-bg-sel text-bg'
+                      ? 'bg-accent text-bg'
                       : 'bg-bg-hover text-accent hover:bg-bg-sel'
                   )}
                 >
@@ -524,7 +524,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     className={clsx(
                       'flex-1 py-1 text-[11px] font-medium transition-all',
                       repeatDays.includes(i)
-                        ? 'bg-bg-sel text-bg'
+                        ? 'bg-accent text-bg'
                         : 'bg-bg-cell border border-line text-fg-mid hover:bg-bg-hover'
                     )}
                   >
@@ -573,7 +573,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
               <button
                 type="button"
                 onClick={() => setShowSubtaskInput((v) => !v)}
-                className="text-xs text-accent hover:text-accent flex items-center gap-1"
+                className="text-xs text-accent hover:text-accent-light flex items-center gap-1"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Добавить
@@ -604,7 +604,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                       }}
                       className={clsx(
                         'w-3.5 h-3.5 border-2 flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-wait',
-                        sub.done ? 'bg-bg-cell border-success hover:bg-bg-cell' : 'border-line hover:border-success'
+                        sub.done ? 'bg-bg-cell border-success hover:bg-bg-hover' : 'border-line hover:border-success'
                       )}
                     />
                     <span className={clsx('flex-1', sub.done && 'line-through text-fg-mid')}>{sub.title}</span>
@@ -645,7 +645,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   type="button"
                   onClick={handleAddSubtask}
                   disabled={!newSubtaskTitle.trim() || createTask.isPending}
-                  className="px-2.5 py-1.5 bg-bg-sel text-bg text-xs hover:bg-bg-sel disabled:opacity-40"
+                  className="px-2.5 py-1.5 bg-accent text-bg text-xs hover:bg-accent-light disabled:opacity-40"
                 >
                   ОК
                 </button>
@@ -661,7 +661,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
               type="button"
               onClick={handleDeleteClick}
               disabled={deleteTask.isPending}
-              className="px-3 py-1.5 text-xs font-medium text-danger hover:text-danger hover:bg-bg-cell transition-colors disabled:opacity-40"
+              className="px-3 py-1.5 text-xs font-medium text-danger hover:bg-bg-cell transition-colors disabled:opacity-40"
             >
               Удалить
             </button>
@@ -677,7 +677,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <button
               type="submit"
               disabled={createTask.isPending || updateTask.isPending || !title.trim()}
-              className="px-4 py-1.5 text-xs font-semibold bg-bg-sel text-bg hover:bg-bg-sel disabled:opacity-40 transition-colors flex items-center gap-1.5"
+              className="px-4 py-1.5 text-xs font-semibold bg-accent text-bg hover:bg-accent-light disabled:opacity-40 transition-colors flex items-center gap-1.5"
             >
               {(createTask.isPending || updateTask.isPending) && (
                 <svg className="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" strokeDasharray="40" strokeLinecap="round"/></svg>

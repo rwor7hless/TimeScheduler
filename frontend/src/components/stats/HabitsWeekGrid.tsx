@@ -96,7 +96,7 @@ export function HabitsWeekGrid({ habits }: Props) {
                           'inline-flex items-center justify-center w-5 h-5 cursor-default transition-colors ' +
                           (done
                             ? 'bg-accent text-bg'
-                            : 'bg-bg-hover text-fg-mid hover:bg-bg-hover')
+                            : 'bg-bg-hover text-fg-mid hover:bg-bg-sel')
                         }
                       >
                         {done ? (

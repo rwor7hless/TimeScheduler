@@ -37,7 +37,7 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
                 className="w-2 h-2 flex-shrink-0 transition-transform duration-200 group-hover:scale-150"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-xs text-fg-body flex-1 truncate group-hover:text-fg transition-colors">
+              <span className="text-xs text-fg-body flex-1 truncate group- transition-colors">
                 {item.label}
               </span>
               <div className="w-20 h-1.5 bg-bg-hover overflow-hidden">

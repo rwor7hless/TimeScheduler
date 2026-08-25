@@ -262,7 +262,7 @@ export default function HabitsPage() {
                   onClick={(e) => { e.stopPropagation(); handleToggle(habit.id, todayStr) }}
                   className={clsx(
                     'w-7 h-7 flex items-center justify-center flex-shrink-0 ml-2 transition-all',
-                    done ? 'text-bg' : 'bg-bg-hover text-fg-mid hover:bg-bg-hover'
+                    done ? 'text-bg' : 'bg-bg-hover text-fg-mid hover:bg-bg-sel'
                   )}
                   style={done ? { backgroundColor: habit.color } : undefined}
                   title={done ? 'Выполнено':'Отметить'}

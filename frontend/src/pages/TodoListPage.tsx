@@ -154,8 +154,8 @@ function TaskRow({
         done
           ? 'opacity-50 bg-bg-raised border-line-soft'
           : isOverdue
-          ? 'bg-bg-cell border-danger hover:border-danger'
-          : 'bg-bg-cell border-line hover:border-line'
+          ? 'bg-bg-cell border-danger'
+          : 'bg-bg-cell border-line hover:border-accent'
       )}
     >
       {/* Checkbox */}
@@ -167,7 +167,7 @@ function TaskRow({
           done
             ? 'text-bg border-transparent'
             : isOverdue
-            ? 'border-danger hover:border-danger'
+            ? 'border-danger'
             : 'border-line hover:border-accent'
         )}
         style={done ? { backgroundColor: task.color } : undefined}
@@ -283,7 +283,7 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                         await unarchive.mutateAsync(task.id)
                         toast.success('Задача возвращена')
                       }}
-                      className="px-2 py-1 text-[11px] font-medium text-accent hover:text-accent hover:bg-bg-sel transition-colors"
+                      className="px-2 py-1 text-[11px] font-medium text-accent hover:text-accent-light hover:bg-bg-sel transition-colors"
                     >
                       Вернуть
                     </button>
@@ -486,7 +486,7 @@ export default function TodoListPage() {
               setEditingTask(null)
               setModalOpen(true)
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sel hover:bg-bg-sel text-bg text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-accent hover:bg-accent-light text-bg text-sm font-medium transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -510,7 +510,7 @@ export default function TodoListPage() {
           type="button"
           onClick={handleQuickAdd}
           disabled={!quickAdd.trim()}
-          className="px-3 py-2 bg-bg-sel hover:bg-bg-sel disabled:opacity-40 disabled:cursor-not-allowed text-bg transition-colors"
+          className="px-3 py-2 bg-accent hover:bg-accent-light disabled:opacity-40 disabled:cursor-not-allowed text-bg transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -574,7 +574,7 @@ export default function TodoListPage() {
           <button
             type="button"
             onClick={() => setDoneOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-fg-mid hover:text-fg-mid transition-colors mb-2"
+            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-fg-mid hover:text-fg transition-colors mb-2"
           >
             <svg
               width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"

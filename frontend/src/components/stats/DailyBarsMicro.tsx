@@ -83,7 +83,7 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
                       ? 'w-full bg-bg-hover opacity-40 border-t-2 border-dashed border-line transition-all'
                       : d.isToday
                       ? 'w-full bg-accent transition-all duration-200 group-hover:bg-accent-light'
-                      : 'w-full bg-accent-dark transition-all duration-200 group-hover:bg-accent'
+                      : 'w-full bg-accent-dark transition-all duration-200 group-hover:bg-accent-light'
                   }
                   style={{ height: heightPx, transformOrigin: 'bottom' }}
                   initial={{ scaleY: 0, opacity: 0 }}
@@ -106,7 +106,7 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
               >
                 {d.label}
               </div>
-              <div className="text-[11px] tabular-nums font-medium text-fg-body group-hover:text-fg transition-colors">
+              <div className="text-[11px] tabular-nums font-medium text-fg-body group- transition-colors">
                 {d.isFuture ? '' : d.count}
               </div>
             </div>

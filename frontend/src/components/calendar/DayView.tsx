@@ -373,7 +373,7 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
                 }}
               >
                 <TaskCard task={ghost.task} onClick={() => {}} compact className="h-full pointer-events-none" />
-                <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-bg text-bg px-1 leading-tight">
+                <div className="absolute bottom-1 right-1 text-[10px] font-mono bg-fg text-bg px-1 leading-tight">
                   {String(Math.floor(ghost.startMin / 60)).padStart(2, '0')}:{String(ghost.startMin % 60).padStart(2, '0')}
                 </div>
               </div>
