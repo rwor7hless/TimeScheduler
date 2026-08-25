@@ -725,7 +725,7 @@ export default function TodayPage() {
       </div>
 
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-[1fr_220px] gap-6 items-start">
+      <div className="grid grid-cols-[1fr_220px] narrow:grid-cols-1 gap-6 items-start">
 
         {/* Left — tasks + backlog */}
         <div className="space-y-4">

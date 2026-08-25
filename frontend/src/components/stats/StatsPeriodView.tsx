@@ -153,7 +153,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-4 narrow:grid-cols-2 gap-3">
         <StatCard label="Активные задачи" value={stats.active_tasks} />
         <StatCard label="Выполнено" value={stats.completed_last_month} accent="green" />
         <StatCard label="Просрочено" value={stats.overdue_count} accent="red" />
@@ -164,7 +164,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 narrow:grid-cols-1 gap-4">
         <div className="bg-bg-cell border border-line p-4">
           <h3 className="text-sm font-medium text-fg-body mb-3">Выполнения по дням</h3>
           <div style={{ color: 'var(--mid)' }}>

@@ -322,7 +322,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
         </div>
 
         {/* Two columns: WHAT / WHEN */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 narrow:grid-cols-1 gap-3">
 
           {/* WHAT */}
           <section className="border border-line bg-bg-raised p-3 space-y-3">
@@ -426,7 +426,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     setScheduledDate(e.target.value)
                     if (e.target.value && !startTime) { setStartTime('09:00'); setEndTime('10:00') }
                   }}
-                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-line text-sm bg-bg-cell focus:outline-none focus:border-accent"
+                  className="flex-1 min-w-0 px-2.5 h-[34px] narrow:h-11 border border-line text-sm bg-bg-cell focus:outline-none focus:border-accent"
                 />
                 {scheduledDate && (
                   <>

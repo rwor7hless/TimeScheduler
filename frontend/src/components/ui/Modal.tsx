@@ -27,7 +27,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
         </Transition.Child>
 
         <div className="fixed inset-0 overflow-y-auto overflow-x-hidden overscroll-contain">
-          <div className="flex min-h-full items-center justify-center p-4 py-6">
+          <div className="flex min-h-full items-center justify-center p-4 narrow:p-3 py-6 narrow:py-4">
             <Transition.Child
               as={Fragment}
               enter="ease-out duration-200"
@@ -42,7 +42,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
                   maxWidth === '2xl' ? 'max-w-2xl' : maxWidth === '4xl' ? 'max-w-4xl' : 'max-w-md'
                 }`}
               >
-                <div className="flex-1 min-h-0 px-6 py-5 overflow-y-auto overflow-x-hidden">
+                <div className="flex-1 min-h-0 px-6 narrow:px-4 py-5 narrow:py-4 overflow-y-auto overflow-x-hidden">
                   {title && (
                     <Dialog.Title
                       className="text-base font-semibold mb-4 shrink-0"

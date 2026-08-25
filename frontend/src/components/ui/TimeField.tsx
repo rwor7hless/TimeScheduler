@@ -133,7 +133,7 @@ export default function TimeField({
         disabled={disabled}
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'w-[84px] h-[34px] px-2 text-sm font-medium tabular-nums border transition-all focus:outline-none',
+          'w-[84px] h-[34px] narrow:h-11 px-2 text-sm font-medium tabular-nums border transition-all focus:outline-none',
           'flex items-center justify-center gap-0.5',
           accent.btnText, accent.btnBorder, accent.btnBg,
           open && ' ' + (tone === 'danger' ? '' : ''),
@@ -198,7 +198,7 @@ function Column({ items, activeIndex, colRef, onPick, accent }: ColumnProps) {
             type="button"
             onClick={() => onPick(i)}
             className={clsx(
-              'w-full h-8 text-sm font-medium tabular-nums transition-colors flex items-center justify-center',
+              'w-full h-8 narrow:h-11 text-sm font-medium tabular-nums transition-colors flex items-center justify-center',
               active ? accent.activeBg : 'text-fg-body ' + accent.hoverBg,
             )}
           >

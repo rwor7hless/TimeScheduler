@@ -44,7 +44,7 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'h-9 px-2.5 text-xs font-semibold border transition-colors max-w-[140px] truncate',
+          'h-9 narrow:h-11 px-2.5 text-xs font-semibold border transition-colors max-w-[140px] truncate',
           selected
             ? 'border-accent bg-bg-sel text-accent'
             : 'border-line bg-bg-cell text-fg-body hover:border-accent',

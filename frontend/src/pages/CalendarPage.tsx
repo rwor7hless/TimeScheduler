@@ -85,7 +85,7 @@ export default function CalendarPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-9rem)] min-h-0 overflow-x-hidden">
       {/* Toolbar */}
-      <div className="flex flex-row items-center justify-between gap-2 flex-shrink-0 mb-2">
+      <div className="flex flex-row narrow:flex-col items-center narrow:items-stretch justify-between gap-2 flex-shrink-0 mb-2">
         {/* Nav + date */}
         <div className="flex items-center gap-1.5 min-w-0">
           <Button variant="secondary" size="sm" onClick={navigatePrev}>&larr;</Button>

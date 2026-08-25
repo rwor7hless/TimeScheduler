@@ -309,7 +309,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
     <div className="bg-bg-cell border border-line overflow-hidden flex flex-col h-full min-h-0">
       {/* Day headers - fixed */}
       <div className="flex border-b border-line bg-bg-raised flex-shrink-0">
-        <div className="w-14 flex-shrink-0" />
+        <div className="w-14 narrow:w-10 flex-shrink-0" />
         {days.map((day) => {
           const isToday = isSameDay(day, today)
           return (
@@ -342,7 +342,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
         if (!anyDeadlines) return null
         return (
           <div className="flex border-b border-line bg-bg-cell flex-shrink-0">
-            <div className="w-14 flex-shrink-0 flex items-center justify-end pr-1.5 text-[10px] uppercase tracking-wider text-danger opacity-70">
+            <div className="w-14 narrow:w-10 flex-shrink-0 flex items-center justify-end pr-1.5 text-[10px] uppercase tracking-wider text-danger opacity-70">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                 <path d="M4 21V4l16 0-3 5 3 5H4" />
               </svg>
@@ -387,7 +387,7 @@ export default function WeekView({ date, tasks, onTaskClick, onSlotClick, onTask
       <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto">
         <div className="flex" style={{ height: `${HOUR_H * 24}px` }}>
           {/* Time column */}
-          <div className="w-14 flex-shrink-0 border-r border-line-soft bg-bg-raised">
+          <div className="w-14 narrow:w-10 flex-shrink-0 border-r border-line-soft bg-bg-raised">
             {HOURS.map((hour) => (
               <div
                 key={hour}

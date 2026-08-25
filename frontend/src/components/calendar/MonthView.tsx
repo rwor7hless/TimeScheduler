@@ -77,8 +77,8 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
       <div className="grid grid-cols-7 border-b border-line">
         {WEEKDAYS_LONG.map((day, i) => (
           <div key={day} className="px-1 py-2 text-xs font-medium text-fg-mid text-center">
-            <span>{day}</span>
-            <span className="hidden">{WEEKDAYS_SHORT[i]}</span>
+            <span className="narrow:hidden">{day}</span>
+            <span className="hidden narrow:inline">{WEEKDAYS_SHORT[i]}</span>
           </div>
         ))}
       </div>
@@ -95,7 +95,7 @@ export default function MonthView({ date, tasks, onDayClick }: MonthViewProps) {
               key={key}
               onClick={() => onDayClick(day)}
               className={clsx(
-                'min-h-[100px] p-1.5 border-b border-r border-line-soft cursor-pointer hover:bg-bg-raised transition-colors',
+                'min-h-[100px] narrow:min-h-[56px] p-1.5 narrow:p-1 border-b border-r border-line-soft cursor-pointer hover:bg-bg-raised transition-colors',
                 !inMonth && 'bg-bg-raised'
               )}
             >

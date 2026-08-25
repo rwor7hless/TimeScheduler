@@ -203,7 +203,7 @@ export default function HabitsPage() {
   if (isLoading) return <Spinner className="mt-20" />
 
   return (
-    <div className="flex flex-col gap-4 h-[calc(100vh-9rem)] min-h-0">
+    <div className="flex flex-col gap-4 h-[calc(100vh-9rem)] narrow:h-auto min-h-0">
 
       {/* Header */}
       <div className="flex items-center justify-between flex-shrink-0">
@@ -212,7 +212,7 @@ export default function HabitsPage() {
       </div>
 
       {/* Main grid */}
-      <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] gap-4 overflow-hidden">
+      <div className="flex-1 min-h-0 grid grid-cols-[minmax(0,240px)_minmax(0,1fr)] narrow:grid-cols-1 gap-4 overflow-hidden narrow:overflow-visible">
 
         {/* Left: habit list */}
         <div className="flex flex-col gap-2 overflow-y-auto">
@@ -319,7 +319,7 @@ export default function HabitsPage() {
             {(() => {
               const s = buildSummary(selectedHabit)
               return (
-                <div className="grid grid-cols-4 gap-2.5">
+                <div className="grid grid-cols-4 narrow:grid-cols-2 gap-2.5">
                   <StatCard label="За 30 дней"       value={`${s.completion30}%`}    color="amber"   />
                   <StatCard label="Всего выполнено"  value={`${s.totalAll}`}         color="emerald" />
                   <StatCard label="Текущий стрик"    value={`${s.currentStreak} дн.`} color="orange"  />
@@ -364,7 +364,7 @@ export default function HabitsPage() {
             </div>
 
             {/* Charts */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 narrow:grid-cols-1 gap-3">
 
               <div className="flex flex-col">
                 <p className="text-xs font-medium text-fg-mid mb-1 flex-shrink-0">Стрики — 30 дней</p>
@@ -527,7 +527,7 @@ export default function HabitsPage() {
                   type="button"
                   onClick={() => setNewColor(c)}
                   className={clsx(
-                    'w-8 h-8 border-2 transition-all',
+                    'w-8 h-8 narrow:w-11 narrow:h-11 border-2 transition-all',
                     newColor === c ? 'border-fg scale-110' : 'border-transparent hover:scale-105'
                   )}
                   style={{ backgroundColor: c }}

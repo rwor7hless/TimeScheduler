@@ -102,7 +102,7 @@ export default function AdminPage() {
 
       <div className="bg-bg-cell border border-line p-4">
         <h3 className="text-sm font-medium text-fg-body mb-3">Register User</h3>
-        <form onSubmit={handleSubmit} className="flex flex-row flex-wrap gap-3 items-end">
+        <form onSubmit={handleSubmit} className="flex flex-row narrow:flex-col flex-wrap gap-3 items-end narrow:items-stretch">
           <Input
             label="Username"
             value={username}
@@ -136,7 +136,7 @@ export default function AdminPage() {
                 <th className="py-2 pr-4">Username</th>
                 <th className="py-2 pr-4">Role</th>
                 <th className="py-2 pr-4">Саммари</th>
-                <th className="py-2 pr-4 table-cell">Created</th>
+                <th className="py-2 pr-4 table-cell narrow:hidden">Created</th>
                 <th className="py-2 w-20 text-right">Actions</th>
               </tr>
             </thead>
@@ -176,7 +176,7 @@ export default function AdminPage() {
                         )}
                       </label>
                     </td>
-                    <td className="py-2 pr-4 text-fg-mid table-cell">
+                    <td className="py-2 pr-4 text-fg-mid table-cell narrow:hidden">
                       {new Date(u.created_at).toLocaleDateString('ru-RU')}
                     </td>
                     <td className="py-2 text-right">
@@ -187,7 +187,7 @@ export default function AdminPage() {
                           size="sm"
                           onClick={() => setDeleteTarget(u)}
                           disabled={deleteUser.isPending}
-                          className="min-h-[36px] touch-manipulation"
+                          className="min-h-[36px] narrow:min-h-11 touch-manipulation"
                         >
                           Delete
                         </Button>

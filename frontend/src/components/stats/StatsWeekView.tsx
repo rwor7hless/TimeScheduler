@@ -106,7 +106,7 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
 
       {stats && (
         <>
-          <motion.div variants={blockVariants} className="grid grid-cols-4 gap-3">
+          <motion.div variants={blockVariants} className="grid grid-cols-4 narrow:grid-cols-2 gap-3">
             <KpiCard label="Активные" value={stats.active_tasks} />
             <KpiCard label="Просрочено" value={stats.overdue_count} accent="red" />
             <KpiCard
@@ -148,7 +148,7 @@ export default function StatsWeekView({ weekStart, onWeekChange }: Props) {
           </motion.div>
 
           {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
-            <motion.div variants={blockVariants} className="grid grid-cols-3 gap-4">
+            <motion.div variants={blockVariants} className="grid grid-cols-3 narrow:grid-cols-1 gap-4">
               <div className="bg-bg-cell border border-line p-4">
                 <BreakdownBar title="По приоритету" items={stats.by_priority} />
               </div>
