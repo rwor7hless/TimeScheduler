@@ -45,44 +45,49 @@ spec called top-level visibility of «Привычки / Статистика / 
 
 Adapted from `time_manage/src/styles.css`. lumen ships dark only; light is derived.
 
+> **Пересмотрено 2026-08-25.** Исходная гамма — почти чёрный фон с янтарным
+> акцентом — читалась как чужой узнаваемый бренд, а не как инструмент. Оттенок
+> сменён на угольно-фиолетовый с сиреневым акцентом; структура токенов, тиры и
+> правило 4.5:1 не изменились. Значения ниже — действующие.
+
 ### Dark (default)
 ```
---bg:         #0b0c0c
---bg-raised:  #0e100f
---bg-cell:    #121413
---bg-hover:   #101211
---bg-sel:     #141715
---line:       #1e211e
---line-soft:  #131614
---fg:         #d6d8d3
---fg-body:    #b9bcb6
---mid:        #8a8d87
---dim:        #6b706b
---muted:      #4d514a
---faint:      #42463f
---accent:     #d8a657
---red:        #b4666a
---green:      #7c9a6d
+--bg          #131318
+--bg-raised   #17171d
+--bg-cell     #1b1b22
+--bg-hover    #191920
+--bg-sel      #232330
+--line        #2a2a33
+--line-soft   #1e1e26
+--fg          #d8d6de
+--fg-body     #b7b5c0
+--mid         #8a8894
+--dim         #6a6875
+--muted       #4f4e59
+--faint       #42414b
+--accent      #a898e0
+--red         #d0757e
+--green       #7fb083
 ```
 
 ### Light (derived — inverted lightness, same hue family)
 ```
---bg:         #f6f5f1
---bg-raised:  #f1f0ea
---bg-cell:    #ecebe4
---bg-hover:   #eceae2
---bg-sel:     #e5e3d9
---line:       #d8d6cb
---line-soft:  #e6e4da
---fg:         #23241f
---fg-body:    #3c3e37
---mid:        #6b6e64
---dim:        #85887c
---muted:      #a0a396
---faint:      #b6b8ac
---accent:     #96651a
---red:        #a2454a
---green:      #4e6f41
+--bg          #f6f5f9
+--bg-raised   #f1f0f6
+--bg-cell     #eceaf3
+--bg-hover    #ebe9f2
+--bg-sel      #e0dcee
+--line        #d5d2e0
+--line-soft   #e6e3ee
+--fg          #22212a
+--fg-body     #3b3947
+--mid         #66637a
+--dim         #84819a
+--muted       #a29fb4
+--faint       #b8b5c6
+--accent      #6247aa
+--red         #a8434f
+--green       #4a6f45
 ```
 
 ### Contrast
@@ -91,17 +96,18 @@ Measured against each theme's `--bg` (WCAG 2.1 relative luminance):
 
 | token | dark | light |
 |---|---|---|
-| `--fg` | 13.64 | 14.33 |
-| `--accent` | 8.87 | 4.61 |
-| `--green` | 6.25 | 5.24 |
-| `--mid` | 5.82 | 4.77 |
-| `--red` | 4.71 | 5.52 |
-| `--dim` | **3.88** | **3.31** |
+| `--fg` | 12.87 | 14.67 |
+| `--accent` | 7.26 | 6.45 |
+| `--green` | 7.44 | 5.30 |
+| `--mid` | 5.32 | 5.33 |
+| `--red` | 5.76 | 5.40 |
+| `--dim` | **3.39** | **3.46** |
 
-Light `--accent` is darkened from `#d8a657` to `#96651a` specifically to reach 4.61.
+Light `--accent` is deepened from `#a898e0` to `#6247aa`: the dark theme's lilac
+measures 1.6:1 on paper.
 
 `--dim`, `--muted` and `--faint` deliberately sit below 4.5:1 — the dim ladder is the
-aesthetic, and lumen's own `--dim: #6b706b` measures the same 3.88. They are therefore
+aesthetic. They are therefore
 **decorative tiers**: no information may live *only* at that contrast. Concretely,
 `.kicker` section headers are `--dim`, which is acceptable because they label a region
 whose content is `--fg`; but a task's due date, a counter, or an error string must use

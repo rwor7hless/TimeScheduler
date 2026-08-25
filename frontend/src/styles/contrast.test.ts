@@ -18,18 +18,18 @@ describe('contrastRatio', () => {
   })
 
   it('is 1 for a colour against itself', () => {
-    expect(contrastRatio('#0b0c0c', '#0b0c0c')).toBeCloseTo(1, 5)
+    expect(contrastRatio('#131318', '#131318')).toBeCloseTo(1, 5)
   })
 
   it('does not depend on argument order', () => {
-    expect(contrastRatio('#d8a657', '#0b0c0c')).toBeCloseTo(
-      contrastRatio('#0b0c0c', '#d8a657'),
+    expect(contrastRatio('#a898e0', '#131318')).toBeCloseTo(
+      contrastRatio('#131318', '#a898e0'),
       5,
     )
   })
 
   it('matches the value the spec records for the dark accent', () => {
-    expect(contrastRatio('#d8a657', '#0b0c0c')).toBeCloseTo(8.87, 2)
+    expect(contrastRatio('#a898e0', '#131318')).toBeCloseTo(7.26, 2)
   })
 })
 
