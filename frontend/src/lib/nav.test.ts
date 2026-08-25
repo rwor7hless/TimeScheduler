@@ -30,3 +30,11 @@ describe('buildNav', () => {
     expect(labels).toContain('Админ')
   })
 })
+
+describe('routing', () => {
+  it('declares a catch-all so an unknown path is a 404, not a blank screen', () => {
+    // Без него React Router не отрисовывает вообще ничего: /budget, который
+    // спек просит отдавать 404, показывал пустую страницу без шапки и меню.
+    expect(declaredRoutes()).toContain('*')
+  })
+})

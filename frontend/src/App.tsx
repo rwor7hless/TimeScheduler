@@ -14,6 +14,7 @@ import StatsPage from '@/pages/StatsPage'
 import TodayPage from '@/pages/TodayPage'
 import TasksPage from '@/pages/TasksPage'
 import NotificationsPage from '@/pages/NotificationsPage'
+import NotFoundPage from '@/pages/NotFoundPage'
 import { queryClient } from '@/lib/queryClient'
 
 /** Отдельный компонент, потому что useTheme() работает только внутри ThemeProvider. */
@@ -89,6 +90,9 @@ export default function App() {
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<AdminPage />} />
                 </Route>
+                {/* Ловушка: неизвестный путь остаётся внутри шелла и получает
+                    404-экран, а не пустую страницу. */}
+                <Route path="*" element={<NotFoundPage />} />
               </Route>
             </Route>
           </Routes>

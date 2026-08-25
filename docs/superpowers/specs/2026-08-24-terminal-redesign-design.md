@@ -352,6 +352,10 @@ verify the drag visually, and keep them only if something actually regresses.
 
 ## Inherited by plan 2 (recorded at the end of plan 1)
 
+> **Статус: закрыто.** Все восемь пунктов выполнены в плане 2
+> (`docs/superpowers/plans/2026-08-25-terminal-redesign-screens.md`, задачи 5, 10,
+> 12 и 13). Раздел оставлен как история решений, а не как список дел.
+
 Plan 1's execution surfaced work that belongs to the screen pass. Listed here because
 the execution ledger it was recorded in is scratch and does not survive.
 
