@@ -121,7 +121,7 @@ export function HabitsWeekGrid({ habits }: Props) {
                               : { duration: 2.2, repeat: Infinity, ease: 'easeInOut' }
                           }
                           className="inline-flex items-center text-amber-500"
-                          style={{ color: 'var(--color-accent)' }}
+                          style={{ color: 'var(--accent)' }}
                         >
                           <IconFlame size={14} />
                         </motion.span>

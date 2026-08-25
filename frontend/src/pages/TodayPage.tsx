@@ -691,7 +691,7 @@ export default function TodayPage() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="topbar">
         <div>
-          <p className="text-xs" style={{ color: 'var(--ink-3)' }}>{getGreeting()}</p>
+          <p className="text-xs" style={{ color: 'var(--mid)' }}>{getGreeting()}</p>
           <h1 className="page-title capitalize" style={{ fontSize: 28 }}>
             {format(today, 'EEEE, d MMMM', { locale: ru })}
           </h1>

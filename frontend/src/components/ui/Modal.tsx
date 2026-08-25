@@ -46,7 +46,7 @@ export default function Modal({ isOpen, onClose, title, children, maxWidth = 'md
                   {title && (
                     <Dialog.Title
                       className="text-base font-semibold mb-4 shrink-0"
-                      style={{ color: 'var(--ink)' }}
+                      style={{ color: 'var(--fg)' }}
                     >
                       {title}
                     </Dialog.Title>

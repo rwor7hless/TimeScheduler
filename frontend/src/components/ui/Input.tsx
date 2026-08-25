@@ -10,7 +10,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, className, ...props }, ref) => (
     <div className="space-y-1">
       {label && (
-        <label className="block text-sm font-medium" style={{ color: 'var(--ink-2)' }}>
+        <label className="block text-sm font-medium" style={{ color: 'var(--fg-body)' }}>
           {label}
         </label>
       )}
@@ -20,7 +20,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         {...props}
       />
       {error && (
-        <p className="text-xs" style={{ color: 'var(--danger)' }}>
+        <p className="text-xs" style={{ color: 'var(--red)' }}>
           {error}
         </p>
       )}

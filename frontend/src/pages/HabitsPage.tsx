@@ -356,9 +356,9 @@ export default function HabitsPage() {
                           style={{
                             backgroundColor:
                               day === null ? 'transparent'
-                              : day.future ? 'var(--color-surface-muted)'
+                              : day.future ? 'var(--bg-cell)'
                               : day.completed ? selectedHabit.color
-                              : 'var(--color-border)',
+                              : 'var(--line)',
                             opacity: day?.future ? 0.5 : 1,
                           }}
                           title={day?.date}
@@ -375,7 +375,7 @@ export default function HabitsPage() {
 
               <div className="flex flex-col">
                 <p className="text-xs font-medium text-gray-500 mb-1 flex-shrink-0">Стрики — 30 дней</p>
-                <div className="h-[160px]" style={{ color: 'var(--color-muted)' }}>
+                <div className="h-[160px]" style={{ color: 'var(--mid)' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={buildStreakLineData()} margin={{ top: 4, right: 4, bottom: 0, left: -24 }}>
                       <XAxis
@@ -493,7 +493,7 @@ export default function HabitsPage() {
                               className="w-[7px] h-[7px] rounded-full flex-shrink-0"
                               style={{ backgroundColor: isDark ? entry.neon : entry.color }}
                             />
-                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 10 }}>{entry.label}</span>
+                            <span style={{ color: 'var(--fg-body)', fontSize: 10 }}>{entry.label}</span>
                           </div>
                         ))}
                       </div>

@@ -44,7 +44,7 @@ export default function LoginPage() {
               height="28"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="var(--accent-ink)"
+              stroke="var(--bg)"
               strokeWidth="2"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -55,17 +55,11 @@ export default function LoginPage() {
           </div>
           <h1
             className="text-3xl font-semibold"
-            style={{
-              background: 'linear-gradient(180deg, var(--ink), var(--ink-2))',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              color: 'transparent',
-              letterSpacing: '-0.02em',
-            }}
+            style={{ color: 'var(--fg)', letterSpacing: '-0.02em' }}
           >
             Time<span style={{ color: 'var(--accent)' }}>Scheduler</span>
           </h1>
-          <p className="text-sm mt-2" style={{ color: 'var(--ink-3)' }}>
+          <p className="text-sm mt-2" style={{ color: 'var(--mid)' }}>
             Войдите в свой планировщик
           </p>
         </div>
@@ -92,7 +86,7 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <p className="text-center text-xs mt-6" style={{ color: 'var(--ink-3)' }}>
+        <p className="text-center text-xs mt-6" style={{ color: 'var(--mid)' }}>
           TimeScheduler &copy; {new Date().getFullYear()}
         </p>
       </div>

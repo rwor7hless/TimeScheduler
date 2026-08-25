@@ -73,10 +73,10 @@ function AdminIcon() {
 }
 
 const PRIO_COLOR: Record<string, string> = {
-  low: 'var(--ink-3)',
-  medium: 'var(--blue)',
-  high: 'var(--orange)',
-  urgent: 'var(--danger)',
+  low: 'var(--mid)',
+  medium: 'var(--fg-body)',
+  high: 'var(--accent)',
+  urgent: 'var(--red)',
 }
 
 interface SidebarProps {
@@ -292,7 +292,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
                             {t.title}
                           </span>
                           {t.tags && t.tags.length > 0 && <TagBadgeGroup tags={t.tags} />}
-                          <span style={{ fontSize: 10, color: PRIO_COLOR[t.priority] ?? 'var(--ink-3)', fontWeight: 600 }}>
+                          <span style={{ fontSize: 10, color: PRIO_COLOR[t.priority] ?? 'var(--mid)', fontWeight: 600 }}>
                             {t.priority}
                           </span>
                         </button>
@@ -335,7 +335,7 @@ export default function Sidebar({ isOpen, onClose, searchRef }: SidebarProps) {
                   )}
                 </>
               ) : (
-                <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--ink-3)' }}>
+                <div style={{ padding: 16, textAlign: 'center', fontSize: 12, color: 'var(--mid)' }}>
                   Ничего не найдено
                 </div>
               )}

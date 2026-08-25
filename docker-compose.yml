@@ -50,3 +50,13 @@ volumes:
   pgdata:
     name: timescheduler_pgdata
     external: true
+
+# Docker's automatic pool allocator refuses every predefined pool while a
+# split-tunnel VPN is up (its 128.0.0.0/1 / 64.0.0.0/2 / ... routes cover the
+# whole 172.16/12 and 192.168/16 space), failing with "all predefined address
+# pools have been fully subnetted". An explicit subnet bypasses the allocator.
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16
