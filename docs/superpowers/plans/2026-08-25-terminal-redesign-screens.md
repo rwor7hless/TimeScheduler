@@ -113,7 +113,9 @@ const PALETTE =
   /\b(?:bg|text|border|from|to|via|fill|stroke|divide)-(?:gray|slate|zinc|neutral|stone|white|black|amber|blue|green|red|orange|purple|pink|indigo|emerald|yellow|violet|rose|teal|cyan|sky|lime|fuchsia)(?:-\d{2,3})?\b/
 const RADIUS = /\brounded(?:-[a-z0-9[\]]+)?\b/
 const SHADOW = /\bshadow(?:-[a-z0-9[\]]+)?\b/
-const BREAKPOINT = /\b(?:sm|md|lg|xl|2xl):/
+// Двоеточие вплотную к классу: `md: string` — это аннотация типа у параметра
+// с именем md, а не вариант Tailwind.
+const BREAKPOINT = /\b(?:sm|md|lg|xl|2xl):(?=[a-z[-])/
 
 const CATEGORIES = [
   ['palette', PALETTE],

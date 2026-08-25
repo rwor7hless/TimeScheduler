@@ -6,23 +6,23 @@ interface Props {
 export function ReportStatusBadge({ status, isStreaming }: Props) {
   if (isStreaming || status === 'in_progress') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 bg-bg-cell text-accent">
+        <span className="w-1.5 h-1.5 bg-accent animate-pulse" />
         Пишет…
       </span>
     )
   }
   if (status === 'pending') {
     return (
-      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400">
-        <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+      <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 bg-bg-cell text-fg-mid">
+        <span className="w-1.5 h-1.5 bg-fg-mid animate-pulse" />
         Генерируется…
       </span>
     )
   }
   if (status === 'done') {
     return (
-      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 bg-bg-cell text-success">
         <svg
           width="8"
           height="8"
@@ -40,7 +40,7 @@ export function ReportStatusBadge({ status, isStreaming }: Props) {
     )
   }
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400">
+    <span className="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 bg-bg-cell text-danger">
       Ошибка
     </span>
   )

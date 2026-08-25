@@ -20,11 +20,11 @@ interface ItemProps {
 
 function statusDotClass(status: string, isStreaming: boolean): string {
   if (isStreaming || status === 'in_progress')
-    return 'bg-sky-400 shadow-[0_0_10px_rgba(56,189,248,0.6)] animate-pulse'
+    return 'bg-accent animate-pulse'
   if (status === 'pending')
-    return 'bg-amber-400 shadow-[0_0_10px_rgba(251,191,36,0.6)] animate-pulse'
-  if (status === 'done') return 'bg-emerald-400'
-  return 'bg-rose-400'
+    return 'bg-fg-mid animate-pulse'
+  if (status === 'done') return 'bg-success'
+  return 'bg-danger'
 }
 
 function ChevronDown({ isOpen }: { isOpen: boolean }) {
@@ -38,7 +38,7 @@ function ChevronDown({ isOpen }: { isOpen: boolean }) {
       strokeWidth="1.7"
       strokeLinecap="round"
       strokeLinejoin="round"
-      className={`text-gray-400 dark:text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+      className={`text-fg-mid transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
     >
       <polyline points="6 9 12 15 18 9" />
     </svg>
@@ -64,24 +64,24 @@ function ReportItem({
     streamingContent ?? (report.status === 'done' ? report.content : null)
 
   return (
-    <li className="rounded-2xl border border-gray-200/80 dark:border-gray-700/60 bg-white/80 dark:bg-gray-800/60 backdrop-blur-sm overflow-hidden transition-colors">
+    <li className=" border border-line bg-bg-cell backdrop-blur-sm overflow-hidden transition-colors">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="w-full flex items-center gap-3 px-4 sm:px-5 py-3.5 text-left hover:bg-gray-50/70 dark:hover:bg-gray-800/80 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50 rounded-2xl"
+        className="w-full flex items-center gap-3 px-5 py-3.5 text-left hover:bg-bg-raised transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-400/50"
       >
         <span
-          className={`flex-shrink-0 w-2 h-2 rounded-full ${statusDotClass(report.status, isStreaming)}`}
+          className={`flex-shrink-0 w-2 h-2 ${statusDotClass(report.status, isStreaming)}`}
         />
         <div className="flex-1 min-w-0">
-          <p className="text-[11px] uppercase tracking-wider text-gray-400 dark:text-gray-500 mb-0.5">
+          <p className="text-[11px] uppercase tracking-wider text-fg-mid mb-0.5">
             Отчёт за неделю
           </p>
-          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">
+          <p className="text-sm font-semibold text-fg truncate">
             {rangeLabel}
           </p>
-          <p className="text-[11px] text-gray-400 dark:text-gray-500 mt-0.5 hidden sm:block">
+          <p className="text-[11px] text-fg-mid mt-0.5">
             Сгенерирован {generatedAt}
           </p>
         </div>
@@ -101,7 +101,7 @@ function ReportItem({
             transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
             style={{ overflow: 'hidden' }}
           >
-            <div className="border-t border-gray-100 dark:border-gray-700/60 px-3 sm:px-4 py-4 bg-gradient-to-b from-transparent to-gray-50/30 dark:to-gray-900/20">
+            <div className="border-t border-line-soft px-4 py-4">
               {/* Pending, стрим ещё не начался */}
               {report.status === 'pending' && !content && <ThinkingIndicator />}
 
@@ -112,7 +112,7 @@ function ReportItem({
 
               {/* Чужая вкладка уже генерирует */}
               {report.status === 'in_progress' && !isStreaming && !content && (
-                <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400 px-2 py-4">
+                <div className="flex items-center gap-3 text-sm text-fg-mid px-2 py-4">
                   <Spinner className="!w-5 !h-5" />
                   <span>Отчёт пишется в другой вкладке…</span>
                 </div>
@@ -121,11 +121,11 @@ function ReportItem({
               {/* Ошибка без контента */}
               {report.status === 'error' && !content && (
                 <div className="text-sm px-2 py-2">
-                  <p className="font-medium text-rose-600 dark:text-rose-400 mb-1">
+                  <p className="font-medium text-danger mb-1">
                     Не удалось сгенерировать отчёт
                   </p>
                   {report.error_msg && (
-                    <p className="text-xs font-mono text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-900/20 rounded-lg px-3 py-2 border border-rose-100 dark:border-rose-900/40">
+                    <p className="text-xs font-mono text-danger bg-bg-cell px-3 py-2 border border-danger">
                       {report.error_msg}
                     </p>
                   )}
@@ -138,7 +138,7 @@ function ReportItem({
               )}
 
               {/* Футер — время создания, для свёрнутого режима сюда точно не заглянут */}
-              <p className="mt-4 text-[11px] text-gray-300 dark:text-gray-600 px-1">
+              <p className="mt-4 text-[11px] text-fg-mid px-1">
                 Создан {generatedAt}
               </p>
             </div>

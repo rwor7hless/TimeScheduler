@@ -215,12 +215,12 @@ export function ThinkingIndicator() {
 
   return (
     <div className="flex flex-col items-center gap-4 py-6">
-      <pre className="font-mono text-[11px] leading-[1.05] text-sky-500/80 dark:text-sky-400/80 select-none whitespace-pre text-center">
+      <pre className="font-mono text-[11px] leading-[1.05] text-accent select-none whitespace-pre text-center">
         {frame}
       </pre>
       <span
         key={msgIdx}
-        className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-xs"
+        className="text-sm text-fg-mid text-center max-w-xs"
       >
         {THINKING_MESSAGES[msgIdx]}
       </span>
@@ -231,6 +231,6 @@ export function ThinkingIndicator() {
 /** Мигающий курсор для вставки в конце стримящегося текста. */
 export function StreamCursor() {
   return (
-    <span className="inline-block w-0.5 h-4 bg-amber-400 animate-pulse ml-0.5 align-middle" />
+    <span className="inline-block w-0.5 h-4 bg-bg-sel animate-pulse ml-0.5 align-middle" />
   )
 }

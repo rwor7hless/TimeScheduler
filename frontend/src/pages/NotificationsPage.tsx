@@ -99,9 +99,9 @@ export default function NotificationsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="page-title">История отчётов</h1>
-          <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+          <p className="text-sm text-fg-mid mt-1">
             Архив прошлых недель. Актуальный разбор и аналитика — на{' '}
-            <a href="/stats?tab=week" className="text-amber-600 dark:text-amber-400 hover:underline">
+            <a href="/stats?tab=week" className="text-accent hover:underline">
               вкладке Статистика
             </a>
             . AI-отчёт генерируется автоматически каждое воскресенье в 21:00
@@ -124,7 +124,7 @@ export default function NotificationsPage() {
       {isLoading && <Spinner className="mt-20" />}
 
       {!isLoading && (!reports || reports.length === 0) && (
-        <div className="text-center py-20 text-gray-400 dark:text-gray-500">
+        <div className="text-center py-20 text-fg-mid">
           <svg
             className="w-10 h-10 mx-auto mb-3 opacity-40"
             viewBox="0 0 24 24"
