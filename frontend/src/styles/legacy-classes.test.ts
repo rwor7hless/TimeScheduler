@@ -30,7 +30,6 @@ const CATEGORIES = [
  * записи, которая устарела после того, как файл починили.
  */
 const BASELINE: Record<string, readonly string[]> = {
-  'components/layout/AppShell.tsx': ['breakpoint'],
 }
 
 function sourceFiles(dir: string): string[] {

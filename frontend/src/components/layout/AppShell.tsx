@@ -91,7 +91,7 @@ export default function AppShell() {
         type="button"
         aria-label="Меню"
         onClick={() => setSidebarOpen(true)}
-        className="ts-shell__burger icon-btn lg:hidden"
+        className="ts-shell__burger icon-btn hidden"
       >
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 6h16M4 12h16M4 18h16" />
@@ -101,7 +101,7 @@ export default function AppShell() {
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="ts-shell__backdrop lg:hidden"
+          className="ts-shell__backdrop hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

@@ -116,6 +116,7 @@ body {
 
 .ts-shell__main {
   padding: 24px 28px;
+  background: var(--bg);
   overflow: auto;
   min-width: 0;
   min-height: 0;
