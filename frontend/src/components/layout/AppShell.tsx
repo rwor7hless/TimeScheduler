@@ -93,7 +93,7 @@ export default function AppShell() {
         onClick={() => setSidebarOpen(true)}
         className="ts-shell__burger icon-btn hidden"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>

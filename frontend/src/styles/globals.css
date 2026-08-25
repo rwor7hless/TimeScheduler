@@ -253,6 +253,9 @@ body {
   text-decoration: none;
   cursor: pointer;
 }
+.ts-side__link svg {
+  flex-shrink: 0;
+}
 .ts-side__link:hover {
   background: var(--bg-hover);
   color: var(--fg);
@@ -485,6 +488,118 @@ textarea:focus,
 select:focus {
   outline: none;
   border-color: var(--accent);
+}
+
+/* ============================================================================
+   FORM CONTROL
+
+   Голое правило `input {}` выше задаёт только цвета. Метрику — высоту,
+   отступы, кегль — несёт этот класс; без него поле выглядит браузерным
+   дефолтом. Его отсутствие ничем не диагностируется, поэтому за ним следит
+   css-classes.test.ts.
+   ============================================================================ */
+
+.ts-input {
+  width: 100%;
+  height: var(--row-h);
+  padding: 0 10px;
+  font-family: inherit;
+  font-size: var(--fs);
+  background: var(--bg-cell);
+  border: 1px solid var(--line);
+  color: var(--fg);
+  outline: none;
+}
+.ts-input::placeholder {
+  color: var(--dim);
+}
+.ts-input:focus {
+  border-color: var(--accent);
+}
+.ts-input--err {
+  border-color: var(--red);
+}
+
+/* Быстрый ввод на «Моём дне»: настоящий input прозрачен, текст рисует слой
+   под ним — так подсветка разбора не мешает каретке. */
+input.quick-add {
+  background: transparent;
+  color: transparent;
+  border-color: transparent;
+}
+
+/* ============================================================================
+   PAGE HEADER
+   ============================================================================ */
+
+.topbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.topbar-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.page-title {
+  margin: 0 0 2px;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+.page-sub {
+  color: var(--mid);
+  font-size: 12px;
+}
+
+/* ============================================================================
+   SUB-TABS
+
+   Сегменты делятся одной линией, а не рамкой у каждого: две соседние рамки
+   по 1px читаются как 2px и сразу выдают нетерминальную сетку.
+   ============================================================================ */
+
+.ts-subtabs {
+  display: inline-flex;
+  border: 1px solid var(--line);
+}
+.ts-subtabs a,
+.ts-subtabs button {
+  display: inline-flex;
+  align-items: center;
+  height: var(--row-h);
+  padding: 0 12px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--mid);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+}
+.ts-subtabs a:last-child,
+.ts-subtabs button:last-child {
+  border-right: 0;
+}
+.ts-subtabs a:hover,
+.ts-subtabs button:hover {
+  background: var(--bg-hover);
+  color: var(--fg);
+}
+.ts-subtabs a.active,
+.ts-subtabs button.active,
+.ts-subtabs a[aria-current="true"] {
+  background: var(--bg-sel);
+  color: var(--fg);
 }
 
 /* ============================================================================
