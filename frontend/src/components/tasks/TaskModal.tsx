@@ -19,10 +19,10 @@ interface TaskModalProps {
 }
 
 const PRIORITY_CONFIG: { value: Priority; label: string; activeClass: string; ghostClass: string }[] = [
-  { value: 'low',    label: '↓',  activeClass: 'bg-gray-500 text-white',   ghostClass: 'text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-white/10' },
-  { value: 'medium', label: '—',  activeClass: 'bg-blue-500 text-white',   ghostClass: 'text-blue-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30' },
-  { value: 'high',   label: '↑',  activeClass: 'bg-orange-500 text-white', ghostClass: 'text-orange-400 hover:text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/30' },
-  { value: 'urgent', label: '⚡', activeClass: 'bg-red-500 text-white',    ghostClass: 'text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30' },
+  { value: 'low',    label: '↓',  activeClass: 'bg-fg-mid text-bg',  ghostClass: 'text-fg-mid hover:text-fg-body hover:bg-bg-hover' },
+  { value: 'medium', label: '—',  activeClass: 'bg-fg-body text-bg', ghostClass: 'text-fg-body hover:text-fg hover:bg-bg-hover' },
+  { value: 'high',   label: '↑',  activeClass: 'bg-accent text-bg',  ghostClass: 'text-accent hover:text-accent-light hover:bg-bg-sel' },
+  { value: 'urgent', label: '⚡', activeClass: 'bg-danger text-bg',  ghostClass: 'text-danger hover:text-danger hover:bg-bg-hover' },
 ]
 
 const PRIORITY_TITLES: Record<Priority, string> = {
@@ -298,7 +298,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
     : ''
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование задачи' : 'Новая задача'} maxWidth="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={task ? 'Редактирование задачи':'Новая задача'} maxWidth="2xl">
       <form onSubmit={handleSubmit} className="space-y-5">
 
         {/* Quick input */}
@@ -306,13 +306,13 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
           <input
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder={task ? 'Название' : 'Что нужно сделать? (например: купить хлеб завтра в 18:00)'}
+            placeholder={task ? 'Название':'Что нужно сделать? (например: купить хлеб завтра в 18:00)'}
             required
             autoFocus
-            className="w-full text-lg font-medium px-0 py-1 bg-transparent border-0 border-b-2 border-gray-200 dark:border-gray-700 focus:border-indigo-400 focus:outline-none placeholder-gray-300 dark:placeholder-gray-600 text-gray-900 dark:text-gray-100 transition-colors"
+            className="w-full text-lg font-medium px-0 py-1 bg-transparent border-0 border-b-2 border-line focus:border-accent focus:outline-none placeholder-gray-300 text-fg transition-colors"
           />
           {parserHint && !task && (
-            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-indigo-500 dark:text-indigo-400">
+            <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-accent">
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -322,15 +322,15 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
         </div>
 
         {/* Two columns: WHAT / WHEN */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
 
           {/* WHAT */}
-          <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-white/5 p-3 space-y-3">
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Что</h3>
+          <section className="border border-line bg-bg-raised p-3 space-y-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-fg-mid">Что</h3>
 
             {/* Priority */}
             <div>
-              <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Приоритет</div>
+              <div className="text-[11px] font-medium text-fg-mid mb-1">Приоритет</div>
               <div className="flex gap-1">
                 {PRIORITY_CONFIG.map((p) => (
                   <button
@@ -339,10 +339,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     onClick={() => setPriority(p.value)}
                     title={PRIORITY_TITLES[p.value]}
                     className={clsx(
-                      'flex-1 py-1.5 rounded-lg text-sm font-semibold transition-all',
+                      'flex-1 py-1.5 text-sm font-semibold transition-all',
                       priority === p.value
                         ? p.activeClass
-                        : `bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 ${p.ghostClass}`
+                        : `bg-bg-cell border border-line ${p.ghostClass}`
                     )}
                   >
                     {p.label}
@@ -354,7 +354,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             {/* Tags */}
             {tags && tags.length > 0 && (
               <div>
-                <div className="text-[11px] font-medium text-gray-500 dark:text-gray-400 mb-1">Теги</div>
+                <div className="text-[11px] font-medium text-fg-mid mb-1">Теги</div>
                 <div className="flex flex-wrap gap-1">
                   {tags.map((tag) => {
                     const active = selectedTagIds.includes(tag.id)
@@ -364,10 +364,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                         type="button"
                         onClick={() => toggleTag(tag.id)}
                         className={clsx(
-                          'px-2 py-0.5 rounded-full text-[11px] font-medium transition-all',
+                          'px-2 py-0.5 text-[11px] font-medium transition-all',
                           active
-                            ? 'text-white'
-                            : 'text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 hover:border-gray-300 dark:hover:border-white/20'
+                            ? 'text-bg'
+                            : 'text-fg-body bg-bg-cell border border-line hover:border-line'
                         )}
                         style={active ? { backgroundColor: tag.color } : undefined}
                       >
@@ -381,12 +381,12 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
 
             {/* Done (edit only) */}
             {task && (
-              <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+              <label className="flex items-center gap-2 text-sm text-fg-body cursor-pointer">
                 <input
                   type="checkbox"
                   checked={done}
                   onChange={(e) => setDone(e.target.checked)}
-                  className="w-4 h-4 rounded border-gray-300 dark:border-gray-600"
+                  className="w-4 h-4 border-line"
                 />
                 Выполнено
               </label>
@@ -394,16 +394,16 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
           </section>
 
           {/* WHEN */}
-          <section className="rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50/40 dark:bg-white/5 p-3 space-y-3">
-            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Когда</h3>
+          <section className="border border-line bg-bg-raised p-3 space-y-3">
+            <h3 className="text-[10px] font-semibold uppercase tracking-wider text-fg-mid">Когда</h3>
 
             {/* Scheduled */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                <span className="text-[11px] font-medium text-fg-mid">
                   Расписание
                   {scheduledDate && (
-                    <span className="ml-1.5 text-indigo-500 dark:text-indigo-400 font-normal normal-case">
+                    <span className="ml-1.5 text-accent font-normal normal-case">
                       {whenLabel}
                     </span>
                   )}
@@ -412,7 +412,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   <button
                     type="button"
                     onClick={() => { setScheduledDate(''); setStartTime(''); setEndTime('') }}
-                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-[10px] text-fg-mid hover:text-danger transition-colors"
                   >
                     очистить
                   </button>
@@ -426,7 +426,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     setScheduledDate(e.target.value)
                     if (e.target.value && !startTime) { setStartTime('09:00'); setEndTime('10:00') }
                   }}
-                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-gray-200 dark:border-white/10 rounded-lg text-sm bg-white dark:bg-white/5 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-indigo-400"
+                  className="flex-1 min-w-0 px-2.5 h-[34px] border border-line text-sm bg-bg-cell focus:outline-none focus:ring-2 focus:ring-indigo-400/30 focus:border-accent"
                 />
                 {scheduledDate && (
                   <>
@@ -444,7 +444,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                         }
                       }}
                     />
-                    <span className="text-gray-400 text-xs">–</span>
+                    <span className="text-fg-mid text-xs">–</span>
                     <TimeField
                       value={endTime || '10:00'}
                       onChange={setEndTime}
@@ -457,12 +457,12 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             {/* Deadline */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Дедлайн</span>
+                <span className="text-[11px] font-medium text-fg-mid">Дедлайн</span>
                 {showDeadline && (
                   <button
                     type="button"
                     onClick={() => { setShowDeadline(false); setDeadlineDate(''); setDeadlineTime('') }}
-                    className="text-[10px] text-gray-400 hover:text-red-500 transition-colors"
+                    className="text-[10px] text-fg-mid hover:text-danger transition-colors"
                   >
                     убрать
                   </button>
@@ -474,7 +474,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                     type="date"
                     value={deadlineDate}
                     onChange={(e) => setDeadlineDate(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 h-[34px] border border-red-200 dark:border-red-900/40 rounded-lg text-sm bg-red-50/40 dark:bg-red-950/20 text-red-700 dark:text-red-300 focus:outline-none focus:ring-2 focus:ring-red-400/30"
+                    className="flex-1 min-w-0 px-2.5 h-[34px] border border-danger text-sm bg-bg-cell text-danger focus:outline-none focus:ring-2 focus:ring-red-400/30"
                   />
                   <TimeField
                     tone="danger"
@@ -486,7 +486,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                 <button
                   type="button"
                   onClick={() => { setShowDeadline(true); if (!deadlineTime) setDeadlineTime('23:59') }}
-                  className="w-full px-3 py-2 text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 bg-white dark:bg-white/5 border border-dashed border-gray-300 dark:border-white/10 rounded-lg hover:border-red-300 transition-all"
+                  className="w-full px-3 py-2 text-xs text-fg-mid hover:text-danger bg-bg-cell border border-dashed border-line hover:border-danger transition-all"
                 >
                   + добавить дедлайн
                 </button>
@@ -496,15 +496,15 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             {/* Repeat */}
             <div>
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">Повтор</span>
+                <span className="text-[11px] font-medium text-fg-mid">Повтор</span>
                 <button
                   type="button"
                   onClick={() => setRepeatDays(repeatDays.length === 7 ? [] : [0, 1, 2, 3, 4, 5, 6])}
                   className={clsx(
-                    'text-[10px] font-medium px-2 py-0.5 rounded-full transition-all',
+                    'text-[10px] font-medium px-2 py-0.5 transition-all',
                     repeatDays.length === 7
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-gray-100 dark:bg-white/5 text-amber-700 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20'
+                      ? 'bg-bg-sel text-bg'
+                      : 'bg-bg-hover text-accent hover:bg-bg-sel'
                   )}
                 >
                   Каждый день
@@ -521,10 +521,10 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                       )
                     }
                     className={clsx(
-                      'flex-1 py-1 rounded-lg text-[11px] font-medium transition-all',
+                      'flex-1 py-1 text-[11px] font-medium transition-all',
                       repeatDays.includes(i)
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/10'
+                        ? 'bg-bg-sel text-bg'
+                        : 'bg-bg-cell border border-line text-fg-mid hover:bg-bg-hover'
                     )}
                   >
                     {label}
@@ -541,7 +541,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full h-20 px-3 py-2 bg-gray-50/60 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-300 resize-none placeholder-gray-300 dark:placeholder-gray-600 dark:text-gray-200 transition-colors"
+              className="w-full h-20 px-3 py-2 bg-bg-raised border border-line text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-accent resize-none placeholder-gray-300 transition-colors"
               placeholder="Описание..."
               autoFocus={showDescription && !description}
             />
@@ -549,7 +549,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <button
               type="button"
               onClick={() => setShowDescription(true)}
-              className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors flex items-center gap-1.5"
+              className="text-xs text-fg-mid hover:text-fg-body transition-colors flex items-center gap-1.5"
             >
               <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               Добавить описание
@@ -559,12 +559,12 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
 
         {/* Subtasks (edit only) */}
         {task && (
-          <div className="border-t border-gray-100 dark:border-white/10 pt-3 space-y-2">
+          <div className="border-t border-line-soft pt-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-fg-mid">
                 Подзадачи
                 {localSubtasks.length > 0 && (
-                  <span className="ml-1.5 text-gray-400 font-normal normal-case tracking-normal">
+                  <span className="ml-1.5 text-fg-mid font-normal normal-case tracking-normal">
                     {localSubtasks.filter((s) => s.done).length}/{localSubtasks.length}
                   </span>
                 )}
@@ -572,7 +572,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
               <button
                 type="button"
                 onClick={() => setShowSubtaskInput((v) => !v)}
-                className="text-xs text-indigo-500 hover:text-indigo-700 flex items-center gap-1"
+                className="text-xs text-accent hover:text-accent flex items-center gap-1"
               >
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                 Добавить
@@ -582,7 +582,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             {localSubtasks.length > 0 && (
               <ul className="space-y-0.5">
                 {localSubtasks.map((sub) => (
-                  <li key={sub.id} className="flex items-center gap-2 text-xs text-gray-700 dark:text-gray-300 py-1 px-2 rounded-lg hover:bg-gray-50/80 dark:hover:bg-white/5 group/sub">
+                  <li key={sub.id} className="flex items-center gap-2 text-xs text-fg-body py-1 px-2 hover:bg-bg-raised group/sub">
                     <button
                       type="button"
                       disabled={pendingSubtaskIds.has(sub.id)}
@@ -602,11 +602,11 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                         }
                       }}
                       className={clsx(
-                        'w-3.5 h-3.5 rounded-full border-2 flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-wait',
-                        sub.done ? 'bg-emerald-500 border-emerald-500 hover:bg-emerald-400' : 'border-gray-300 hover:border-emerald-400'
+                        'w-3.5 h-3.5 border-2 flex-shrink-0 transition-colors disabled:opacity-50 disabled:cursor-wait',
+                        sub.done ? 'bg-bg-cell border-success hover:bg-bg-cell' : 'border-line hover:border-success'
                       )}
                     />
-                    <span className={clsx('flex-1', sub.done && 'line-through text-gray-400')}>{sub.title}</span>
+                    <span className={clsx('flex-1', sub.done && 'line-through text-fg-mid')}>{sub.title}</span>
                     <button
                       type="button"
                       onClick={async () => {
@@ -618,7 +618,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                           toast.error('Не удалось удалить подзадачу')
                         }
                       }}
-                      className="w-4 h-4 flex items-center justify-center text-gray-300 hover:text-red-400 opacity-0 group-hover/sub:opacity-100 transition-all flex-shrink-0"
+                      className="w-4 h-4 flex items-center justify-center text-fg-mid hover:text-danger opacity-0 group-hover/sub:opacity-100 transition-all flex-shrink-0"
                     >
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -637,14 +637,14 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddSubtask() } if (e.key === 'Escape') { setShowSubtaskInput(false); setNewSubtaskTitle('') } }}
                   placeholder="Название подзадачи..."
-                  className="flex-1 px-2.5 py-1.5 border border-gray-200 dark:border-white/10 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-indigo-400 bg-white dark:bg-white/5 dark:text-gray-200"
+                  className="flex-1 px-2.5 py-1.5 border border-line text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400/40 focus:border-accent bg-bg-cell"
                   autoFocus
                 />
                 <button
                   type="button"
                   onClick={handleAddSubtask}
                   disabled={!newSubtaskTitle.trim() || createTask.isPending}
-                  className="px-2.5 py-1.5 bg-indigo-500 text-white text-xs rounded-lg hover:bg-indigo-600 disabled:opacity-40"
+                  className="px-2.5 py-1.5 bg-bg-sel text-bg text-xs hover:bg-bg-sel disabled:opacity-40"
                 >
                   ОК
                 </button>
@@ -654,13 +654,13 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
         )}
 
         {/* Actions */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100 dark:border-white/10">
+        <div className="flex items-center justify-between pt-3 border-t border-line-soft">
           {task ? (
             <button
               type="button"
               onClick={handleDeleteClick}
               disabled={deleteTask.isPending}
-              className="px-3 py-1.5 text-xs font-medium text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-40"
+              className="px-3 py-1.5 text-xs font-medium text-danger hover:text-danger hover:bg-bg-cell transition-colors disabled:opacity-40"
             >
               Удалить
             </button>
@@ -669,19 +669,19 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-white/10 rounded-lg transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-fg-body hover:bg-bg-hover transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={createTask.isPending || updateTask.isPending || !title.trim()}
-              className="px-4 py-1.5 text-xs font-semibold bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+              className="px-4 py-1.5 text-xs font-semibold bg-bg-sel text-bg hover:bg-bg-sel disabled:opacity-40 transition-colors flex items-center gap-1.5"
             >
               {(createTask.isPending || updateTask.isPending) && (
                 <svg className="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" strokeDasharray="40" strokeLinecap="round"/></svg>
               )}
-              {task ? 'Сохранить' : 'Создать'}
+              {task ? 'Сохранить':'Создать'}
             </button>
           </div>
         </div>

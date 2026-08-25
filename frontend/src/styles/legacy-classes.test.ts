@@ -32,7 +32,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/calendar/MonthView.tsx': ['breakpoint', 'palette', 'radius'],
   'components/calendar/WeekView.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'components/layout/AppShell.tsx': ['breakpoint'],
-  'components/layout/SidebarBoardTree.tsx': ['palette', 'radius'],
   'components/reports/ReportAccordion.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'components/reports/ReportContent.tsx': ['breakpoint'],
   'components/reports/ReportStatusBadge.tsx': ['palette', 'radius'],
@@ -45,15 +44,12 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/stats/StatsWeekView.tsx': ['breakpoint', 'palette', 'radius'],
   'components/stats/WeekNavigator.tsx': ['breakpoint', 'palette', 'radius'],
   'components/stats/WeekReportBody.tsx': ['palette', 'radius'],
-  'components/tasks/TaskModal.tsx': ['breakpoint', 'palette', 'radius'],
   'components/ui/ThemePicker.tsx': ['shadow'],
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/CalendarPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/ExportPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/HabitsPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/NotificationsPage.tsx': ['palette'],
-  'pages/TasksPage.tsx': ['palette'],
-  'pages/TodoListPage.tsx': ['palette', 'radius', 'shadow'],
 }
 
 function sourceFiles(dir: string): string[] {

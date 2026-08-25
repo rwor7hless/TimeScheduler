@@ -73,7 +73,7 @@ export default function TasksPage() {
 
       {buckets.overdue.length > 0 && (
         <section className="space-y-1.5">
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-red-500 dark:text-red-400">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-danger">
             Просрочено ({buckets.overdue.length})
           </div>
           {buckets.overdue.map(renderRow)}
@@ -82,7 +82,7 @@ export default function TasksPage() {
 
       {buckets.today.length > 0 && (
         <section className="space-y-1.5">
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-fg-mid">
             Сегодня ({buckets.today.length})
           </div>
           {buckets.today.map(renderRow)}
@@ -91,7 +91,7 @@ export default function TasksPage() {
 
       {buckets.sections.map((s) => (
         <section key={String(s.key)} className="space-y-1.5">
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-fg-mid">
             {s.label} ({s.tasks.length})
           </div>
           {s.tasks.map(renderRow)}
@@ -101,7 +101,7 @@ export default function TasksPage() {
       {buckets.overdue.length === 0 &&
         buckets.today.length === 0 &&
         buckets.sections.length === 0 && (
-          <p className="text-sm text-gray-400 dark:text-gray-500 py-3">Нет задач — всё чисто</p>
+          <p className="text-sm text-fg-mid py-3">Нет задач — всё чисто</p>
         )}
 
       <TaskModal isOpen={modalOpen} onClose={() => setModalOpen(false)} task={editing} />

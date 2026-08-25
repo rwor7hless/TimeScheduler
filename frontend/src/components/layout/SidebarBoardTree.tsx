@@ -352,7 +352,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
               if (e.key === 'Enter') handleRename()
               if (e.key === 'Escape') setRenameTarget(null)
             }}
-            className="ts-side__link flex-1 bg-transparent border border-amber-400 rounded px-2 py-1 text-sm"
+            className="ts-side__link flex-1 bg-transparent border border-accent px-2 py-1 text-sm"
           />
         ) : (
           <NavLink
@@ -427,7 +427,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                 if (e.key === 'Enter') handleRename()
                 if (e.key === 'Escape') setRenameTarget(null)
               }}
-              className="flex-1 bg-transparent border border-amber-400 rounded px-2 py-1 text-[11px]"
+              className="flex-1 bg-transparent border border-accent px-2 py-1 text-[11px]"
             />
           ) : (
             <button
@@ -484,12 +484,12 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
         className={clsx(
           'transition-all duration-200 ease-out',
           visible
-            ? 'h-7 mx-1 mb-1 rounded-md flex items-center justify-center text-[10px] uppercase tracking-wider border border-dashed'
+            ? 'h-7 mx-1 mb-1 flex items-center justify-center text-[10px] uppercase tracking-wider border border-dashed'
             : 'h-0 overflow-hidden border-0',
           visible && isOver
-            ? 'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+            ? 'border-accent bg-bg-sel text-accent'
             : visible
-            ? 'border-gray-300 dark:border-gray-600 text-gray-400 dark:text-gray-500'
+            ? 'border-line text-fg-mid'
             : '',
         )}
       >
@@ -522,7 +522,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                 onClick={() => setCreateListOpen(true)}
                 title="Новый проект"
                 aria-label="Новый проект"
-                className="p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                className="p-0.5 hover:bg-bg-hover hover:text-fg-body transition-colors"
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                   <line x1="12" y1="5" x2="12" y2="19" />
@@ -535,7 +535,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                   onClick={() => setCreatingGroupName('')}
                   title="Новая группа"
                   aria-label="Новая группа"
-                  className="p-0.5 rounded hover:bg-gray-200/60 dark:hover:bg-gray-700/60 hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+                  className="p-0.5 hover:bg-bg-hover hover:text-fg-body transition-colors"
                 >
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
@@ -552,7 +552,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                     if (e.key === 'Escape') setCreatingGroupName(null)
                   }}
                   placeholder="Имя группы"
-                  className="bg-transparent border border-amber-400 rounded px-1.5 py-0 text-[10px] w-24"
+                  className="bg-transparent border border-accent px-1.5 py-0 text-[10px] w-24"
                 />
               )}
             </span>
@@ -583,7 +583,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                 <select
                   value={createListGroupId ?? ''}
                   onChange={(e) => setCreateListGroupId(e.target.value ? Number(e.target.value) : null)}
-                  className="w-full mt-1 px-2 py-1.5 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  className="w-full mt-1 px-2 py-1.5 border border-line bg-bg-cell"
                 >
                   <option value="">Без группы (верхний уровень)</option>
                   {(groups ?? []).map((g) => (
@@ -618,7 +618,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
                   checked={deleteGroupCascade}
                   onChange={() => setDeleteGroupCascade(true)}
                 />
-                <span className="text-red-600">Удалить группу вместе с проектами и их задачами</span>
+                <span className="text-danger">Удалить группу вместе с проектами и их задачами</span>
               </label>
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="secondary" onClick={() => setDeleteGroupTarget(null)}>Отмена</Button>
@@ -633,7 +633,7 @@ export default function SidebarBoardTree({ taskCounts, onClose }: Props) {
             title={`Удалить проект «${deleteListTarget?.name ?? ''}»?`}
           >
             <div className="space-y-4">
-              <p className="text-gray-600 dark:text-gray-300">
+              <p className="text-fg-body">
                 Задачи проекта станут «без проекта» и будут видны в «Задачи».
               </p>
               <div className="flex justify-end gap-2">

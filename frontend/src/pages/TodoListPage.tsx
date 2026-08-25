@@ -112,20 +112,20 @@ function DeadlineBadge({ deadline }: { deadline: string | null }) {
       (new Date(today).getTime() - new Date(dDate).getTime()) / 86400000
     )
     return (
-      <span className="text-[10px] font-medium text-red-500 bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap">
+      <span className="text-[10px] font-medium text-danger bg-bg-cell px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap">
         Просрочено {days}д
       </span>
     )
   }
   if (dDate === today) {
     return (
-      <span className="text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-full flex-shrink-0">
+      <span className="text-[10px] font-medium text-accent bg-bg-sel px-1.5 py-0.5 flex-shrink-0">
         Сегодня
       </span>
     )
   }
   return (
-    <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0 whitespace-nowrap">
+    <span className="text-[10px] text-fg-mid flex-shrink-0 whitespace-nowrap">
       до {formatDeadline(deadline)}
     </span>
   )
@@ -150,12 +150,12 @@ function TaskRow({
   return (
     <div
       className={clsx(
-        'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group',
+        'flex items-center gap-3 px-3 py-2 border transition-all group',
         done
-          ? 'opacity-50 bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50'
+          ? 'opacity-50 bg-bg-raised border-line-soft'
           : isOverdue
-          ? 'bg-red-50/40 dark:bg-red-900/10 border-red-200 dark:border-red-800/50 hover:border-red-300'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          ? 'bg-bg-cell border-danger hover:border-danger'
+          : 'bg-bg-cell border-line hover:border-line'
       )}
     >
       {/* Checkbox */}
@@ -163,12 +163,12 @@ function TaskRow({
         type="button"
         onClick={onToggle}
         className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border-2',
+          'w-5 h-5 flex-shrink-0 flex items-center justify-center transition-all border-2',
           done
-            ? 'text-white border-transparent'
+            ? 'text-bg border-transparent'
             : isOverdue
-            ? 'border-red-300 dark:border-red-700 hover:border-red-500'
-            : 'border-gray-300 dark:border-gray-600 hover:border-amber-400'
+            ? 'border-danger hover:border-danger'
+            : 'border-line hover:border-accent'
         )}
         style={done ? { backgroundColor: task.color } : undefined}
       >
@@ -190,7 +190,7 @@ function TaskRow({
 
       {/* Color dot */}
       <div
-        className="w-1.5 h-4 rounded-full flex-shrink-0"
+        className="w-1.5 h-4 flex-shrink-0"
         style={{ backgroundColor: task.color }}
       />
 
@@ -201,8 +201,8 @@ function TaskRow({
         className={clsx(
           'flex-1 text-sm font-medium text-left truncate transition-colors',
           done
-            ? 'line-through text-gray-400 dark:text-gray-500'
-            : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
+            ? 'line-through text-fg-mid'
+            : 'text-fg hover:text-accent'
         )}
       >
         {task.title}
@@ -210,7 +210,7 @@ function TaskRow({
 
       {/* Subtasks count */}
       {(task.subtasks?.length ?? 0) > 0 && (
-        <span className="text-[10px] text-gray-400 dark:text-gray-500 flex-shrink-0">
+        <span className="text-[10px] text-fg-mid flex-shrink-0">
           {task.subtasks.filter((s) => s.done).length}/{task.subtasks.length}
         </span>
       )}
@@ -233,15 +233,15 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white dark:bg-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+      <div className="absolute inset-0 bg-bg backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-bg-cell w-full max-w-2xl max-h-[80vh] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-line-soft">
+          <h2 className="text-base font-semibold text-fg">
             Завершённые задачи
           </h2>
           <button
             onClick={onClose}
-            className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="w-7 h-7 flex items-center justify-center text-fg-mid hover:text-fg-body hover:bg-bg-hover transition-colors"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -253,7 +253,7 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           {isLoading ? (
             <div className="flex justify-center py-10"><Spinner /></div>
           ) : !archived || archived.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            <div className="flex flex-col items-center justify-center py-12 text-fg-mid">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="mb-3 opacity-40">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -264,15 +264,15 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
               {archived.map((task) => (
                 <div
                   key={task.id}
-                  className="flex items-center gap-3 px-3 py-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors group"
+                  className="flex items-center gap-3 px-3 py-2.5 border border-line-soft bg-bg-raised hover:bg-bg-hover transition-colors group"
                 >
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: task.color }} />
+                  <div className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: task.color }} />
                   <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate line-through decoration-gray-300 dark:decoration-gray-600">
+                    <div className="text-sm font-medium text-fg-body truncate line-through decoration-line">
                       {task.title}
                     </div>
                     {task.completed_at && (
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                      <span className="text-[10px] text-fg-mid">
                         {new Date(task.completed_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
                       </span>
                     )}
@@ -283,13 +283,13 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
                         await unarchive.mutateAsync(task.id)
                         toast.success('Задача возвращена')
                       }}
-                      className="px-2 py-1 text-[11px] font-medium text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded-lg transition-colors"
+                      className="px-2 py-1 text-[11px] font-medium text-accent hover:text-accent hover:bg-bg-sel transition-colors"
                     >
                       Вернуть
                     </button>
                     <button
                       onClick={() => setDeletingId(task.id)}
-                      className="w-6 h-6 flex items-center justify-center text-gray-300 hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                      className="w-6 h-6 flex items-center justify-center text-fg-mid hover:text-danger hover:bg-bg-cell transition-colors"
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                         <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
@@ -302,7 +302,7 @@ function ArchivedModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => vo
           )}
         </div>
 
-        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 text-xs text-gray-400 text-center">
+        <div className="px-5 py-3 border-t border-line-soft text-xs text-fg-mid text-center">
           {archived && archived.length > 0 && `${archived.length} задач в архиве`}
         </div>
       </div>
@@ -439,9 +439,9 @@ export default function TodoListPage() {
   if (boardIdParam && !isValidBoardId) {
     return (
       <div className="space-y-4">
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-fg-body">
           Проект не найден.{' '}
-          <Link to="/tasks" className="text-amber-600 hover:underline">
+          <Link to="/tasks" className="text-accent hover:underline">
             К задачам
           </Link>
         </p>
@@ -456,18 +456,18 @@ export default function TodoListPage() {
         <div className="flex items-center gap-3">
           <Link
             to="/tasks"
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            className="text-sm text-fg-mid hover:text-accent transition-colors"
           >
             ← Задачи
           </Link>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{projectName}</h2>
+          <h2 className="text-lg font-semibold text-fg">{projectName}</h2>
         </div>
 
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setArchivedOpen(true)}
-            className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="text-sm text-fg-mid hover:text-fg-body px-3 py-1.5 hover:bg-bg-hover transition-colors"
           >
             Завершённые
           </button>
@@ -475,7 +475,7 @@ export default function TodoListPage() {
             <button
               type="button"
               onClick={() => setArchiveConfirmOpen(true)}
-              className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 px-3 py-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="text-sm text-fg-mid hover:text-fg-body px-3 py-1.5 hover:bg-bg-hover transition-colors"
             >
               В архив ({doneTasks.length})
             </button>
@@ -486,7 +486,7 @@ export default function TodoListPage() {
               setEditingTask(null)
               setModalOpen(true)
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-500 text-white text-sm font-medium transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-bg-sel hover:bg-bg-sel text-bg text-sm font-medium transition-colors"
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -504,13 +504,13 @@ export default function TodoListPage() {
           onChange={(e) => setQuickAdd(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleQuickAdd()}
           placeholder="Добавить задачу..."
-          className="flex-1 text-sm px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:border-amber-400 dark:focus:border-amber-500 transition-colors"
+          className="flex-1 text-sm px-3 py-2 border border-line bg-bg-cell text-fg placeholder-gray-400 focus:outline-none focus:border-accent transition-colors"
         />
         <button
           type="button"
           onClick={handleQuickAdd}
           disabled={!quickAdd.trim()}
-          className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+          className="px-3 py-2 bg-bg-sel hover:bg-bg-sel disabled:opacity-40 disabled:cursor-not-allowed text-bg transition-colors"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -520,7 +520,7 @@ export default function TodoListPage() {
 
       {/* Active tasks */}
       {activeTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-gray-300 dark:text-gray-600">
+        <div className="flex flex-col items-center justify-center py-16 text-fg-mid">
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" className="mb-3">
             <polyline points="9 11 12 14 22 4" />
             <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
@@ -574,7 +574,7 @@ export default function TodoListPage() {
           <button
             type="button"
             onClick={() => setDoneOpen((v) => !v)}
-            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors mb-2"
+            className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-fg-mid hover:text-fg-mid transition-colors mb-2"
           >
             <svg
               width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
