@@ -314,11 +314,11 @@ export default function DayView({ date, tasks, onTaskClick, onSlotClick, onTaskM
                 <>
                   <div
                     className="absolute z-30 pointer-events-none"
-                    style={{ top: `calc(${pct}% - 4px)`, left: '0px', width: '8px', height: '8px', backgroundColor: '#ef4444' }}
+                    style={{ top: `calc(${pct}% - 4px)`, left: '0px', width: '8px', height: '8px', backgroundColor: 'var(--red)' }}
                   />
                   <div
                     className="absolute left-0 right-0 z-30 pointer-events-none"
-                    style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: '#ef4444' }}
+                    style={{ top: `calc(${pct}% - 1px)`, height: '2px', backgroundColor: 'var(--red)' }}
                   />
                   <div
                     className="absolute z-30 pointer-events-none right-1 -translate-y-1/2 text-[10px] font-mono text-danger bg-bg-hover px-1 border border-danger"

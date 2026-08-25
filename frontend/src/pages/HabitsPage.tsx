@@ -15,7 +15,7 @@ import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { PALETTE as HABIT_COLORS } from '@/lib/colors'
+import { PALETTE as HABIT_COLORS, TIME_BUCKETS } from '@/lib/colors'
 
 // ─── Heatmap util ──────────────────────────────────────────────────────────────
 
@@ -72,13 +72,6 @@ function StatCard({ label, value, color }: { label: string; value: string; color
 
 // ─── Time buckets ──────────────────────────────────────────────────────────────
 
-const TIME_BUCKETS = [
-  { id: 'morning',      label: 'Утро',          hours: [6,7,8,9,10,11],      color: '#FBBF24', neon: '#FFEE44' },
-  { id: 'afternoon',    label: 'День',          hours: [12,13,14,15,16,17],  color: '#34D399', neon: '#00FF99' },
-  { id: 'evening',      label: 'Вечер',         hours: [18,19,20,21],        color: '#60A5FA', neon: '#00CCFF' },
-  { id: 'night',        label: 'Ночь',          hours: [22,23,0,1,2],        color: '#A78BFA', neon: '#CC66FF' },
-  { id: 'late night',   label: 'Поздняя ночь',  hours: [3,4,5],              color: '#A78BFA', neon: '#CC66FF' },
-]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
 

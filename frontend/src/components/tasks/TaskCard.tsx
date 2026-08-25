@@ -1,5 +1,6 @@
 import clsx from 'clsx'
 import { inkOn } from '@/styles/contrast'
+import { useTheme } from '@/context/ThemeContext'
 import type { Task, Priority } from '@/types/task'
 import { WEEKDAY_LABELS } from '@/types/task'
 import TagBadgeGroup from './TagBadgeGroup'
@@ -40,7 +41,8 @@ function getDeadlineStatus(deadline: string | null): 'overdue' | 'soon' | null {
 }
 
 export default function TaskCard({ task, onClick, compact = false, className, overlapping = false }: TaskCardProps) {
-  const color = task.color || '#6B7280'
+  const { colors } = useTheme()
+  const color = task.color || colors.fgMid
   const prio = PRIORITY_CONFIG[task.priority]
   const isCancelled = task.done
   const deadlineStatus = !isCancelled ? getDeadlineStatus(task.deadline) : null

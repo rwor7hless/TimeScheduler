@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams } from 'react
 import { QueryClientProvider } from '@tanstack/react-query'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider, useAuth } from '@/context/AuthContext'
-import { ThemeProvider } from '@/context/ThemeContext'
+import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import AppShell from '@/components/layout/AppShell'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
 import LoginPage from '@/pages/LoginPage'
@@ -15,6 +15,25 @@ import TodayPage from '@/pages/TodayPage'
 import TasksPage from '@/pages/TasksPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import { queryClient } from '@/lib/queryClient'
+
+/** Отдельный компонент, потому что useTheme() работает только внутри ThemeProvider. */
+function ThemedToaster() {
+  const { colors } = useTheme()
+  return (
+    <Toaster
+      position="bottom-right"
+      toastOptions={{
+        duration: 3000,
+        style: {
+          background: colors.surface,
+          color: colors.fg,
+          border: `1px solid ${colors.line}`,
+          fontSize: '14px',
+        },
+      }}
+    />
+  )
+}
 
 function ListPageRedirect() {
   const { boardId } = useParams<{ boardId: string }>()
@@ -75,18 +94,7 @@ export default function App() {
           </Routes>
           </ErrorBoundary>
         </BrowserRouter>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#1F2937',
-              color: '#F9FAFB',
-              fontSize: '14px',
-              borderRadius: '8px',
-            },
-          }}
-        />
+        <ThemedToaster />
       </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>

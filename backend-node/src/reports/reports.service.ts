@@ -4,7 +4,6 @@ import {
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { User, WeeklyReport } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LlmService } from '../llm/llm.service';
@@ -36,7 +35,6 @@ export class ReportsService {
     private readonly llm: LlmService,
     private readonly ntfy: NtfyService,
     private readonly weeklyData: WeeklyDataService,
-    private readonly config: ConfigService,
   ) {}
 
   static todayIso(): string {

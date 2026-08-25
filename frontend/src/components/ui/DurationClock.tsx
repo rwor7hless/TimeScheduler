@@ -216,7 +216,7 @@ export default function DurationClock({
                     cy={CY}
                     r={R}
                     fill="none"
-                    stroke="#E5E7EB"
+                    className="stroke-line"
                     strokeWidth="1"
                   />
                   {Array.from({ length: 288 }).map((_, i) => {
@@ -236,7 +236,7 @@ export default function DurationClock({
                         y1={y1}
                         x2={x2}
                         y2={y2}
-                        stroke={isHour ? '#9CA3AF' : '#E5E7EB'}
+                        className={isHour ? 'stroke-fg-mid' : 'stroke-line'}
                         strokeWidth={isHour ? 2 : 1}
                       />
                     )

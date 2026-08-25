@@ -64,6 +64,22 @@ describe('legacy tailwind classes', () => {
     expect(offendersByFile()).toEqual(BASELINE)
   })
 
+  it('no hex literal outside the colour modules', () => {
+    // Освобождены три модуля, и по разным причинам.
+    // tokens.ts — единственный источник палитры темы.
+    // contrast.ts держит чистые чёрный и белый как краску поверх произвольного
+    // пользовательского цвета; это не токены темы и не могут ими быть.
+    // lib/colors.ts и types/task.ts — палитры, ИЗ КОТОРЫХ пользователь выбирает
+    // цвет тега, доски или привычки. Это данные: они не переключаются вместе с
+    // темой и не выражаются токенами.
+    const EXEMPT = /(?:styles\/(?:tokens|contrast)\.ts|lib\/colors\.ts|types\/task\.ts)$/
+    const offenders = sourceFiles(SRC)
+      .filter((f) => !EXEMPT.test(f))
+      .filter((f) => /#[0-9a-fA-F]{3,8}\b/.test(stripComments(readFileSync(f, 'utf8'))))
+      .map((f) => relative(SRC, f))
+    expect(offenders).toEqual([])
+  })
+
   it('no ring utility survives — they emit box-shadow', () => {
     const offenders = sourceFiles(SRC)
       .filter((f) =>
