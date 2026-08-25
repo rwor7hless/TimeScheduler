@@ -44,17 +44,17 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
         type="button"
         onClick={() => setOpen((v) => !v)}
         className={clsx(
-          'h-9 px-2.5 rounded-xl text-xs font-semibold border transition-colors max-w-[140px] truncate',
+          'h-9 px-2.5 text-xs font-semibold border transition-colors max-w-[140px] truncate',
           selected
-            ? 'border-amber-400 bg-amber-100 text-amber-800 dark:border-amber-500 dark:bg-amber-900/50 dark:text-amber-200'
-            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:border-amber-400 dark:hover:border-amber-500',
+            ? 'border-accent bg-bg-sel text-accent'
+            : 'border-line bg-bg-cell text-fg-body hover:border-accent',
         )}
         title={selected ? `Проект: ${label}` : 'Выбрать проект'}
       >
         {label}
       </button>
       {open && (
-        <div className="popover absolute right-0 z-40 mt-1 w-56 max-h-64 overflow-y-auto rounded-xl py-1">
+        <div className="popover absolute right-0 z-40 mt-1 w-56 max-h-64 overflow-y-auto py-1">
           <button
             type="button"
             onClick={() => {
@@ -64,8 +64,8 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
             className={clsx(
               'w-full text-left px-3 py-1.5 text-xs',
               selectedId == null
-                ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60',
+                ? 'bg-bg-sel text-accent'
+                : 'text-fg-body hover:bg-bg-raised',
             )}
           >
             Без проекта
@@ -81,8 +81,8 @@ export default function ProjectChip({ boards, selectedId, onSelect }: ProjectChi
               className={clsx(
                 'w-full text-left px-3 py-1.5 text-xs truncate',
                 selectedId === b.id
-                  ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60',
+                  ? 'bg-bg-sel text-accent'
+                  : 'text-fg-body hover:bg-bg-raised',
               )}
             >
               {b.name}

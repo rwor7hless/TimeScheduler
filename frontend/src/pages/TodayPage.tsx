@@ -85,7 +85,7 @@ function SortableRow({ id, children }: { id: number; children: React.ReactNode }
   // Active row applies its cursor-follow transform (visible feedback that
   // it's being dragged) with opacity 0.55 hint. animateLayoutChanges
   // (defined above) skips the post-drop FLIP for the dropped row so it
-  // doesn't 'jump N positions above destination'.
+  // doesn't'jump N positions above destination'.
   // Каждая строка получает собственный композиционный слой:
   //   - `will-change: transform` поднимает её на отдельный GPU-слой,
   //   - `contain: paint` изолирует её отрисовку от соседей,
@@ -177,7 +177,7 @@ function getDateSectionKey(task: Task, todayStr: string): DateSectionKey | null 
 
 function getDateSectionLabel(key: DateSectionKey, today: Date): string {
   if (key === 'later') return 'Позднее'
-  if (key === 'noDate') return 'Отложенное'
+  if (key === 'noDate') return'Отложенное'
   if (key === 1) return 'Завтра'
   if (key === 2) return 'Послезавтра'
   if (key === 3) return 'Через 3 дня'
@@ -217,21 +217,21 @@ function BacklogTaskRow({
   return (
     <div
       className={clsx(
-        'flex items-center gap-3 px-3 py-2 rounded-xl border transition-all group',
+        'flex items-center gap-3 px-3 py-2 border transition-all group',
         done
-          ? 'bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          ? 'bg-bg-raised border-line'
+          : 'bg-bg-cell border-line hover:border-line'
       )}
     >
       <button
         type="button"
         onClick={onToggle}
-        title={done ? 'Снять отметку' : 'Отметить выполненной'}
+        title={done ? 'Снять отметку':'Отметить выполненной'}
         className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all border-2',
+          'w-5 h-5 flex-shrink-0 flex items-center justify-center transition-all border-2',
           done
-            ? 'text-white border-transparent'
-            : 'border-gray-300 dark:border-gray-600 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30'
+            ? 'text-bg border-transparent'
+            : 'border-line hover:border-success hover:bg-bg-cell'
         )}
         style={done ? { backgroundColor: task.color } : undefined}
       >
@@ -239,14 +239,14 @@ function BacklogTaskRow({
           width="9" height="9" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"
           className={clsx(
-            done ? '' : 'opacity-0 group-hover:opacity-100 text-emerald-500 transition-opacity'
+            done ? '' : 'opacity-0 group-hover:opacity-100 text-success transition-opacity'
           )}
         >
           <polyline points="20 6 9 17 4 12" />
         </svg>
       </button>
       <div
-        className={clsx('w-1 h-4 rounded-full flex-shrink-0', done && 'opacity-50')}
+        className={clsx('w-1 h-4 flex-shrink-0', done && 'opacity-50')}
         style={{ backgroundColor: task.color }}
       />
       <button
@@ -256,8 +256,8 @@ function BacklogTaskRow({
         className={clsx(
           'flex-1 min-w-0 text-sm font-medium text-left transition-colors truncate',
           done
-            ? 'line-through text-gray-500 dark:text-gray-400'
-            : 'text-gray-900 dark:text-gray-100 hover:text-amber-700 dark:hover:text-amber-400'
+            ? 'line-through text-fg-mid'
+            : 'text-fg hover:text-accent'
         )}
       >
         {truncateTitle(task.title)}
@@ -267,7 +267,7 @@ function BacklogTaskRow({
       )}
       {!done && boardName && (
         <span
-          className="text-[10px] font-medium text-gray-400 dark:text-gray-500 max-w-[80px] truncate flex-shrink-0"
+          className="text-[10px] font-medium text-fg-mid max-w-[80px] truncate flex-shrink-0"
           title={boardName}
         >
           {boardName}
@@ -276,12 +276,12 @@ function BacklogTaskRow({
       {!done && dateLabel && (
         <span
           className={clsx(
-            'text-[10px] font-medium px-1.5 py-0.5 rounded-full flex-shrink-0 whitespace-nowrap',
+            'text-[10px] font-medium px-1.5 py-0.5 flex-shrink-0 whitespace-nowrap',
             isOverdue
-              ? 'text-red-500 dark:text-red-400'
+              ? 'text-danger'
               : dateLabel.tomorrow
-              ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-              : 'text-gray-400 dark:text-gray-500',
+              ? 'bg-bg-sel text-accent'
+              : 'text-fg-mid',
           )}
         >
           {dateLabel.text}
@@ -292,7 +292,7 @@ function BacklogTaskRow({
           type="button"
           onClick={onAddToMyDay}
           title="Добавить в сегодня"
-          className="w-5 h-5 flex-shrink-0 flex items-center justify-center rounded text-gray-300 dark:text-gray-600 hover:text-amber-500 dark:hover:text-amber-400 transition-colors opacity-0 group-hover:opacity-100"
+          className="w-5 h-5 flex-shrink-0 flex items-center justify-center text-fg-mid hover:text-accent transition-colors opacity-0 group-hover:opacity-100"
         >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -311,17 +311,17 @@ function HabitRow({ habit, done, onToggle }: { habit: Habit; done: boolean; onTo
       type="button"
       onClick={onToggle}
       className={clsx(
-        'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl border text-left transition-all',
+        'w-full flex items-center gap-3 px-3 py-2.5 border text-left transition-all',
         done
           ? 'opacity-60'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+          : 'bg-bg-cell border-line hover:border-line'
       )}
       style={done ? { backgroundColor: `${habit.color}15`, borderColor: `${habit.color}50` } : undefined}
     >
       <div
         className={clsx(
-          'w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center transition-all',
-          done ? 'text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-300 dark:text-gray-600'
+          'w-5 h-5 flex-shrink-0 flex items-center justify-center transition-all',
+          done ? 'text-bg' : 'bg-bg-hover text-fg-mid'
         )}
         style={done ? { backgroundColor: habit.color } : undefined}
       >
@@ -338,12 +338,12 @@ function HabitRow({ habit, done, onToggle }: { habit: Habit; done: boolean; onTo
       <span
         className={clsx(
           'flex-1 text-sm font-medium',
-          done ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-gray-100'
+          done ? 'line-through text-fg-mid' : 'text-fg'
         )}
       >
         {habit.name}
       </span>
-      <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: habit.color }} />
+      <div className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: habit.color }} />
     </button>
   )
 }
@@ -701,31 +701,31 @@ export default function TodayPage() {
       {/* ── Compact progress ────────────────────────────────────────────────── */}
       <div className="flex items-center gap-5">
         <div className="flex items-center gap-2 flex-1">
-          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-bg-hover overflow-hidden">
             <div
-              className="h-full bg-amber-400 rounded-full transition-all duration-500"
+              className="h-full bg-bg-sel transition-all duration-500"
               style={{ width: `${taskPct}%` }}
             />
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+          <span className="text-xs text-fg-mid whitespace-nowrap tabular-nums">
             {doneTodayCount}/{todayUnified.length} задач
           </span>
         </div>
         <div className="flex items-center gap-2 flex-1">
-          <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+          <div className="flex-1 h-1.5 bg-bg-hover overflow-hidden">
             <div
-              className="h-full bg-emerald-400 rounded-full transition-all duration-500"
+              className="h-full bg-bg-cell transition-all duration-500"
               style={{ width: `${habitPct}%` }}
             />
           </div>
-          <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap tabular-nums">
+          <span className="text-xs text-fg-mid whitespace-nowrap tabular-nums">
             {doneHabits}/{activeHabits.length} привычек
           </span>
         </div>
       </div>
 
       {/* ── Main grid ───────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_220px] gap-6 items-start">
+      <div className="grid grid-cols-[1fr_220px] gap-6 items-start">
 
         {/* Left — tasks + backlog */}
         <div className="space-y-4">
@@ -734,26 +734,26 @@ export default function TodayPage() {
           <div className="space-y-1.5">
             <div className="flex gap-2">
               {/* Backdrop + transparent input trick */}
-              <div className="relative flex-1 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 focus-within:border-amber-400 dark:focus-within:border-amber-500 transition-colors">
+              <div className="relative flex-1 border border-line bg-bg-cell focus-within:border-accent transition-colors">
                 {/* Backdrop: renders plain text + underlined tokens, scrolls in sync with input */}
                 <div
                   ref={quickAddBackdropRef}
                   aria-hidden
-                  className="absolute inset-0 px-3 py-2 text-sm pointer-events-none select-none overflow-hidden whitespace-pre rounded-xl"
+                  className="absolute inset-0 px-3 py-2 text-sm pointer-events-none select-none overflow-hidden whitespace-pre"
                 >
                   {quickAdd === '' ? (
-                    <span className="text-gray-400 dark:text-gray-500">Встреча завтра в 11:00 на 2 часа...</span>
+                    <span className="text-fg-mid">Встреча завтра в 11:00 на 2 часа...</span>
                   ) : (
                     buildSegments(quickAdd, parsedPreview?.spans ?? []).map((seg, i) =>
                       seg.highlighted ? (
                         <span
                           key={i}
-                          className="text-gray-900 dark:text-gray-100 underline decoration-amber-400 decoration-2 underline-offset-2"
+                          className="text-fg underline decoration-amber-400 decoration-2 underline-offset-2"
                         >
                           {seg.text}
                         </span>
                       ) : (
-                        <span key={i} className="text-gray-900 dark:text-gray-100">{seg.text}</span>
+                        <span key={i} className="text-fg">{seg.text}</span>
                       )
                     )
                   )}
@@ -770,7 +770,7 @@ export default function TodayPage() {
                       quickAddBackdropRef.current.scrollLeft = quickAddInputRef.current.scrollLeft
                     }
                   }}
-                  className="quick-add relative w-full text-sm px-3 py-2 rounded-xl bg-transparent border-0 text-transparent caret-gray-900 dark:caret-gray-100 focus:outline-none"
+                  className="quick-add relative w-full text-sm px-3 py-2 bg-transparent border-0 text-transparent caret-fg focus:outline-none"
                 />
               </div>
               <QuickAddIcons value={quickAddOverrides} onChange={setQuickAddOverrides} />
@@ -783,7 +783,7 @@ export default function TodayPage() {
                 type="button"
                 onClick={handleQuickAdd}
                 disabled={!quickAdd.trim()}
-                className="px-3 py-2 rounded-xl bg-amber-400 hover:bg-amber-500 disabled:opacity-40 disabled:cursor-not-allowed text-white transition-colors"
+                className="px-3 py-2 bg-bg-sel hover:bg-bg-sel disabled:opacity-40 disabled:cursor-not-allowed text-bg transition-colors"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
@@ -794,21 +794,21 @@ export default function TodayPage() {
             {/* Parsed result summary — shown below input */}
             {parsedPreview && quickAdd.trim() && (parsedPreview.scheduledDate || parsedPreview.startTime || parsedPreview.deadline) && (
               <div className="flex items-center gap-1.5 px-1 flex-wrap">
-                <span className="text-xs text-amber-700 dark:text-amber-400 font-medium truncate max-w-[180px]">
+                <span className="text-xs text-accent font-medium truncate max-w-[180px]">
                   {parsedPreview.title || quickAdd.trim()}
                 </span>
                 {parsedPreview.scheduledDate && (
-                  <span className="text-[11px] bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[11px] bg-bg-sel text-accent px-1.5 py-0.5">
                     {friendlyDate(parsedPreview.scheduledDate, todayStr)}
                   </span>
                 )}
                 {parsedPreview.startTime && parsedPreview.endTime && (
-                  <span className="text-[11px] bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full font-mono">
+                  <span className="text-[11px] bg-bg-sel text-accent px-1.5 py-0.5 font-mono">
                     {parsedPreview.startTime}–{parsedPreview.endTime}
                   </span>
                 )}
                 {parsedPreview.deadline && (
-                  <span className="text-[11px] bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-1.5 py-0.5 rounded-full">
+                  <span className="text-[11px] bg-bg-cell text-danger px-1.5 py-0.5">
                     дедлайн {friendlyDate(parsedPreview.deadline, todayStr)}
                   </span>
                 )}
@@ -835,7 +835,7 @@ export default function TodayPage() {
                 className={clsx(topTab === 'overdue' && 'active')}
               >
                 Просрочено
-                <span className="ml-1 text-red-500 dark:text-red-400">({overdueTasks.length})</span>
+                <span className="ml-1 text-danger">({overdueTasks.length})</span>
               </button>
             </div>
           )}
@@ -870,7 +870,7 @@ export default function TodayPage() {
               </SortableContext>
             </DndContext>
           ) : todayUnified.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-gray-500 py-3">
+            <p className="text-sm text-fg-mid py-3">
               Нет задач на сегодня — добавь или назначь дедлайн
             </p>
           ) : (
@@ -911,7 +911,7 @@ export default function TodayPage() {
                 <button
                   type="button"
                   onClick={() => toggleSection(keyStr)}
-                  className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 hover:text-gray-500 dark:hover:text-gray-400 transition-colors"
+                  className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-widest text-fg-mid hover:text-fg-mid transition-colors"
                 >
                   <svg
                     width="10" height="10" viewBox="0 0 24 24" fill="none"
@@ -962,11 +962,11 @@ export default function TodayPage() {
         {/* Right — habits */}
         <div className="space-y-5">
           <div>
-            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-2">
+            <h2 className="text-[11px] font-semibold uppercase tracking-widest text-fg-mid mb-2">
               Привычки
             </h2>
             {activeHabits.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 py-4 text-center">
+              <p className="text-sm text-fg-mid py-4 text-center">
                 Нет активных привычек
               </p>
             ) : (

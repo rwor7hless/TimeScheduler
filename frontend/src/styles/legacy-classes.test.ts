@@ -45,13 +45,7 @@ const BASELINE: Record<string, readonly string[]> = {
   'components/stats/StatsWeekView.tsx': ['breakpoint', 'palette', 'radius'],
   'components/stats/WeekNavigator.tsx': ['breakpoint', 'palette', 'radius'],
   'components/stats/WeekReportBody.tsx': ['palette', 'radius'],
-  'components/tasks/BacklogTaskRow.tsx': ['palette', 'radius'],
-  'components/tasks/ProjectChip.tsx': ['palette', 'radius'],
-  'components/tasks/TagBadge.tsx': ['palette', 'radius'],
-  'components/tasks/TagBadgeGroup.tsx': ['palette', 'radius'],
-  'components/tasks/TaskCard.tsx': ['palette', 'radius', 'shadow'],
   'components/tasks/TaskModal.tsx': ['breakpoint', 'palette', 'radius'],
-  'components/today/QuickAddIcons.tsx': ['palette', 'radius'],
   'components/ui/ThemePicker.tsx': ['shadow'],
   'pages/AdminPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/CalendarPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
@@ -59,7 +53,6 @@ const BASELINE: Record<string, readonly string[]> = {
   'pages/HabitsPage.tsx': ['breakpoint', 'palette', 'radius', 'shadow'],
   'pages/NotificationsPage.tsx': ['palette'],
   'pages/TasksPage.tsx': ['palette'],
-  'pages/TodayPage.tsx': ['breakpoint', 'palette', 'radius'],
   'pages/TodoListPage.tsx': ['palette', 'radius', 'shadow'],
 }
 

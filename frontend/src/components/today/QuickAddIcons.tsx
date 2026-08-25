@@ -51,10 +51,10 @@ export default function QuickAddIcons({ value, onChange }: Props) {
 
   const iconClasses = (active: boolean) =>
     clsx(
-      'p-2 rounded-xl border transition-colors',
+      'p-2 border transition-colors',
       active
-        ? 'border-amber-400 text-amber-500 bg-amber-50 dark:bg-amber-900/20'
-        : 'border-transparent text-gray-400 hover:text-gray-600 dark:hover:text-gray-200',
+        ? 'border-accent text-accent bg-bg-sel'
+        : 'border-transparent text-fg-mid hover:text-fg-body',
     )
 
   return (
@@ -73,7 +73,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
           </svg>
         </button>
         {open === 'date' && (
-          <div className="popover absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
+          <div className="popover absolute right-0 z-40 mt-2 w-72 p-3 space-y-2 text-sm">
             <div>
               <label className="block text-[11px] uppercase opacity-60 mb-1 tracking-wider">Дата</label>
               <input
@@ -82,7 +82,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...value, scheduledDate: e.target.value || null })
                 }
-                className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                className="w-full px-2 py-1.5 border border-line bg-transparent"
               />
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -94,7 +94,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
                   onChange={(e) =>
                     onChange({ ...value, startTime: e.target.value || null })
                   }
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                  className="w-full px-2 py-1.5 border border-line bg-transparent"
                 />
               </div>
               <div>
@@ -105,7 +105,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
                   onChange={(e) =>
                     onChange({ ...value, endTime: e.target.value || null })
                   }
-                  className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                  className="w-full px-2 py-1.5 border border-line bg-transparent"
                 />
               </div>
             </div>
@@ -117,7 +117,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
                 onChange={(e) =>
                   onChange({ ...value, deadline: e.target.value || null })
                 }
-                className="w-full px-2 py-1.5 rounded border border-gray-300 dark:border-gray-600 bg-transparent"
+                className="w-full px-2 py-1.5 border border-line bg-transparent"
               />
             </div>
             <div className="flex justify-between pt-1">
@@ -139,7 +139,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="text-xs text-amber-500 hover:underline"
+                className="text-xs text-accent hover:underline"
               >
                 Готово
               </button>
@@ -164,7 +164,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
           </svg>
         </button>
         {open === 'repeat' && (
-          <div className="popover absolute right-0 z-40 mt-2 w-72 rounded-xl p-3 space-y-2 text-sm">
+          <div className="popover absolute right-0 z-40 mt-2 w-72 p-3 space-y-2 text-sm">
             <div className="text-[11px] uppercase opacity-60 tracking-wider">Повторять по дням</div>
             <div className="flex gap-1">
               {WEEKDAYS.map((label, i) => {
@@ -180,10 +180,10 @@ export default function QuickAddIcons({ value, onChange }: Props) {
                       onChange({ ...value, repeatDays: next })
                     }}
                     className={clsx(
-                      'flex-1 min-w-[34px] py-1 rounded border text-[11px] font-medium transition-colors',
+                      'flex-1 min-w-[34px] py-1 border text-[11px] font-medium transition-colors',
                       active
-                        ? 'border-amber-400 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
-                        : 'border-gray-300 dark:border-gray-600 text-gray-500',
+                        ? 'border-accent bg-bg-sel text-accent'
+                        : 'border-line text-fg-mid',
                     )}
                   >
                     {label}
@@ -205,7 +205,7 @@ export default function QuickAddIcons({ value, onChange }: Props) {
               <button
                 type="button"
                 onClick={() => setOpen(null)}
-                className="text-xs text-amber-500 hover:underline"
+                className="text-xs text-accent hover:underline"
               >
                 Готово
               </button>

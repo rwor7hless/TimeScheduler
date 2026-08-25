@@ -1,4 +1,5 @@
 import type { Tag } from '@/types/task'
+import { inkOn } from '@/styles/contrast'
 
 interface Props {
   tags: Tag[]
@@ -15,17 +16,17 @@ export default function TagBadgeGroup({ tags, max = 2, size = 'sm', className = 
   const rest = tags.length - visible.length
   const pillClass =
     size === 'sm'
-      ? 'inline-flex items-center px-1.5 py-px rounded-full text-[10px] font-medium text-white leading-tight max-w-[96px] truncate'
-      : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-white'
+      ? 'inline-flex items-center px-1.5 py-px text-[10px] font-medium leading-tight max-w-[96px] truncate'
+      : 'inline-flex items-center px-2 py-0.5 text-xs font-medium'
   const restClass =
     size === 'sm'
-      ? 'inline-flex items-center px-1.5 py-px rounded-full text-[10px] font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 leading-tight'
-      : 'inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700'
+      ? 'inline-flex items-center px-1.5 py-px text-[10px] font-medium text-fg-mid bg-bg-hover leading-tight'
+      : 'inline-flex items-center px-2 py-0.5 text-xs font-medium text-fg-mid bg-bg-hover'
 
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
       {visible.map((t) => (
-        <span key={t.id} className={pillClass} style={{ backgroundColor: t.color }} title={t.name}>
+        <span key={t.id} className={pillClass} style={{ backgroundColor: t.color, color: inkOn(t.color) }} title={t.name}>
           {t.name}
         </span>
       ))}
