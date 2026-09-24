@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
-import { useSearchParams, useNavigate } from 'react-router-dom'
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom'
 import { addDays, addWeeks, addMonths, subDays, subWeeks, subMonths, startOfWeek, endOfWeek, format } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { useTasks, usePatchTask } from '@/hooks/useTasks'
@@ -9,18 +9,21 @@ import MonthView from '@/components/calendar/MonthView'
 import TaskModal from '@/components/tasks/TaskModal'
 import Button from '@/components/ui/Button'
 import Spinner from '@/components/ui/Spinner'
+import { calendarViewFromPath, CALENDAR_VIEWS, type CalendarView } from '@/lib/calendarView'
 import type { Task } from '@/types/task'
 
-type ViewMode = 'day' | 'week' | 'month'
-
 export default function CalendarPage() {
-  const [viewMode, setViewMode] = useState<ViewMode>('week')
+  const location = useLocation()
+  const viewMode = calendarViewFromPath(location.pathname)
   const [currentDate, setCurrentDate] = useState(new Date())
   const [modalOpen, setModalOpen] = useState(false)
   const [editingTask, setEditingTask] = useState<Task | null>(null)
   const [defaultDate, setDefaultDate] = useState<string>('')
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
+  // ?search= переживает смену вида, ?new=1 — нет: его съедает эффект ниже.
+  const setViewMode = (mode: CalendarView) =>
+    navigate({ pathname: `/calendar/${mode}`, search: location.search })
   const searchQuery = searchParams.get('search')
 
   const taskParams: Record<string, string> = { scope: 'calendar' }
@@ -35,9 +38,9 @@ export default function CalendarPage() {
       setEditingTask(null)
       setDefaultDate('')
       setModalOpen(true)
-      navigate('/calendar/day', { replace: true })
+      navigate(location.pathname, { replace: true })
     }
-  }, [searchParams, navigate])
+  }, [searchParams, navigate, location.pathname])
 
   const handleTaskMove = useCallback((task: Task, newStart: string, newEnd: string) => {
     patchTask.mutate({ id: task.id, data: { scheduled_start: newStart, scheduled_end: newEnd } })
@@ -97,7 +100,7 @@ export default function CalendarPage() {
         {/* Mode switcher + add */}
         <div className="flex items-center gap-2 flex-shrink-0">
           <div className="flex bg-bg-hover p-0.5">
-            {(['day', 'week', 'month'] as ViewMode[]).map((mode) => (
+            {CALENDAR_VIEWS.map((mode) => (
               <button
                 key={mode}
                 onClick={() => setViewMode(mode)}

@@ -89,7 +89,7 @@ export function buildNav({ isAdmin }: { isAdmin: boolean }): NavGroup[] {
       title: 'Планирование',
       items: [
         { to: '/tasks', label: 'Задачи', match: (p) => p === '/tasks', icon: <BoardsIcon /> },
-        { to: '/calendar/day', label: 'Календарь', match: (p) => p.startsWith('/calendar'), icon: <CalIcon /> },
+        { to: '/calendar/week', label: 'Календарь', match: (p) => p.startsWith('/calendar'), icon: <CalIcon /> },
       ],
     },
     {
