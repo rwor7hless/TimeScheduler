@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/context/AuthContext'
 import { ThemeProvider, useTheme } from '@/context/ThemeContext'
 import AppShell from '@/components/layout/AppShell'
 import ErrorBoundary from '@/components/ui/ErrorBoundary'
+import Spinner from '@/components/ui/Spinner'
 import LoginPage from '@/pages/LoginPage'
 import AdminPage from '@/pages/AdminPage'
 import CalendarPage from '@/pages/CalendarPage'
@@ -16,6 +17,7 @@ import TasksPage from '@/pages/TasksPage'
 import NotificationsPage from '@/pages/NotificationsPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 import { queryClient } from '@/lib/queryClient'
+import { adminGate } from '@/lib/adminGate'
 
 /** Отдельный компонент, потому что useTheme() работает только внутри ThemeProvider. */
 function ThemedToaster() {
@@ -48,10 +50,13 @@ function ProtectedRoute() {
 }
 
 function AdminRoute() {
-  const { isAuthenticated, isAdmin } = useAuth()
-  if (!isAuthenticated) return <Navigate to="/login" replace />
-  if (!isAdmin) return <Navigate to="/calendar/day" replace />
-  return <Outlet />
+  const { isAuthenticated, user } = useAuth()
+  switch (adminGate({ isAuthenticated, user })) {
+    case 'login': return <Navigate to="/login" replace />
+    case 'pending': return <Spinner className="mt-20" />
+    case 'deny': return <Navigate to="/calendar/day" replace />
+    case 'allow': return <Outlet />
+  }
 }
 
 export default function App() {
@@ -68,7 +73,7 @@ export default function App() {
                 <Route path="/" element={<Navigate to="/today" replace />} />
                 <Route path="/today" element={<TodayPage />} />
                 <Route path="/tasks" element={<TasksPage />} />
-                <Route path="/calendar" element={<Navigate to="/calendar/day" replace />} />
+                <Route path="/calendar" element={<Navigate to="/calendar/week" replace />} />
                 <Route path="/calendar/day" element={<CalendarPage />} />
                 <Route path="/calendar/week" element={<CalendarPage />} />
                 <Route path="/calendar/month" element={<CalendarPage />} />
