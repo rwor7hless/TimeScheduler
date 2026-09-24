@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'fs'
-import { join, relative, resolve } from 'path'
+import { join, relative as nativeRelative, resolve, sep } from 'path'
+
+// Baselines are keyed with '/'; on Windows path.relative answers with '\'.
+const relative = (from: string, to: string) => nativeRelative(from, to).split(sep).join('/')
 
 const SRC = resolve(process.cwd(), 'src')
 
@@ -84,7 +87,7 @@ describe('legacy tailwind classes', () => {
     // темой и не выражаются токенами.
     const EXEMPT = /(?:styles\/(?:tokens|contrast)\.ts|lib\/colors\.ts|types\/task\.ts)$/
     const offenders = sourceFiles(SRC)
-      .filter((f) => !EXEMPT.test(f))
+      .filter((f) => !EXEMPT.test(relative(SRC, f)))
       .filter((f) => /#[0-9a-fA-F]{3,8}\b/.test(stripComments(readFileSync(f, 'utf8'))))
       .map((f) => relative(SRC, f))
     expect(offenders).toEqual([])

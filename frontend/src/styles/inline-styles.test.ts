@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync, statSync } from 'fs'
-import { join, relative, resolve } from 'path'
+import { join, relative as nativeRelative, resolve, sep } from 'path'
+
+// Baselines are keyed with '/'; on Windows path.relative answers with '\'.
+const relative = (from: string, to: string) => nativeRelative(from, to).split(sep).join('/')
 
 const SRC = resolve(process.cwd(), 'src')
 
