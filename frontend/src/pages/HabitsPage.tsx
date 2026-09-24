@@ -352,7 +352,7 @@ export default function HabitsPage() {
                       {week.map((day, di) => (
                         <div
                           key={di}
-                          className="w-[11px] h-[11px]-[2px]"
+                          className="w-[11px] h-[11px]"
                           style={{
                             backgroundColor:
                               day === null ? 'transparent'

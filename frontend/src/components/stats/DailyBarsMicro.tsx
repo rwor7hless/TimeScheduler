@@ -110,7 +110,7 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
               >
                 {d.label}
               </div>
-              <div className="text-[11px] tabular-nums font-medium text-fg-body group- transition-colors">
+              <div className="text-[11px] tabular-nums font-medium text-fg-body transition-colors">
                 {d.isFuture ? '' : d.count}
               </div>
             </div>
