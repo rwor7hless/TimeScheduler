@@ -151,7 +151,7 @@ export default function AdminPage() {
                     <td className="py-2 pr-4 font-medium text-fg">{u.username}</td>
                     <td className="py-2 pr-4">
                       {u.is_admin ? (
-                        <span className="text-accent font-medium">Admin</span>
+                        <span className="text-fg font-medium">Admin</span>
                       ) : (
                         <span className="text-fg-mid">User</span>
                       )}

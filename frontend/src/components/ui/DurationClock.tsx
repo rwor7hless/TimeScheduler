@@ -330,7 +330,7 @@ export default function DurationClock({
             applyManualInput()
             close?.()
           }}
-          className={clsx('w-full bg-accent text-bg font-medium hover:bg-accent-light focus:outline-none transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
+          className={clsx('primary-btn w-full focus:outline-none transition-colors', compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm')}
         >
           Подтвердить
         </button>

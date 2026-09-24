@@ -53,7 +53,7 @@ export function PeakHoursStrip({ hours }: Props) {
                   'h-5 flex-1 transition-colors ' +
                   (isActive
                     ? 'bg-accent'
-                    : 'bg-bg-hover')
+                    : 'bg-line-soft')
                 }
               />
             )

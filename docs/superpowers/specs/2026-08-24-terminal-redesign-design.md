@@ -52,8 +52,8 @@ Adapted from `time_manage/src/styles.css`. lumen ships dark only; light is deriv
 --bg-cell:    #121413
 --bg-hover:   #101211
 --bg-sel:     #141715
---line:       #1e211e
---line-soft:  #131614
+--line:       #2b2f2b
+--line-soft:  #1d201d
 --fg:         #d6d8d3
 --fg-body:    #b9bcb6
 --mid:        #8a8d87
@@ -72,8 +72,8 @@ Adapted from `time_manage/src/styles.css`. lumen ships dark only; light is deriv
 --bg-cell:    #ecebe4
 --bg-hover:   #eceae2
 --bg-sel:     #e5e3d9
---line:       #d8d6cb
---line-soft:  #e6e4da
+--line:       #cfcdc1
+--line-soft:  #dddbd0
 --fg:         #23241f
 --fg-body:    #3c3e37
 --mid:        #6b6e64

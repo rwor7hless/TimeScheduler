@@ -24,8 +24,8 @@
   --bg-cell: #121413;
   --bg-hover: #101211;
   --bg-sel: #141715;
-  --line: #1e211e;
-  --line-soft: #131614;
+  --line: #2b2f2b;
+  --line-soft: #1d201d;
   --fg: #d6d8d3;
   --fg-body: #b9bcb6;
   --mid: #8a8d87;
@@ -53,8 +53,8 @@
   --bg-cell: #ecebe4;
   --bg-hover: #eceae2;
   --bg-sel: #e5e3d9;
-  --line: #d8d6cb;
-  --line-soft: #e6e4da;
+  --line: #cfcdc1;
+  --line-soft: #dddbd0;
   --fg: #23241f;
   --fg-body: #3c3e37;
   --mid: #6b6e64;
@@ -361,17 +361,32 @@ button {
   border-color: var(--line);
 }
 
-/* Primary uses the accent as text colour only — never as a fill behind
-   small text, which is illegible against the terminal palette. */
+/* Primary is the one filled control on a screen, and the only kind: an
+   accent outline next to an accent fill read as two different ranks of
+   "main". Ink on the accent measures 8.9:1 dark and 4.6:1 light. Hover
+   moves AWAY from the background in each theme — lighter on dark, darker on
+   paper — because the light theme's --accent-light under --bg ink is 3.4:1.
+   Disabled drops to a neutral cell: a see-through accent turned into a
+   brown smear on the dark background. */
 .primary-btn {
+  background: var(--accent);
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--bg);
+  font-weight: 600;
 }
-.primary-btn:hover {
-  background: var(--bg-hover);
+.primary-btn:hover:not(:disabled) {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+}
+:root[data-theme="light"] .primary-btn:hover:not(:disabled) {
+  background: var(--accent-dark);
+  border-color: var(--accent-dark);
 }
 .primary-btn:disabled {
-  opacity: 0.5;
+  background: var(--bg-cell);
+  border-color: var(--line);
+  color: var(--dim);
+  opacity: 1;
   cursor: not-allowed;
 }
 

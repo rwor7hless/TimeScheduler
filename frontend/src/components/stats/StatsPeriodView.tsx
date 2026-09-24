@@ -12,9 +12,9 @@ import {
 import Spinner from '@/components/ui/Spinner'
 import { useStats } from '@/hooks/useStats'
 import { useTheme } from '@/context/ThemeContext'
-import { CHART_COLORS as DEFAULT_COLORS } from '@/lib/colors'
 import type { BreakdownItem } from '@/types/stats'
 import type { StatsPeriod } from '@/api/stats'
+import { isEmptyMetric } from '@/lib/metric'
 
 /**
  * Month/Year view — the classic StatsPage layout.
@@ -67,10 +67,7 @@ function StatCard({
       <div
         className={clsx(
           'text-2xl font-bold',
-          accent === 'green' && 'text-success',
-          accent === 'red' && 'text-danger',
-          accent === 'amber' && 'text-accent',
-          !accent && 'text-fg',
+          isEmptyMetric(value) ? 'text-fg' : accent === 'green' ? 'text-success' : accent === 'red' ? 'text-danger' : 'text-fg',
         )}
       >
         {value}
@@ -85,17 +82,17 @@ function BreakdownBar({ title, items }: { title: string; items: BreakdownItem[] 
   if (total === 0) return null
 
   return (
-    <div className="space-y-2">
+    <div className="bg-bg-cell border border-line p-4 space-y-2">
       <h4 className="text-xs font-medium text-fg-mid">{title}</h4>
       <div className="space-y-1.5">
-        {items.map((item, idx) => {
+        {items.map((item) => {
           const pct = Math.round((item.count / total) * 100)
-          const color = item.color || DEFAULT_COLORS[idx % DEFAULT_COLORS.length]
+          const color = item.color || 'var(--mid)'
           return (
             <div key={item.label} className="flex items-center gap-2">
               <div className="w-2 h-2 flex-shrink-0" style={{ backgroundColor: color }} />
               <span className="text-xs text-fg-body flex-1 truncate">{item.label}</span>
-              <div className="w-20 h-1.5 bg-bg-hover overflow-hidden">
+              <div className="w-20 h-1.5 bg-line-soft overflow-hidden">
                 <div className="h-full" style={{ width: `${pct}%`, backgroundColor: color }} />
               </div>
               <span className="text-xs text-fg-mid w-8 text-right">{item.count}</span>
@@ -136,7 +133,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
         <button
           type="button"
           onClick={() => refetch()}
-          className="px-3 py-1.5 text-xs font-medium bg-accent text-bg hover:bg-accent-dark transition-colors"
+          className="primary-btn px-3 py-1.5 text-xs transition-colors"
         >
           Повторить
         </button>
@@ -221,7 +218,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <div className="text-xs text-fg-mid">Выполнено задач</div>
-                  <div className="text-2xl font-bold text-accent">{periodMetrics.total}</div>
+                  <div className="text-2xl font-bold text-fg">{periodMetrics.total}</div>
                 </div>
                 <div>
                   <div className="text-xs text-fg-mid">Серия дней</div>
@@ -292,15 +289,9 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
 
       {(stats.by_priority.length > 0 || stats.by_board.length > 0 || stats.by_tag.length > 0) && (
         <div className="grid grid-cols-3 narrow:grid-cols-1 gap-4">
-          <div className="bg-bg-cell border border-line p-4">
-            <BreakdownBar title="По приоритету" items={stats.by_priority} />
-          </div>
-          <div className="bg-bg-cell border border-line p-4">
-            <BreakdownBar title="По доскам" items={stats.by_board} />
-          </div>
-          <div className="bg-bg-cell border border-line p-4">
-            <BreakdownBar title="По тегам" items={stats.by_tag} />
-          </div>
+          <BreakdownBar title="По приоритету" items={stats.by_priority} />
+          <BreakdownBar title="По доскам" items={stats.by_board} />
+          <BreakdownBar title="По тегам" items={stats.by_tag} />
         </div>
       )}
 
@@ -315,7 +306,7 @@ export default function StatsPeriodView({ period }: { period: 'month' | 'year' }
                   <div className="text-xs text-fg-mid">Стрик: {hp.current_streak} дн.</div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <div className="w-32 bg-bg-hover h-2">
+                  <div className="w-32 bg-line-soft h-2">
                     <div
                       className="h-2 bg-bg-cell transition-all"
                       style={{ width: `${Math.min(hp.completion_rate * 100, 100)}%` }}

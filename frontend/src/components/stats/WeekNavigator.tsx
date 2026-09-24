@@ -112,7 +112,7 @@ export function WeekNavigator({ weekStart, onChange }: Props) {
               <motion.span
                 animate={shouldReduceMotion ? undefined : { opacity: [1, 0.7, 1] }}
                 transition={shouldReduceMotion ? undefined : { duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-bg-sel text-accent text-[10px] font-medium tracking-wide"
+                className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-bg-sel text-fg-mid text-[10px] font-medium tracking-wide"
               >
                 Текущая неделя
               </motion.span>

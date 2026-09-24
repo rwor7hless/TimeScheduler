@@ -44,7 +44,7 @@ export default class ErrorBoundary extends Component<Props, State> {
           <button
             type="button"
             onClick={this.handleReload}
-            className="px-4 py-2 bg-accent hover:bg-accent-light text-bg text-sm font-medium"
+            className="primary-btn px-4 py-2 text-sm"
           >
             Перезагрузить
           </button>

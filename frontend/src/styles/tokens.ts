@@ -35,8 +35,10 @@ export const DARK: Palette = {
   bgCell:      '#121413',
   bgHover:     '#101211',
   bgSel:       '#141715',
-  line:        '#1e211e',
-  lineSoft:    '#131614',
+  // Подняты на ступень: при 1.2:1 и 1.08:1 к фону сетка календаря и рамки
+  // карточек растворялись. Теперь ~1.45:1 и ~1.2:1 — видно, но не кричит.
+  line:        '#2b2f2b',
+  lineSoft:    '#1d201d',
   fg:          '#d6d8d3',
   fgBody:      '#b9bcb6',
   mid:         '#8a8d87',
@@ -56,8 +58,8 @@ export const LIGHT: Palette = {
   bgCell:      '#ecebe4',
   bgHover:     '#eceae2',
   bgSel:       '#e5e3d9',
-  line:        '#d8d6cb',
-  lineSoft:    '#e6e4da',
+  line:        '#cfcdc1',
+  lineSoft:    '#dddbd0',
   fg:          '#23241f',
   fgBody:      '#3c3e37',
   mid:         '#6b6e64',

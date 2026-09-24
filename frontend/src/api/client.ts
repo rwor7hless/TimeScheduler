@@ -1,5 +1,6 @@
 import axios from 'axios'
 import toast from 'react-hot-toast'
+import { recolorLegacy } from '@/lib/colors'
 
 const api = axios.create({
   baseURL: '/api',
@@ -26,7 +27,10 @@ api.interceptors.request.use((config) => {
 })
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    response.data = recolorLegacy(response.data)
+    return response
+  },
   (error) => {
     if (error.response?.status === 401) {
       handleSessionExpired()

@@ -128,7 +128,7 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
           {!compact && deadlineStatus && (
             <div className={clsx(
               'text-[10px] font-medium mt-1.5 flex items-center gap-1',
-              deadlineStatus === 'overdue' ? 'text-danger' : 'text-accent'
+              deadlineStatus === 'overdue' ? 'text-danger' : 'text-fg-mid'
             )}>
               <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
@@ -178,7 +178,7 @@ export default function TaskCard({ task, onClick, compact = false, className, ov
             </div>
           )}
           {!compact && task.repeat_days && task.repeat_days.length > 0 && (
-            <div className="text-xs text-accent mt-1">
+            <div className="text-xs text-fg-mid mt-1">
               ↻ {task.repeat_days.map((d) => WEEKDAY_LABELS[d]).join(', ')}
             </div>
           )}

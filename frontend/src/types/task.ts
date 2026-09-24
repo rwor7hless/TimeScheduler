@@ -1,3 +1,5 @@
+import { PALETTE } from '@/lib/colors'
+
 export type Priority = 'low' | 'medium' | 'high' | 'urgent'
 
 export interface Tag {
@@ -6,10 +8,8 @@ export interface Tag {
   color: string
 }
 
-export const TASK_COLOR_PALETTE = [
-  '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6',
-  '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
-]
+/** Задаче при создании достаётся случайный цвет из общей палитры данных. */
+export const TASK_COLOR_PALETTE = PALETTE
 
 export interface Task {
   id: number

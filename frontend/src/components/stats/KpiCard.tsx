@@ -1,6 +1,7 @@
 import clsx from 'clsx'
 import type { ReactNode } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
+import { isEmptyMetric } from '@/lib/metric'
 
 type Accent = 'green' | 'red' | 'amber' | 'violet' | 'sky'
 
@@ -47,10 +48,14 @@ function DeltaBadge({ delta, format }: { delta: number; format: 'int' | 'pp' | '
 const accentText: Record<Accent, string> = {
   green: 'text-success',
   red: 'text-danger',
-  amber: 'text-accent',
-  violet: 'text-accent',
-  sky: 'text-accent',
+  amber: 'text-fg',
+  violet: 'text-fg',
+  sky: 'text-fg',
 }
+
+/** value может быть и разметкой — такую не оцениваем и оставляем цвет как задан. */
+const isEmptyValue = (value: ReactNode) =>
+  (typeof value === 'string' || typeof value === 'number') && isEmptyMetric(value)
 
 export function KpiCard({ label, value, delta, deltaFormat = 'int', accent, sub }: Props) {
   const shouldReduceMotion = useReducedMotion()
@@ -72,7 +77,7 @@ export function KpiCard({ label, value, delta, deltaFormat = 'int', accent, sub 
       <div
         className={clsx(
           'text-2xl font-bold flex items-baseline gap-1',
-          accent ? accentText[accent] : 'text-fg',
+          accent && !isEmptyValue(value) ? accentText[accent] : 'text-fg',
         )}
       >
         <span>{value}</span>

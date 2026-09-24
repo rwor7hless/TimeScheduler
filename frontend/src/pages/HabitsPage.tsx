@@ -16,6 +16,7 @@ import {
   PieChart, Pie, Cell,
 } from 'recharts'
 import { PALETTE as HABIT_COLORS, TIME_BUCKETS } from '@/lib/colors'
+import { isEmptyMetric } from '@/lib/metric'
 
 // ─── Heatmap util ──────────────────────────────────────────────────────────────
 
@@ -54,10 +55,10 @@ function buildHeatmapGrid(completedDates: Set<string>): HeatmapDay[][] {
 type StatColor = 'amber' | 'emerald' | 'orange' | 'violet'
 
 const colorMap: Record<StatColor, { bg: string; text: string }> = {
-  amber:   { bg: 'bg-bg-cell', text: 'text-accent' },
+  amber:   { bg: 'bg-bg-cell', text: 'text-fg' },
   emerald: { bg: 'bg-bg-cell', text: 'text-success' },
-  orange:  { bg: 'bg-bg-cell', text: 'text-accent' },
-  violet:  { bg: 'bg-bg-cell', text: 'text-accent' },
+  orange:  { bg: 'bg-bg-cell', text: 'text-fg' },
+  violet:  { bg: 'bg-bg-cell', text: 'text-fg' },
 }
 
 function StatCard({ label, value, color }: { label: string; value: string; color: StatColor }) {
@@ -65,7 +66,7 @@ function StatCard({ label, value, color }: { label: string; value: string; color
   return (
     <div className={clsx('px-3 py-2', c.bg)}>
       <div className="text-[10px] text-fg-mid leading-tight">{label}</div>
-      <div className={clsx('text-xl font-bold leading-tight mt-0.5', c.text)}>{value}</div>
+      <div className={clsx('text-xl font-bold leading-tight mt-0.5', isEmptyMetric(value) ? 'text-fg' : c.text)}>{value}</div>
     </div>
   )
 }
@@ -88,7 +89,13 @@ export default function HabitsPage() {
   const [selectedHabitId, setSelectedHabitId] = useState<number | null>(null)
   const [habitToDelete, setHabitToDelete] = useState<Habit | null>(null)
 
-  const { isDark } = useTheme()
+  const { colors } = useTheme()
+  const tooltipStyle = {
+    fontSize: 11,
+    background: colors.surface,
+    border: `1px solid ${colors.line}`,
+    color: colors.fg,
+  }
   const todayStr = format(new Date(), 'yyyy-MM-dd')
 
   const isCompleted = (habit: Habit, date: string) =>
@@ -386,7 +393,7 @@ export default function HabitsPage() {
                         minTickGap={10}
                       />
                       <Tooltip
-                        contentStyle={{ fontSize: 11 }}
+                        contentStyle={tooltipStyle}
                         formatter={(v: number, name: string) => [`${v} дн.`, name]}
                       />
                       {habits?.map(h => (
@@ -412,49 +419,7 @@ export default function HabitsPage() {
                 <div className="h-[160px] flex items-center">
                   {buildTimeData(selectedHabit).length > 0 ? (
                     <>
-                      {/* Chart with glow layers — no Legend inside so all layers align */}
                       <div className="relative flex-1 h-full">
-                        {/* Wide glow */}
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ filter: 'blur(20px)', opacity: isDark ? 0.85 : 0.35 }}
-                          aria-hidden
-                        >
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={buildTimeData(selectedHabit)} dataKey="value" nameKey="label"
-                                innerRadius={40} outerRadius={65} paddingAngle={3} isAnimationActive={false} stroke="none"
-                              >
-                                {buildTimeData(selectedHabit).map((entry) => (
-                                  <Cell key={entry.id} fill={isDark ? entry.neon : entry.color} />
-                                ))}
-                              </Pie>
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-
-                        {/* Tight glow */}
-                        <div
-                          className="absolute inset-0 pointer-events-none"
-                          style={{ filter: 'blur(6px)', opacity: isDark ? 0.6 : 0.25 }}
-                          aria-hidden
-                        >
-                          <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                              <Pie
-                                data={buildTimeData(selectedHabit)} dataKey="value" nameKey="label"
-                                innerRadius={40} outerRadius={65} paddingAngle={3} isAnimationActive={false} stroke="none"
-                              >
-                                {buildTimeData(selectedHabit).map((entry) => (
-                                  <Cell key={entry.id} fill={isDark ? entry.neon : entry.color} />
-                                ))}
-                              </Pie>
-                            </PieChart>
-                          </ResponsiveContainer>
-                        </div>
-
-                        {/* Main chart — no Legend, same layout as glow layers */}
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
                             <Pie
@@ -467,12 +432,12 @@ export default function HabitsPage() {
                               stroke="none"
                             >
                               {buildTimeData(selectedHabit).map((entry) => (
-                                <Cell key={entry.id} fill={isDark ? entry.neon : entry.color} />
+                                <Cell key={entry.id} fill={entry.color} />
                               ))}
                             </Pie>
                             <Tooltip
                               formatter={(v: number, name: string) => [`${v} раз`, name]}
-                              contentStyle={{ fontSize: 11 }}
+                              contentStyle={tooltipStyle}
                             />
                           </PieChart>
                         </ResponsiveContainer>
@@ -484,7 +449,7 @@ export default function HabitsPage() {
                           <div key={entry.id} className="flex items-center gap-1.5">
                             <span
                               className="w-[7px] h-[7px] flex-shrink-0"
-                              style={{ backgroundColor: isDark ? entry.neon : entry.color }}
+                              style={{ backgroundColor: entry.color }}
                             />
                             <span style={{ color: 'var(--fg-body)', fontSize: 10 }}>{entry.label}</span>
                           </div>

@@ -65,8 +65,10 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
           // Use a fixed pixel bar-area height so flex/auto-sizing can't
           // collapse it to zero (the earlier bug — `items-end` made each
           // column intrinsic-sized, which killed the percentage-height bars).
+          // A zero day is a baseline, not a short bar: in the accent it read as
+          // "a little done" on a day when nothing was.
           const heightPx =
-            d.count === 0 ? 4 : Math.max(4, Math.round((d.count / max) * BAR_AREA_PX))
+            d.count === 0 ? 2 : Math.max(4, Math.round((d.count / max) * BAR_AREA_PX))
           return (
             <div
               key={d.iso}
@@ -81,6 +83,8 @@ export function DailyBarsMicro({ weekStart, dailyCompletions }: Props) {
                   className={
                     d.isFuture
                       ? 'w-full bg-bg-hover opacity-40 border-t-2 border-dashed border-line transition-all'
+                      : d.count === 0
+                      ? 'w-full bg-line transition-all'
                       : d.isToday
                       ? 'w-full bg-accent transition-all duration-200 group-hover:bg-accent-light'
                       : 'w-full bg-accent-dark transition-all duration-200 group-hover:bg-accent-light'

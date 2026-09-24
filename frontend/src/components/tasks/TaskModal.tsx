@@ -404,7 +404,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                 <span className="text-[11px] font-medium text-fg-mid">
                   Расписание
                   {scheduledDate && (
-                    <span className="ml-1.5 text-accent font-normal normal-case">
+                    <span className="ml-1.5 text-fg-body font-normal normal-case">
                       {whenLabel}
                     </span>
                   )}
@@ -645,7 +645,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
                   type="button"
                   onClick={handleAddSubtask}
                   disabled={!newSubtaskTitle.trim() || createTask.isPending}
-                  className="px-2.5 py-1.5 bg-accent text-bg text-xs hover:bg-accent-light disabled:opacity-40"
+                  className="primary-btn px-2.5 py-1.5 text-xs"
                 >
                   ОК
                 </button>
@@ -677,7 +677,7 @@ export default function TaskModal({ isOpen, onClose, task, defaultDate, defaultD
             <button
               type="submit"
               disabled={createTask.isPending || updateTask.isPending || !title.trim()}
-              className="px-4 py-1.5 text-xs font-semibold bg-accent text-bg hover:bg-accent-light disabled:opacity-40 transition-colors flex items-center gap-1.5"
+              className="primary-btn px-4 py-1.5 text-xs transition-colors flex items-center gap-1.5"
             >
               {(createTask.isPending || updateTask.isPending) && (
                 <svg className="animate-spin" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="9" strokeDasharray="40" strokeLinecap="round"/></svg>
